@@ -1,7 +1,7 @@
 pragma solidity ^0.4.13;
 
 import "./ERC20.sol";
-import "./Ownable.sol";
+import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 contract WToken is ERC20, Ownable {

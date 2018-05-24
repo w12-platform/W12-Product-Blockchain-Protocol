@@ -1,6 +1,8 @@
 pragma solidity ^0.4.23;
 
 
+// Despite having OpenZeppelin as a submodule, we're going to use this declaration of ERC20 token standard
+// because of its brevity in comparison to OpenZeppelin's.
 contract ERC20 {
     function totalSupply() public view returns (uint256);
     function balanceOf(address who) public view returns (uint256);

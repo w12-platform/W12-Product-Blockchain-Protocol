@@ -1,6 +1,6 @@
 pragma solidity 0.4.23;
 
-import "./Ownable.sol";
+import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./ERC20.sol";
 import "./WToken.sol";
 
@@ -8,7 +8,8 @@ import "./WToken.sol";
 contract TokenLister is Ownable {
 
     mapping (address => ListedToken) approvedTokens;
-    mapping (address => WToken) listing;
+    mapping (address => WToken) listingTokenToWToken;
+    mapping (address => ERC20) listingWTokenToToken;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol, uint8 decimals);
     event TokenPlaced(address indexed originalTokenAddress, uint tokenAmount, address placedTokenAddress);
@@ -36,23 +37,53 @@ contract TokenLister is Ownable {
 
     function placeToken(address tokenAddress, uint amount) external {
         require(amount > 0);
+        require(token != address(0x0));
 
         ListedToken storage listedToken = approvedTokens[tokenAddress];
 
-        require(listedToken.approvedOwners[msg.sender]);
+        assert(listedToken.approvedOwners[msg.sender]);
 
         ERC20 token = ERC20(tokenAddress);
         uint balanceBefore = token.balanceOf(address(this));
         token.transferFrom(msg.sender, address(this), amount);
-        uint balanceAfter = token.balanceOf(address(this));
+        uint balanceAfter = token.balalistingTokenToWTokennceOf(address(this));
 
-        require(balanceBefore < balanceAfter);
-        require(balanceAfter == balanceBefore + amount);
+        assert(balanceBefore < balanceAfter);
+        assert(balanceAfter == balanceBefore + amount);
         
-        if(listing[tokenAddress] == address(0x0)) {
-            listing[tokenAddress] = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+        if(listingTokenToWToken[tokenAddress] == address(0x0)) {
+            listingTokenToWToken[tokenAddress] = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+            listingWTokenToToken[listingTokenToWToken[tokenAddress]] = tokenAddress;
         }
 
-        emit TokenPlaced(tokenAddress, amount, listing[tokenAddress]);
+        emit TokenPlaced(tokenAddress, amount, listingTokenToWToken[tokenAddress]);
+    }
+
+    function getWTokenByToken(address token)
+        assertOutputAddress
+        external view {
+
+        require(token != address(0x0));
+
+        address wTokenAddress = listingTokenToWToken[token];
+
+        return wTokenAddress;
+    }
+
+    function getTokenByWToken(address wToken)
+        assertOutputAddress
+        external view {
+
+        require(wToken != address(0x0));
+
+        address tokenAddress = listingWTokenToToken[wToken];
+
+        return tokenAddress;
+    }
+
+    modifier assertOutputAddress() {
+        address result = _;
+
+        assert(result != address(0x0));
     }
 }
