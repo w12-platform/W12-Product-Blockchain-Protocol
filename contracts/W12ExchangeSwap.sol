@@ -1,16 +1,16 @@
 pragma solidity ^0.4.23;
 
-import "./ERC20.sol";
+//import "./ERC20.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../openzeppelin-soliditycontracts/token/SafeERC20.sol";
+import "../openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 
-contract TokenSwap is Ownable {
+contract W12ExchangeSwap is Ownable {
     using SafeMath for uint;
     using SafeERC20 for ERC20;
 
-    function exchange(ERC20 fromToken, ERC20 toToken, uint amount) {
+    function exchange(ERC20 fromToken, ERC20 toToken, uint amount) external {
         require(fromToken != address(0x0));
         require(toToken != address(0x0));
         // we won't check `amount` for zero because ERC20 implies zero amount transfers as a valid case
@@ -32,10 +32,10 @@ contract TokenSwap is Ownable {
         uint swapFromTokenBalanceAfter = fromToken.balanceOf(swapAddress);
         uint swapToTokenBalanceAfter = toToken.balanceOf(swapAddress);
 
-        assert(senderFromTokenBalanceBefore.sub(amount) == senderFromTokenBalanceAfter);
-        assert(senderToTokenBalanceBefore.add(amount) == senderToTokenBalanceAfter);
+        require(senderFromTokenBalanceBefore.sub(amount) == senderFromTokenBalanceAfter);
+        require(senderToTokenBalanceBefore.add(amount) == senderToTokenBalanceAfter);
 
-        assert(swapToTokenBalanceBefore.sub(amount) == swapToTokenBalanceAfter);
-        assert(swapFromTokenBalanceBefore.add(amount) == swapFromTokenBalanceAfter);
+        require(swapToTokenBalanceBefore.sub(amount) == swapToTokenBalanceAfter);
+        require(swapFromTokenBalanceBefore.add(amount) == swapFromTokenBalanceAfter);
     }
 }
