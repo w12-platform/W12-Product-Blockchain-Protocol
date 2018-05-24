@@ -7,7 +7,7 @@ import "./WToken.sol";
 import "./W12ExchangeSwap.sol";
 
 
-contract W12Lister is Ownable {
+contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     mapping (address => ListedToken) public approvedTokens;
@@ -54,7 +54,7 @@ contract W12Lister is Ownable {
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
     }
 
-    function placeToken(address tokenAddress, uint amount) external {
+    function placeToken(address tokenAddress, uint amount) external nonReentrant {
         require(amount > 0);
         require(tokenAddress != address(0x0));
 
@@ -70,9 +70,9 @@ contract W12Lister is Ownable {
 
         uint amountWithoutFee = amount.sub(fee);
 
+        approvedTokens[tokenAddress].tokensForSaleAmount = approvedTokens[tokenAddress].tokensForSaleAmount.add(amountWithoutFee);
         token.transferFrom(msg.sender, swap, amountWithoutFee);
         token.transferFrom(msg.sender, serviceWallet, fee);
-        approvedTokens[tokenAddress].tokensForSaleAmount = approvedTokens[tokenAddress].tokensForSaleAmount.add(amountWithoutFee);
 
         uint balanceAfter = token.balanceOf(swap);
 
@@ -86,13 +86,13 @@ contract W12Lister is Ownable {
         emit TokenPlaced(tokenAddress, amountWithoutFee, listingTokenToWToken[tokenAddress]);
     }
 
-    function initCrowdsale(address crowdsaleAddress, address tokenAddress, uint amountForSale) external onlyOwner {
+    function initCrowdsale(address crowdsaleAddress, address tokenAddress, uint amountForSale) external onlyOwner nonReentrant {
         require(crowdsaleAddress != address(0x0));
         require(approvedTokens[tokenAddress].tokensForSaleAmount <= approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale));
 
-        getWTokenByToken(tokenAddress).mint(crowdsaleAddress, amountForSale);
         approvedTokens[tokenAddress].wTokensIssuedAmount = approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale);
         approvedTokens[tokenAddress].crowdsaleAddress = crowdsaleAddress;
+        getWTokenByToken(tokenAddress).mint(crowdsaleAddress, amountForSale);
     }
 
     function getWTokenByToken(address token) public view returns (WToken wTokenAddress) {

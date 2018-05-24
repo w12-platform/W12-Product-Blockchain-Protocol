@@ -4,13 +4,14 @@ pragma solidity ^0.4.23;
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 
 
-contract W12ExchangeSwap is Ownable {
+contract W12ExchangeSwap is Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for ERC20;
 
-    function exchange(ERC20 fromToken, ERC20 toToken, uint amount) external {
+    function exchange(ERC20 fromToken, ERC20 toToken, uint amount) external nonReentrant {
         require(fromToken != address(0x0));
         require(toToken != address(0x0));
         // we won't check `amount` for zero because ERC20 implies zero amount transfers as a valid case
