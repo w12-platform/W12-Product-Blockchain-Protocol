@@ -1,20 +1,19 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.23;
 
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./WToken.sol";
-import "./W12ExchangeSwap.sol";
+import "./W12AtomicSwap.sol";
+import "./W12TokenLedger.sol";
+import "./IW12Crowdsale.sol";
 
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     mapping (address => ListedToken) public approvedTokens;
-    mapping (address => WToken) public listingTokenToWToken;
-    mapping (address => ERC20) public listingWTokenToToken;
-    W12ExchangeSwap public swap;
+    W12AtomicSwap public swap;
+    W12TokenLedger public ledger;
     address public serviceWallet;
+    IW12CrowdsaleFactory public factory;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, uint tokenAmount, address placedTokenAddress);
@@ -25,16 +24,19 @@ contract W12Lister is Ownable, ReentrancyGuard {
         uint8 decimals;
         mapping(address => bool) approvedOwners;
         uint8 feePercent;
-        address crowdsaleAddress;
+        IW12Crowdsale crowdsaleAddress;
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
     }
 
-    constructor(address _serviceWallet) public {
+    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory) public {
         require(_serviceWallet != address(0x0));
+        require(_factory != address(0x0));
 
-        swap = new W12ExchangeSwap();
+        ledger = new W12TokenLedger();
+        swap = new W12AtomicSwap(ledger);
         serviceWallet = _serviceWallet;
+        factory = _factory;
     }
 
     function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint8 feePercent)
@@ -78,40 +80,27 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         require(balanceAfter == balanceBefore.add(amountWithoutFee));
         
-        if(listingTokenToWToken[tokenAddress] == address(0x0)) {
-            listingTokenToWToken[tokenAddress] = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
-            listingWTokenToToken[listingTokenToWToken[tokenAddress]] = ERC20(tokenAddress);
+        if(ledger.getWTokenByToken(tokenAddress) == address(0x0)) {
+            WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+            ledger.addTokenToListing(ERC20(tokenAddress), wToken);
         }
 
-        emit TokenPlaced(tokenAddress, amountWithoutFee, listingTokenToWToken[tokenAddress]);
+        emit TokenPlaced(tokenAddress, amountWithoutFee, ledger.getWTokenByToken(tokenAddress));
     }
 
-    function initCrowdsale(address crowdsaleAddress, address tokenAddress, uint amountForSale) external onlyOwner nonReentrant {
-        require(crowdsaleAddress != address(0x0));
+    function initCrowdsale(uint32 _startDate, address tokenAddress, uint amountForSale, uint price, uint8 serviceFee) external onlyOwner nonReentrant {
         require(approvedTokens[tokenAddress].tokensForSaleAmount <= approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale));
+
+        IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(ledger.getWTokenByToken(tokenAddress)), _startDate, price, serviceWallet, serviceFee, owner);
 
         approvedTokens[tokenAddress].wTokensIssuedAmount = approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale);
         approvedTokens[tokenAddress].crowdsaleAddress = crowdsaleAddress;
-        getWTokenByToken(tokenAddress).mint(crowdsaleAddress, amountForSale);
+        ledger.getWTokenByToken(tokenAddress).mint(crowdsaleAddress, amountForSale, 0);
     }
 
-    function getWTokenByToken(address token) public view returns (WToken wTokenAddress) {
-        require(token != address(0x0));
+    function getTokenCrowdsale(address tokenAddress) view external returns (address) {
+        require(approvedTokens[tokenAddress].crowdsaleAddress != address(0x0));
 
-        wTokenAddress = listingTokenToWToken[token];
-
-        require(wTokenAddress != address(0x0));
-
-        return wTokenAddress;
-    }
-
-    function getTokenByWToken(address wToken) public view returns (ERC20 tokenAddress) {
-        require(wToken != address(0x0));
-
-        tokenAddress = listingWTokenToToken[wToken];
-
-        require(tokenAddress != address(0x0));
-
-        return tokenAddress;
+        return approvedTokens[tokenAddress].crowdsaleAddress;
     }
 }

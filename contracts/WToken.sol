@@ -1,25 +1,22 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.24;
 
 import "../openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
-contract WToken is ERC20, Ownable {
+contract WToken is DetailedERC20, Ownable {
 
     mapping (address => mapping (address => uint256)) internal allowed;
 
     mapping(address => uint256) public balances;
 
     uint256 private _totalSupply;
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
 
-    constructor (string name, string symbol, uint8 decimals) public {
-        _name = name;
-        _symbol = symbol;
-        _decimals = decimals;
-    }
+    mapping (address => mapping (uint256 => uint256)) public vestingBalanceOf;
+
+    uint[] vestingTimes;
+
+    event VestingTransfer(address indexed _from, address indexed _to, uint256 value, uint256 agingTime);
 
     /**
     * @dev total number of tokens in existence
@@ -28,25 +25,7 @@ contract WToken is ERC20, Ownable {
         return _totalSupply;
     }
 
-    /**
-    * @dev token decimals
-    */
-    function decimals() public view returns (uint8) {
-        return _decimals;
-    }
-
-    /**
-    * @dev full token name
-    */
-    function name() public view returns (string) {
-        return _name;
-    }
-
-    /**
-    * @dev token symbol
-    */
-    function symbol() public view returns (string) {
-        return _symbol;
+    constructor(string _name, string _symbol, uint8 _decimals) DetailedERC20(_name, _symbol, _decimals) public {
     }
 
     /**
@@ -55,12 +34,25 @@ contract WToken is ERC20, Ownable {
     * @param _value The amount to be transferred.
     */
     function transfer(address _to, uint256 _value) public returns (bool) {
+        _checkMyVesting(msg.sender);
         require(_to != address(0));
         require(_value <= balances[msg.sender]);
 
-        balances[msg.sender] = balances[msg.sender] - _value;
-        balances[_to] = balances[_to] + _value;
+        balances[msg.sender] -= _value;
+
+        balances[_to] += _value;
+
         emit Transfer(msg.sender, _to, _value);
+        return true;
+    }
+
+    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) public returns (bool) {
+        transfer(_to, _value);
+
+        if (_vestingTime > now) {
+            _addToVesting(address(0x0), _to, _vestingTime, _value);
+        }
+
         return true;
     }
 
@@ -80,13 +72,16 @@ contract WToken is ERC20, Ownable {
     * @param _value uint256 the amount of tokens to be transferred
     */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+        _checkMyVesting(_from);
+
         require(_to != address(0));
         require(_value <= balances[_from]);
         require(_value <= allowed[_from][msg.sender]);
 
-        balances[_from] = balances[_from] - _value;
-        balances[_to] = balances[_to] + _value;
-        allowed[_from][msg.sender] = allowed[_from][msg.sender] - _value;
+        balances[_from] -= _value;
+        balances[_to] += _value;
+        allowed[_from][msg.sender] -= _value;
+
         emit Transfer(_from, _to, _value);
         return true;
     }
@@ -129,7 +124,7 @@ contract WToken is ERC20, Ownable {
     * @param _addedValue The amount of tokens to increase the allowance by.
     */
     function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
-        allowed[msg.sender][_spender] = allowed[msg.sender][_spender] + _addedValue;
+        allowed[msg.sender][_spender] += _addedValue;
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
 
         return true;
@@ -157,14 +152,42 @@ contract WToken is ERC20, Ownable {
         return true;
     }
 
-    function mint(address _to, uint _amount) external onlyOwner returns (bool) {
+    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyOwner returns (bool) {
         require(_totalSupply + _amount > _totalSupply);
-        require(balances[_to] + _amount > balances[_to]);
+
+        if (_vestingTime > now) {
+            _addToVesting(address(0x0), _to, _vestingTime, _amount);
+        }
 
         balances[_to] += _amount;
         _totalSupply += _amount;
         emit Transfer(address(0x0), _to, _amount);
 
         return true;
+    }
+
+    function _addToVesting(address _from, address _to, uint256 _vestingTime, uint256 _amount) internal {
+        vestingBalanceOf[_to][0] += _amount;
+        vestingBalanceOf[_to][_vestingTime] += _amount;
+        emit VestingTransfer(_from, _to, _amount, _vestingTime);
+    }
+
+    function () external {
+        revert();
+    }
+
+    function _checkMyVesting(address _from) internal {
+        if (vestingBalanceOf[_from][0] == 0) return;
+
+        for (uint256 k = 0; k < vestingTimes.length; k++) {
+            if (vestingTimes[k] < now) {
+                vestingBalanceOf[_from][0] -= vestingBalanceOf[_from][vestingTimes[k]];
+                vestingBalanceOf[_from][vestingTimes[k]] = 0;
+            }
+        }
+    }
+
+    function accountBalance(address _address) public view returns (uint256 balance) {
+        return balances[_address] - vestingBalanceOf[_address][0];
     }
 }
