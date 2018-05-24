@@ -63,23 +63,24 @@ contract('TokenLister', async (accounts) => {
 
         describe('when token are listed', async () => {
             let tokenOwner = accounts[1];
+            const oneToken = new BigNumber(10).pow(18);
 
             beforeEach(async () => {
                 sut = await TokenLister.new();
                 token = await GenericToken.new('TestToken', 'TT', 18);
                 await sut.whitelistToken(tokenOwner, token.address, "TestTokenz", "TT", 18);
-                await token.mint(accounts[1], 10000);
-                await token.approve(sut.address, 10000);
+                await token.mint(accounts[1], oneToken.mul(10000));
+                await token.approve(sut.address, oneToken.mul(10000), { from: accounts[1] });
             });
 
             it('should create an exchangable token', async () => {
-                const tokenAmountForSale = new BigNumber(10).pow(18).mul(10000);
+                const tokenAmountForSale = oneToken.mul(10000);
                 const receipt = await sut.placeToken(token.address, tokenAmountForSale, { from: accounts[1] }).should.be.fulfilled;
 
                 receipt.logs[0].event.should.be.equal('TokenPlaced');
                 receipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
                 receipt.logs[0].args.tokenAmount.should.bignumber.equal(tokenAmountForSale);
-                receipt.logs[0].args.placedTokenAddress.should.be.not.empty();
+                receipt.logs[0].args.placedTokenAddress.should.not.be.equal(ZERO_ADDRESS);
 
                 const actualExchangerBalance = await token.balanceOf(await sut.address).should.be.fulfilled;
 

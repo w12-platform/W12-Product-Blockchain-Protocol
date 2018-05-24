@@ -4,7 +4,7 @@ import "./ERC20.sol";
 import "./Ownable.sol";
 
 
-contract GenericToken is ERC20, Ownable {
+contract WToken is ERC20, Ownable {
 
     mapping (address => mapping (address => uint256)) internal allowed;
 

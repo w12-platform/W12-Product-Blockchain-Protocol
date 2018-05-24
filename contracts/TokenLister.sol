@@ -2,15 +2,16 @@ pragma solidity 0.4.23;
 
 import "./Ownable.sol";
 import "./ERC20.sol";
-import "./GenericToken.sol";
+import "./WToken.sol";
 
 
 contract TokenLister is Ownable {
 
     mapping (address => ListedToken) approvedTokens;
-    mapping (address => address) listing;
+    mapping (address => WToken) listing;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol, uint8 decimals);
+    event TokenPlaced(address indexed originalTokenAddress, uint tokenAmount, address placedTokenAddress);
 
     struct ListedToken {
         string name;
@@ -48,8 +49,10 @@ contract TokenLister is Ownable {
         require(balanceBefore < balanceAfter);
         require(balanceAfter == balanceBefore + amount);
         
-        if(listing[tokenAddress] != address(0x0)) {
-            listing[tokenAddress] = new GenericToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+        if(listing[tokenAddress] == address(0x0)) {
+            listing[tokenAddress] = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
         }
+
+        emit TokenPlaced(tokenAddress, amount, listing[tokenAddress]);
     }
 }
