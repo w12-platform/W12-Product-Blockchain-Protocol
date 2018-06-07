@@ -36,7 +36,7 @@ contract WToken is DetailedERC20, Ownable {
     function transfer(address _to, uint256 _value) public returns (bool) {
         _checkMyVesting(msg.sender);
         require(_to != address(0));
-        require(_value <= balances[msg.sender]);
+        require(_value <= accountBalance(msg.sender));
 
         balances[msg.sender] -= _value;
 
@@ -75,7 +75,7 @@ contract WToken is DetailedERC20, Ownable {
         _checkMyVesting(_from);
 
         require(_to != address(0));
-        require(_value <= balances[_from]);
+        require(_value <= accountBalance(_from));
         require(_value <= allowed[_from][msg.sender]);
 
         balances[_from] -= _value;
