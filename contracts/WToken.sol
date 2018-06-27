@@ -14,7 +14,9 @@ contract WToken is DetailedERC20, Ownable {
 
     mapping (address => mapping (uint256 => uint256)) public vestingBalanceOf;
 
-    uint[] vestingTimes;
+    mapping (address => uint[]) vestingTimes;
+
+    mapping (address => bool) trustedAccounts;
 
     event VestingTransfer(address indexed _from, address indexed _to, uint256 value, uint256 agingTime);
 
@@ -26,6 +28,7 @@ contract WToken is DetailedERC20, Ownable {
     }
 
     constructor(string _name, string _symbol, uint8 _decimals) DetailedERC20(_name, _symbol, _decimals) public {
+        trustedAccounts[msg.sender] = true;
     }
 
     /**
@@ -46,7 +49,7 @@ contract WToken is DetailedERC20, Ownable {
         return true;
     }
 
-    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) public returns (bool) {
+    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
         transfer(_to, _value);
 
         if (_vestingTime > now) {
@@ -152,7 +155,7 @@ contract WToken is DetailedERC20, Ownable {
         return true;
     }
 
-    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyOwner returns (bool) {
+    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
         require(_totalSupply + _amount > _totalSupply);
 
         if (_vestingTime > now) {
@@ -168,6 +171,10 @@ contract WToken is DetailedERC20, Ownable {
 
     function _addToVesting(address _from, address _to, uint256 _vestingTime, uint256 _amount) internal {
         vestingBalanceOf[_to][0] += _amount;
+
+        if(vestingBalanceOf[_to][_vestingTime] == 0)
+            vestingTimes[_to].push(_vestingTime);
+
         vestingBalanceOf[_to][_vestingTime] += _amount;
         emit VestingTransfer(_from, _to, _amount, _vestingTime);
     }
@@ -179,15 +186,28 @@ contract WToken is DetailedERC20, Ownable {
     function _checkMyVesting(address _from) internal {
         if (vestingBalanceOf[_from][0] == 0) return;
 
-        for (uint256 k = 0; k < vestingTimes.length; k++) {
-            if (vestingTimes[k] < now) {
-                vestingBalanceOf[_from][0] -= vestingBalanceOf[_from][vestingTimes[k]];
-                vestingBalanceOf[_from][vestingTimes[k]] = 0;
+        for (uint256 k = 0; k < vestingTimes[_from].length; k++) {
+            if (vestingTimes[_from][k] < now) {
+                vestingBalanceOf[_from][0] -= vestingBalanceOf[_from][vestingTimes[_from][k]];
+                vestingBalanceOf[_from][vestingTimes[_from][k]] = 0;
             }
         }
     }
 
     function accountBalance(address _address) public view returns (uint256 balance) {
         return balances[_address] - vestingBalanceOf[_address][0];
+    }
+
+    function addTrustedAccount(address caller) external onlyOwner {
+        trustedAccounts[caller] = true;
+    }
+
+    function removeTrustedAccount(address caller) external onlyOwner {
+        trustedAccounts[caller] = false;
+    }
+
+    modifier onlyTrusted(address caller) {
+        require(trustedAccounts[caller]);
+        _;
     }
 }

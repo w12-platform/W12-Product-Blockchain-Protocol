@@ -41,7 +41,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         price = _price;
         serviceWallet = _serviceWallet;
         serviceFee = _serviceFee;
-
     }
 
     function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) onlyOwner external {
@@ -83,7 +82,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function getCurrentStage() public returns(uint32 endDate, uint8 discount, uint32 vesting) {
         if(stages.length == 0)
             return (uint32(-1), 0, 0);
-        
+
         if(stages[stages.length].endDate >= now)
             return (stages[stages.length].endDate, stages[stages.length].discount, stages[stages.length].vesting);
 

@@ -79,7 +79,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         uint balanceAfter = token.balanceOf(swap);
 
         require(balanceAfter == balanceBefore.add(amountWithoutFee));
-        
+
         if(ledger.getWTokenByToken(tokenAddress) == address(0x0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
             ledger.addTokenToListing(ERC20(tokenAddress), wToken);
@@ -91,11 +91,13 @@ contract W12Lister is Ownable, ReentrancyGuard {
     function initCrowdsale(uint32 _startDate, address tokenAddress, uint amountForSale, uint price, uint8 serviceFee) external onlyOwner nonReentrant {
         require(approvedTokens[tokenAddress].tokensForSaleAmount <= approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale));
 
-        IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(ledger.getWTokenByToken(tokenAddress)), _startDate, price, serviceWallet, serviceFee, owner);
+        WToken wtoken = ledger.getWTokenByToken(tokenAddress);
+        IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(wtoken), _startDate, price, serviceWallet, serviceFee, address(this));
 
         approvedTokens[tokenAddress].wTokensIssuedAmount = approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale);
         approvedTokens[tokenAddress].crowdsaleAddress = crowdsaleAddress;
-        ledger.getWTokenByToken(tokenAddress).mint(crowdsaleAddress, amountForSale, 0);
+        wtoken.mint(crowdsaleAddress, amountForSale, 0);
+        wtoken.addTrustedAccount(crowdsaleAddress);
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {
