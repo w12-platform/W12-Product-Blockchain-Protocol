@@ -11,7 +11,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
   beforeEach(async function () {
-    this.token = await WToken.new("WToken", "WToken", 18);
+    this.token = await WToken.new("WToken", "WToken", 18, {gas: 7000000});
     await this.token.mint(owner, 100, 0);
   });
 
@@ -472,17 +472,5 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
         assert(logs[0].args.value.eq(amount));
       });
     });
-  });
-
-  it('test maximum vesting time count', async function () {
-    let count = 0;
-    await this.token.mint(recipient, 10000, 0);
-    await this.token.mint(owner, 10000, 0);
-
-    while(++count) {
-      await this.token.vestingTransfer(owner, 1, Date.UTC(2019,1,1) / 1000 + count, {from: recipient});
-      await this.token.transfer(anotherAccount, 1, {from: owner}).should.be.fulfilled;
-      console.log(`iteration #${count} passed`);
-    }
   });
 });
