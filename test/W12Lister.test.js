@@ -35,7 +35,11 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should add token to listing', async () => {
+            const whitelistedTokensCountBefore = await sut.approvedTokensLength().should.be.fulfilled;
+
             const receipt = await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50).should.be.fulfilled;
+
+            (await sut.approvedTokensLength()).should.bignumber.equal(whitelistedTokensCountBefore + 1);
 
             receipt.logs[0].event.should.be.equal('OwnerWhitelisted');
             receipt.logs[0].args.tokenAddress.should.be.equal(token.address);

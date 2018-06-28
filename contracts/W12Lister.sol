@@ -10,7 +10,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     mapping (address => uint16) public approvedTokensIndex;
-    ListedToken[] approvedTokens;
+    ListedToken[] public approvedTokens;
+    uint16 public approvedTokensLength;
     W12AtomicSwap public swap;
     W12TokenLedger public ledger;
     address public serviceWallet;
@@ -52,7 +53,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         uint16 index = uint16(approvedTokens.length);
         approvedTokensIndex[tokenAddress] = index;
 
-        approvedTokens.length++;
+        approvedTokensLength = uint16(approvedTokens.length++);
 
         approvedTokens[index].approvedOwners[tokenOwner] = true;
         approvedTokens[index].name = name;
