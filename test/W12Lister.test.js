@@ -84,8 +84,10 @@ contract('W12Lister', async (accounts) => {
                 placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
                 placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(ZERO_ADDRESS);
 
-                const actualExchangerBalance = await token.balanceOf(await sut.swap());
-                const actualServiceWalletBalance = await token.balanceOf(await sut.serviceWallet());
+                const swapAddress = await sut.swap();
+                const serviceWalletAddress = await sut.serviceWallet();
+                const actualExchangerBalance = await token.balanceOf(swapAddress);
+                const actualServiceWalletBalance = await token.balanceOf(serviceWalletAddress);
 
                 actualExchangerBalance.should.bignumber.equal(oneToken.mul(7));
                 actualServiceWalletBalance.should.bignumber.equal(oneToken.mul(3));

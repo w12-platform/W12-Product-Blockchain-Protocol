@@ -9,7 +9,8 @@ import "./IW12Crowdsale.sol";
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
-    mapping (address => ListedToken) public approvedTokens;
+    mapping (address => uint16) public approvedTokensIndex;
+    ListedToken[] approvedTokens;
     W12AtomicSwap public swap;
     W12TokenLedger public ledger;
     address public serviceWallet;
@@ -37,6 +38,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         swap = new W12AtomicSwap(ledger);
         serviceWallet = _serviceWallet;
         factory = _factory;
+        approvedTokens.length++; // zero-index element should never be used
     }
 
     function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint8 feePercent)
@@ -45,13 +47,18 @@ contract W12Lister is Ownable, ReentrancyGuard {
         require(tokenOwner != address(0x0));
         require(tokenAddress != address(0x0));
         require(feePercent < 100);
-        require(!approvedTokens[tokenAddress].approvedOwners[tokenOwner]);
+        require(!approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[tokenOwner]);
 
-        approvedTokens[tokenAddress].approvedOwners[tokenOwner] = true;
-        approvedTokens[tokenAddress].name = name;
-        approvedTokens[tokenAddress].symbol = symbol;
-        approvedTokens[tokenAddress].decimals = decimals;
-        approvedTokens[tokenAddress].feePercent = feePercent;
+        uint16 index = uint16(approvedTokens.length);
+        approvedTokensIndex[tokenAddress] = index;
+
+        approvedTokens.length++;
+
+        approvedTokens[index].approvedOwners[tokenOwner] = true;
+        approvedTokens[index].name = name;
+        approvedTokens[index].symbol = symbol;
+        approvedTokens[index].decimals = decimals;
+        approvedTokens[index].feePercent = feePercent;
 
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
     }
@@ -59,20 +66,21 @@ contract W12Lister is Ownable, ReentrancyGuard {
     function placeToken(address tokenAddress, uint amount) external nonReentrant {
         require(amount > 0);
         require(tokenAddress != address(0x0));
+        require(approvedTokensIndex[tokenAddress] > 0);
 
-        ListedToken storage listedToken = approvedTokens[tokenAddress];
+        ListedToken storage listedToken = approvedTokens[approvedTokensIndex[tokenAddress]];
 
         require(listedToken.approvedOwners[msg.sender]);
 
         ERC20 token = ERC20(tokenAddress);
         uint balanceBefore = token.balanceOf(swap);
-        uint fee = approvedTokens[tokenAddress].feePercent > 0
-            ? amount.mul(approvedTokens[tokenAddress].feePercent).div(100)
+        uint fee = listedToken.feePercent > 0
+            ? amount.mul(listedToken.feePercent).div(100)
             : 0;
 
         uint amountWithoutFee = amount.sub(fee);
 
-        approvedTokens[tokenAddress].tokensForSaleAmount = approvedTokens[tokenAddress].tokensForSaleAmount.add(amountWithoutFee);
+        approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
         token.transferFrom(msg.sender, swap, amountWithoutFee);
         token.transferFrom(msg.sender, serviceWallet, fee);
 
@@ -89,20 +97,20 @@ contract W12Lister is Ownable, ReentrancyGuard {
     }
 
     function initCrowdsale(uint32 _startDate, address tokenAddress, uint amountForSale, uint price, uint8 serviceFee) external onlyOwner nonReentrant {
-        require(approvedTokens[tokenAddress].tokensForSaleAmount <= approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale));
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount <= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(wtoken), _startDate, price, serviceWallet, serviceFee, address(this));
 
-        approvedTokens[tokenAddress].wTokensIssuedAmount = approvedTokens[tokenAddress].wTokensIssuedAmount.add(amountForSale);
-        approvedTokens[tokenAddress].crowdsaleAddress = crowdsaleAddress;
+        approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale);
+        approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsaleAddress;
         wtoken.mint(crowdsaleAddress, amountForSale, 0);
         wtoken.addTrustedAccount(crowdsaleAddress);
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {
-        require(approvedTokens[tokenAddress].crowdsaleAddress != address(0x0));
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress != address(0x0));
 
-        return approvedTokens[tokenAddress].crowdsaleAddress;
+        return approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress;
     }
 }
