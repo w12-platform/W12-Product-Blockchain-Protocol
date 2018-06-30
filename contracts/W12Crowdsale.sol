@@ -25,22 +25,22 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee) public {
         require(_token != address(0x0));
+        require(_serviceFee >= 0 && _serviceFee < 100);
 
         token = WToken(_token);
 
-        setParameters(_startDate, _price, _serviceWallet, _serviceFee);
+        setParameters(_startDate, _price, _serviceWallet);
+        serviceFee = _serviceFee;
     }
 
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee) onlyOwner public {
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) onlyOwner public {
         require(_startDate >= now);
         require(_price > 0);
         require(_serviceWallet != address(0x0));
-        require(_serviceFee >= 0 && _serviceFee < 100);
 
         startDate = _startDate;
         price = _price;
         serviceWallet = _serviceWallet;
-        serviceFee = _serviceFee;
     }
 
     function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) onlyOwner external {

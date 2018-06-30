@@ -118,6 +118,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsaleAddress;
         wtoken.mint(crowdsaleAddress, amountForSale, 0);
         wtoken.addTrustedAccount(crowdsaleAddress);
+
+        emit CrowdsaleInitialized(_startDate, tokenAddress, amountForSale);
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {
