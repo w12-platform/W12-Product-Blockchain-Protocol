@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 interface IW12Crowdsale {
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee) public;
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) public;
 
     function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external;
 

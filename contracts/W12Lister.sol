@@ -19,6 +19,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, uint tokenAmount, address placedTokenAddress);
+    event CrowdsaleInitialized(uint startDate, address indexed tokenAddress, uint amountForSale);
 
     struct ListedToken {
         string name;
