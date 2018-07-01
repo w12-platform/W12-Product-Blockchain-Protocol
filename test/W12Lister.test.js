@@ -21,7 +21,7 @@ contract('W12Lister', async (accounts) => {
     let token;
     let factory;
     const wallet = accounts[9];
-    const oneToken = new BigNumber(10).pow(18);
+    const oneToken = new BigNumber(1).pow(18);
 
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();

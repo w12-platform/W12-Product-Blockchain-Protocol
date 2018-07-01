@@ -111,7 +111,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
             price,
             serviceWallet,
             approvedTokens[approvedTokensIndex[tokenAddress]].ethFeePercent,
-            address(this));
+            msg.sender);
 
         approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]]
             .wTokensIssuedAmount.add(amountForSale);
