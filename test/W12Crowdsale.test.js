@@ -26,13 +26,14 @@ contract('W12Crowdsale', async (accounts) => {
     let factory;
     let startDate;
     const serviceWallet = generateRandomAddress();
+    const fund = generateRandomAddress();
 
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
         startDate = Math.floor(Date.now() / 1000) + 10;
 
-        const txOutput = await factory.createCrowdsale(token.address, startDate, oneToken, serviceWallet, 10, tokenOwner);
+        const txOutput = await factory.createCrowdsale(token.address, startDate, oneToken, serviceWallet, 10, fund, tokenOwner);
         const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
 
         sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
@@ -97,13 +98,14 @@ contract('W12Crowdsale', async (accounts) => {
         });
 
         it('should be able to buy some tokens', async () => {
-            time.increaseTimeTo(startDate);
+            time.increaseTimeTo(startDate + 1);
             const buyer = accounts[8];
 
             await sut.buyTokens({ value: oneToken.mul(10), from: buyer }).should.be.fulfilled;
 
             (await token.balanceOf(buyer)).should.bignumber.equal(10);
             web3.eth.getBalance(serviceWallet).should.bignumber.equal(oneToken);
+            web3.eth.getBalance(fund).should.bignumber.equal(oneToken.mul(9));
         });
     });
 });

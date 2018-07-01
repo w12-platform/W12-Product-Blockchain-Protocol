@@ -24,18 +24,21 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     uint public price;
     uint8 public serviceFee;
     address public serviceWallet;
+    address public fund;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
     event StagesUpdated();
 
-    constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee) public {
-        require(_token != address(0x0));
+    constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, address _fund) public {
+        require(_token != address(0));
         require(_serviceFee >= 0 && _serviceFee < 100);
+        require(_fund != address(0));
 
         token = WToken(_token);
 
         __setParameters(_startDate, _price, _serviceWallet);
         serviceFee = _serviceFee;
+        fund = _fund;
     }
 
     function stagesLength() external view returns (uint) {
@@ -45,7 +48,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
         require(_startDate >= now);
         require(_price > 0);
-        require(_serviceWallet != address(0x0));
+        require(_serviceWallet != address(0));
 
         startDate = _startDate;
         price = _price;
@@ -105,6 +108,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         if(serviceFee > 0)
             serviceWallet.transfer(msg.value.mul(serviceFee).div(100));
+
+        fund.transfer(address(this).balance);
 
         emit TokenPurchase(msg.sender, msg.value, tokenAmount);
     }

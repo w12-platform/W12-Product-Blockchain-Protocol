@@ -4,6 +4,7 @@ import "./WToken.sol";
 import "./W12AtomicSwap.sol";
 import "./W12TokenLedger.sol";
 import "./IW12Crowdsale.sol";
+import "./W12Fund.sol";
 
 
 contract W12Lister is Ownable, ReentrancyGuard {
@@ -14,6 +15,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     uint16 public approvedTokensLength;
     W12AtomicSwap public swap;
     W12TokenLedger public ledger;
+    W12Fund public fund;
     address public serviceWallet;
     IW12CrowdsaleFactory public factory;
 
@@ -39,6 +41,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         ledger = new W12TokenLedger();
         swap = new W12AtomicSwap(ledger);
+        fund = new W12Fund();
         serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
@@ -101,16 +104,17 @@ contract W12Lister is Ownable, ReentrancyGuard {
         emit TokenPlaced(tokenAddress, amountWithoutFee, ledger.getWTokenByToken(tokenAddress));
     }
 
-    function initCrowdsale(uint32 _startDate, address tokenAddress, uint amountForSale, uint price) external nonReentrant {
+    function initCrowdsale(uint32 startDate, address tokenAddress, uint amountForSale, uint price) external nonReentrant {
         require(approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[msg.sender] == true);
         require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount <= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(wtoken),
-            _startDate,
+            startDate,
             price,
             serviceWallet,
             approvedTokens[approvedTokensIndex[tokenAddress]].ethFeePercent,
+            fund,
             msg.sender);
 
         approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]]
@@ -120,7 +124,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         wtoken.mint(crowdsaleAddress, amountForSale, 0);
         wtoken.addTrustedAccount(crowdsaleAddress);
 
-        emit CrowdsaleInitialized(_startDate, tokenAddress, amountForSale);
+        emit CrowdsaleInitialized(startDate, tokenAddress, amountForSale);
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {

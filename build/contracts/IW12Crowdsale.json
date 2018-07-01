@@ -55,7 +55,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.24;\n\ninterface IW12Crowdsale {\n    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external;\n\n    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external;\n\n    function () payable external;\n}\n\ninterface IW12CrowdsaleFactory {\n    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint8 serviceFee, address owner) external returns (IW12Crowdsale);\n}\n",
+  "source": "pragma solidity ^0.4.24;\n\ninterface IW12Crowdsale {\n    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external;\n\n    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external;\n\n    function () payable external;\n}\n\ninterface IW12CrowdsaleFactory {\n    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint8 serviceFee, address fund, address owner) external returns (IW12Crowdsale);\n}\n",
   "sourcePath": "/home/andrey/Code/w12/platform-contracts/contracts/IW12Crowdsale.sol",
   "ast": {
     "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/IW12Crowdsale.sol",
@@ -64,10 +64,10 @@
         26
       ],
       "IW12CrowdsaleFactory": [
-        44
+        46
       ]
     },
-    "id": 45,
+    "id": 47,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -370,7 +370,7 @@
             "visibility": "external"
           }
         ],
-        "scope": 45,
+        "scope": 47,
         "src": "26:264:0"
       },
       {
@@ -379,9 +379,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 44,
+        "id": 46,
         "linearizedBaseContracts": [
-          44
+          46
         ],
         "name": "IW12CrowdsaleFactory",
         "nodeType": "ContractDefinition",
@@ -389,7 +389,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 43,
+            "id": 45,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -397,7 +397,7 @@
             "name": "createCrowdsale",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 39,
+              "id": 41,
               "nodeType": "ParameterList",
               "parameters": [
                 {
@@ -405,7 +405,7 @@
                   "id": 28,
                   "name": "_wTokenAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "354:22:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -431,7 +431,7 @@
                   "id": 30,
                   "name": "_startDate",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "378:17:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -457,7 +457,7 @@
                   "id": 32,
                   "name": "price",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "397:10:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -483,7 +483,7 @@
                   "id": 34,
                   "name": "serviceWallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "409:21:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -509,7 +509,7 @@
                   "id": 36,
                   "name": "serviceFee",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "432:16:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -533,10 +533,10 @@
                 {
                   "constant": false,
                   "id": 38,
-                  "name": "owner",
+                  "name": "fund",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
-                  "src": "450:13:0",
+                  "scope": 45,
+                  "src": "450:12:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -555,22 +555,48 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 40,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 45,
+                  "src": "464:13:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 39,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "464:7:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "353:111:0"
+              "src": "353:125:0"
             },
             "payable": false,
             "returnParameters": {
-              "id": 42,
+              "id": 44,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 41,
+                  "id": 43,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
-                  "src": "483:13:0",
+                  "scope": 45,
+                  "src": "497:13:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -579,11 +605,11 @@
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 40,
+                    "id": 42,
                     "name": "IW12Crowdsale",
                     "nodeType": "UserDefinedTypeName",
                     "referencedDeclaration": 26,
-                    "src": "483:13:0",
+                    "src": "497:13:0",
                     "typeDescriptions": {
                       "typeIdentifier": "t_contract$_IW12Crowdsale_$26",
                       "typeString": "contract IW12Crowdsale"
@@ -593,20 +619,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "482:15:0"
+              "src": "496:15:0"
             },
-            "scope": 44,
-            "src": "329:169:0",
+            "scope": 46,
+            "src": "329:183:0",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 45,
-        "src": "292:208:0"
+        "scope": 47,
+        "src": "292:222:0"
       }
     ],
-    "src": "0:501:0"
+    "src": "0:515:0"
   },
   "legacyAST": {
     "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/IW12Crowdsale.sol",
@@ -615,10 +641,10 @@
         26
       ],
       "IW12CrowdsaleFactory": [
-        44
+        46
       ]
     },
-    "id": 45,
+    "id": 47,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -921,7 +947,7 @@
             "visibility": "external"
           }
         ],
-        "scope": 45,
+        "scope": 47,
         "src": "26:264:0"
       },
       {
@@ -930,9 +956,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 44,
+        "id": 46,
         "linearizedBaseContracts": [
-          44
+          46
         ],
         "name": "IW12CrowdsaleFactory",
         "nodeType": "ContractDefinition",
@@ -940,7 +966,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 43,
+            "id": 45,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -948,7 +974,7 @@
             "name": "createCrowdsale",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 39,
+              "id": 41,
               "nodeType": "ParameterList",
               "parameters": [
                 {
@@ -956,7 +982,7 @@
                   "id": 28,
                   "name": "_wTokenAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "354:22:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -982,7 +1008,7 @@
                   "id": 30,
                   "name": "_startDate",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "378:17:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1008,7 +1034,7 @@
                   "id": 32,
                   "name": "price",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "397:10:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1034,7 +1060,7 @@
                   "id": 34,
                   "name": "serviceWallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "409:21:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1060,7 +1086,7 @@
                   "id": 36,
                   "name": "serviceFee",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
+                  "scope": 45,
                   "src": "432:16:0",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1084,10 +1110,10 @@
                 {
                   "constant": false,
                   "id": 38,
-                  "name": "owner",
+                  "name": "fund",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
-                  "src": "450:13:0",
+                  "scope": 45,
+                  "src": "450:12:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1106,22 +1132,48 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 40,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 45,
+                  "src": "464:13:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 39,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "464:7:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "353:111:0"
+              "src": "353:125:0"
             },
             "payable": false,
             "returnParameters": {
-              "id": 42,
+              "id": 44,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 41,
+                  "id": 43,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 43,
-                  "src": "483:13:0",
+                  "scope": 45,
+                  "src": "497:13:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1130,11 +1182,11 @@
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 40,
+                    "id": 42,
                     "name": "IW12Crowdsale",
                     "nodeType": "UserDefinedTypeName",
                     "referencedDeclaration": 26,
-                    "src": "483:13:0",
+                    "src": "497:13:0",
                     "typeDescriptions": {
                       "typeIdentifier": "t_contract$_IW12Crowdsale_$26",
                       "typeString": "contract IW12Crowdsale"
@@ -1144,20 +1196,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "482:15:0"
+              "src": "496:15:0"
             },
-            "scope": 44,
-            "src": "329:169:0",
+            "scope": 46,
+            "src": "329:183:0",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 45,
-        "src": "292:208:0"
+        "scope": 47,
+        "src": "292:222:0"
       }
     ],
-    "src": "0:501:0"
+    "src": "0:515:0"
   },
   "compiler": {
     "name": "solc",
@@ -1165,5 +1217,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.0",
-  "updatedAt": "2018-07-01T15:50:30.216Z"
+  "updatedAt": "2018-07-01T16:09:31.204Z"
 }
