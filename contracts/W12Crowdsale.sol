@@ -18,13 +18,21 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint8[] volumeBonuses;
     }
 
-    Stage[] public stages;
+    struct Milestone {
+        uint32 endDate;
+        uint8 tranchePercent;
+        uint32 voteEndDate;
+    }
+
     WToken public token;
     uint32 public startDate;
     uint public price;
     uint8 public serviceFee;
     address public serviceWallet;
     address public fund;
+
+    Stage[] public stages;
+    Milestone[] public milestones;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
     event StagesUpdated();
@@ -43,6 +51,10 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function stagesLength() external view returns (uint) {
         return stages.length;
+    }
+
+    function milestonesLength() external view returns (uint) {
+        return milestones.length;
     }
 
     function getStageVolumeBoundaries(uint stageNumber) external view returns (uint[]) {
@@ -68,6 +80,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner {
+        require(stage_endDates.length <= uint8(-1));
         require(stage_endDates.length > 0);
         require(stage_endDates.length == stage_discounts.length);
         require(stage_endDates.length == stage_vestings.length);
@@ -97,6 +110,25 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         stages[stage].volumeBoundaries = volumeBoundaries;
         stages[stage].volumeBonuses = volumeBonuses;
+    }
+
+    function setMilestones(uint32[] endDates, uint8[] tranchePercents, uint32[] voteEndDates) external onlyOwner {
+        require(endDates.length <= uint8(-1));
+        require(endDates.length > 0);
+        require(endDates.length == tranchePercents.length);
+        require(endDates.length == voteEndDates.length);
+
+        uint8 length = uint8(endDates.length);
+        Milestone[] storage newMilestones;
+
+        for(uint8 i = 0; i < length; i++)
+            newMilestones.push(Milestone({
+                endDate: endDates[i],
+                tranchePercent: tranchePercents[i],
+                voteEndDate: voteEndDates[i]
+            }));
+
+        milestones = newMilestones;
     }
 
     function buyTokens() payable nonReentrant public {

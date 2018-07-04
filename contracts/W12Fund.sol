@@ -7,4 +7,5 @@ import "./WToken.sol";
 
 
 contract W12Fund is Ownable, ReentrancyGuard {
+
 }
