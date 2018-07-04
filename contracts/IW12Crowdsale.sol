@@ -5,6 +5,8 @@ interface IW12Crowdsale {
 
     function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external;
 
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external;
+
     function () payable external;
 }
 

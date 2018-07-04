@@ -45,6 +45,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return stages.length;
     }
 
+    function getStageVolumeBoundaries(uint stageNumber) external view returns (uint[]) {
+        return stages[stageNumber].volumeBoundaries;
+    }
+
+    function getStageVolumeBonuses(uint stageNumber) external view returns (uint8[]) {
+        return stages[stageNumber].volumeBonuses;
+    }
+
     function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
         require(_startDate >= now);
         require(_price > 0);

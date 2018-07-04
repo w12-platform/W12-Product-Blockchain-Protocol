@@ -7,9 +7,18 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
 
     event CrowdsaleCreated(address indexed owner, address indexed token, uint32 startDate, address crowdsaleAddress);
 
-    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint8 serviceFee, address fund, address owner) external returns (IW12Crowdsale result) {
-        result = new W12Crowdsale(WToken(_wTokenAddress), _startDate, price, serviceWallet, serviceFee, fund);
+    function createCrowdsale(
+        address wTokenAddress,
+        uint32 startDate,
+        uint price,
+        address serviceWallet,
+        uint8 serviceFee,
+        address fund,
+        address owner)
+        external returns (IW12Crowdsale result) {
+
+        result = new W12Crowdsale(WToken(wTokenAddress), startDate, price, serviceWallet, serviceFee, fund);
         Ownable(result).transferOwnership(owner);
-        emit CrowdsaleCreated(owner, _wTokenAddress, _startDate, result);
+        emit CrowdsaleCreated(owner, wTokenAddress, startDate, result);
     }
 }

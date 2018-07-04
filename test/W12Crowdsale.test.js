@@ -31,7 +31,7 @@ contract('W12Crowdsale', async (accounts) => {
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
-        startDate = Math.floor(Date.now() / 1000) + 10;
+        startDate = Math.floor(Date.now() / 1000) + 60;
 
         const txOutput = await factory.createCrowdsale(token.address, startDate, oneToken, serviceWallet, 10, fund, tokenOwner);
         const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
@@ -98,7 +98,7 @@ contract('W12Crowdsale', async (accounts) => {
         });
 
         it('should be able to buy some tokens', async () => {
-            time.increaseTimeTo(startDate + 1);
+            time.increaseTimeTo(startDate + 10);
             const buyer = accounts[8];
 
             await sut.buyTokens({ value: oneToken.mul(10), from: buyer }).should.be.fulfilled;
