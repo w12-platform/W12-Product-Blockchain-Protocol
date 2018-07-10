@@ -5,6 +5,7 @@ const BigNumber = web3.BigNumber;
 require('chai')
     .use(require('chai-as-promised'))
     .use(require('chai-bignumber')(BigNumber))
+    .use(require('chai-arrays'))
     .should();
 
 const crypto = require('crypto');
@@ -95,6 +96,19 @@ contract('W12Crowdsale', async (accounts) => {
                 actualStage[1].should.bignumber.equal(expectedStage.discount);
                 actualStage[2].should.bignumber.equal(expectedStage.vestingTime);
             });
+        });
+
+        it('should be able to set milestones', async () => {
+            await sut.setStageVolumeBonuses(0,
+                [oneToken, oneToken.mul(2), oneToken.mul(10)],
+                [1, 2, 10],
+                {from: tokenOwner}).should.be.fulfilled;
+
+            const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(vb => vb);
+            const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(vb => vb);
+
+            actualVolumeBoundaries.should.be.equal([oneToken, oneToken.mul(2), oneToken.mul(10)]);
+            actualVolumeBonuses.should.be.equal([1, 2, 10]);
         });
 
         it('should be able to buy some tokens', async () => {
