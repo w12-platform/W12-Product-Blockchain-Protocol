@@ -34,7 +34,7 @@ contract('W12Crowdsale', async (accounts) => {
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        const txOutput = await factory.createCrowdsale(token.address, startDate, oneToken, serviceWallet, 10, fund, tokenOwner);
+        const txOutput = await factory.createCrowdsale(token.address, startDate, 100, serviceWallet, 10, fund, tokenOwner);
         const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
 
         sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
@@ -46,13 +46,13 @@ contract('W12Crowdsale', async (accounts) => {
         it('should create crowdsale', async () => {
             (await sut.startDate()).should.bignumber.equal(startDate);
             (await sut.token()).should.be.equal(token.address);
-            (await sut.price()).should.bignumber.equal(oneToken);
+            (await sut.price()).should.bignumber.equal(100);
             (await sut.serviceFee()).should.bignumber.equal(10);
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
         });
 
         it('should reject crowdsale with start date in the past', async () => {
-            await factory.createCrowdsale(token.address, Math.floor(Date.now() - 100 / 1000), oneToken, serviceWallet, 10, tokenOwner).should.be.rejected;
+            await factory.createCrowdsale(token.address, startDate - 100, 100, serviceWallet, 10, tokenOwner).should.be.rejected;
         });
     });
 
@@ -62,13 +62,19 @@ contract('W12Crowdsale', async (accounts) => {
         beforeEach(async () => {
             expectedStages = [
                 {
-                    name: 'Phase 1',
+                    name: 'Phase 0',
                     endDate: startDate + time.duration.minutes(60),
                     vestingTime: 0,
+                    discount: 0
+                },
+                {
+                    name: 'Phase 5',
+                    endDate: startDate + time.duration.minutes(90),
+                    vestingTime: startDate + time.duration.minutes(210),
                     discount: 5
                 },
                 {
-                    name: 'Phase 2',
+                    name: 'Phase 10',
                     endDate: startDate + time.duration.minutes(120),
                     vestingTime: startDate + time.duration.minutes(180),
                     discount: 10
@@ -115,11 +121,27 @@ contract('W12Crowdsale', async (accounts) => {
             time.increaseTimeTo(startDate + 10);
             const buyer = accounts[8];
 
-            await sut.buyTokens({ value: oneToken.mul(10), from: buyer }).should.be.fulfilled;
+            await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
-            (await token.balanceOf(buyer)).should.bignumber.equal(10);
-            web3.eth.getBalance(serviceWallet).should.bignumber.equal(oneToken);
-            web3.eth.getBalance(fund).should.bignumber.equal(oneToken.mul(9));
+            (await token.balanceOf(buyer)).should.bignumber.equal(100);
+            web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
+            web3.eth.getBalance(fund).should.bignumber.equal(9000);
+        });
+
+        it('should be able to buy tokens from each stage', async () => {
+            const buyer = accounts[8];
+            const price = await sut.price();
+
+            for (const stage of expectedStages) {
+                const balanceBefore = await token.balanceOf(buyer);
+                time.increaseTimeTo(stage.endDate - 30);
+
+                await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
+
+                const balanceAfter = await token.balanceOf(buyer);
+
+                balanceAfter.should.bignumber.equal(balanceBefore.add(oneToken.div(price.mul(100 - stage.discount).div(100))).toFixed(0));
+            }
         });
     });
 });
