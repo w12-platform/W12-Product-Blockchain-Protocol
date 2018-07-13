@@ -32,7 +32,7 @@ contract('W12Crowdsale', async (accounts) => {
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
-        startDate = Math.floor(Date.now() / 1000) + 60;
+        startDate = web3.eth.getBlock('latest').timestamp + 60;
 
         const txOutput = await factory.createCrowdsale(token.address, startDate, oneToken, serviceWallet, 10, fund, tokenOwner);
         const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
