@@ -104,11 +104,11 @@ contract('W12Crowdsale', async (accounts) => {
                 [1, 2, 10],
                 {from: tokenOwner}).should.be.fulfilled;
 
-            const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(vb => vb);
-            const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(vb => vb);
+            const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
+            const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
 
-            actualVolumeBoundaries.should.be.equal([oneToken, oneToken.mul(2), oneToken.mul(10)]);
-            actualVolumeBonuses.should.be.equal([1, 2, 10]);
+            actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
+            actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
         });
 
         it('should be able to buy some tokens', async () => {
