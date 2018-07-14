@@ -4,7 +4,6 @@ import "./WToken.sol";
 import "./W12AtomicSwap.sol";
 import "./W12TokenLedger.sol";
 import "./IW12Crowdsale.sol";
-import "./W12Fund.sol";
 
 
 contract W12Lister is Ownable, ReentrancyGuard {
@@ -15,7 +14,6 @@ contract W12Lister is Ownable, ReentrancyGuard {
     uint16 public approvedTokensLength;
     W12AtomicSwap public swap;
     W12TokenLedger public ledger;
-    W12Fund public fund;
     address public serviceWallet;
     IW12CrowdsaleFactory public factory;
 
@@ -41,7 +39,6 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         ledger = new W12TokenLedger();
         swap = new W12AtomicSwap(ledger);
-        fund = new W12Fund();
         serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
@@ -114,7 +111,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
             price,
             serviceWallet,
             approvedTokens[approvedTokensIndex[tokenAddress]].ethFeePercent,
-            fund,
+            swap,
             msg.sender);
 
         approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]]

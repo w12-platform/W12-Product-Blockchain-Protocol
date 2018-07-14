@@ -5,6 +5,7 @@ import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./WToken.sol";
 import "./IW12Crowdsale.sol";
+import "./W12Fund.sol";
 
 
 contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
@@ -24,27 +25,20 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint32 voteEndDate;
     }
 
-    struct TokenPrice {
-        uint totalBought;
-        uint averagePrice;
-    }
-
     WToken public token;
     uint32 public startDate;
     uint public price;
     uint8 public serviceFee;
     address public serviceWallet;
-    address public fund;
+    W12Fund public fund;
 
     Stage[] public stages;
     Milestone[] public milestones;
 
-    mapping (address=>TokenPrice) public buyers;
-
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
     event StagesUpdated();
 
-    constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, address _fund) public {
+    constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, W12Fund _fund) public {
         require(_token != address(0));
         require(_serviceFee >= 0 && _serviceFee < 100);
         require(_fund != address(0));
@@ -126,16 +120,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(endDates.length == voteEndDates.length);
 
         uint8 length = uint8(endDates.length);
-        Milestone[] storage newMilestones;
+        delete milestones;
 
         for(uint8 i = 0; i < length; i++)
-            newMilestones.push(Milestone({
+            milestones.push(Milestone({
                 endDate: endDates[i],
                 tranchePercent: tranchePercents[i],
                 voteEndDate: voteEndDates[i]
             }));
-
-        milestones = newMilestones;
     }
 
     function buyTokens() payable nonReentrant public {
@@ -156,16 +148,13 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         if(serviceFee > 0)
             serviceWallet.transfer(msg.value.mul(serviceFee).div(100));
 
-        fund.transfer(address(this).balance);
-
-        uint tokensBoughtBefore = buyers[msg.sender].totalBought;
-
-        buyers[msg.sender].averagePrice = (buyers[msg.sender].averagePrice * tokensBoughtBefore)
-            .add(msg.value)
-            .div(tokensBoughtBefore.add(tokenAmount));
-        buyers[msg.sender].totalBought = tokensBoughtBefore.add(tokenAmount);
+        fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
 
         emit TokenPurchase(msg.sender, msg.value, tokenAmount);
+    }
+
+    function getWToken() external view returns(WToken) {
+        return token;
     }
 
     function getCurrentStage() internal returns(uint8 discount, uint32 vesting, uint8 volumeBonus) {

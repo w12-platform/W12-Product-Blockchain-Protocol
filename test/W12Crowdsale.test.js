@@ -29,17 +29,19 @@ contract('W12Crowdsale', async (accounts) => {
     let startDate;
     let price;
     const serviceWallet = generateRandomAddress();
-    const fund = generateRandomAddress();
+    const swap = generateRandomAddress();
+    let fund;
 
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        const txOutput = await factory.createCrowdsale(token.address, startDate, 100, serviceWallet, 10, fund, tokenOwner);
+        const txOutput = await factory.createCrowdsale(token.address, startDate, 100, serviceWallet, 10, swap, tokenOwner);
         const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
 
         sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
+        fund = crowdsaleCreatedLogEntry.args.fundAddress;
         await token.addTrustedAccount(sut.address, {from: tokenOwner});
         await token.mint(sut.address, oneToken.mul(10000), 0, {from: tokenOwner});
 
@@ -126,7 +128,7 @@ contract('W12Crowdsale', async (accounts) => {
                 });
             });
 
-            it('should set milestones', async () => {
+            it('should set stage bonuses', async () => {
                 await sut.setStageVolumeBonuses(0,
                     [oneToken, oneToken.mul(2), oneToken.mul(10)],
                     [1, 2, 10],
@@ -161,20 +163,21 @@ contract('W12Crowdsale', async (accounts) => {
                     balanceAfter.minus(balanceBefore).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero));
                 }
 
-                const totalTokensBought = await token.balanceOf(buyer);
-                const stages = discountStages.reduce((k, l) => { return { discount: (k.discount + l.discount) / 2 }; });
-                (await sut.buyers(buyer))[0].should.bignumber.equal(totalTokensBought);
+                // TODO: move to funds test
+                // const totalTokensBought = await token.balanceOf(buyer);
+                // const stages = discountStages.reduce((k, l) => { return { discount: (k.discount + l.discount) / 2 }; });
+                // (await sut.buyers(buyer))[0].should.bignumber.equal(totalTokensBought);
 
 
-                const expectedPricePerToken = oneToken.mul(discountStages.length).div(
-                    calculateTokens(oneToken.mul(discountStages.length), price, stages.discount, BigNumber.Zero)
-                );
-                const actualPricePerToken = (await sut.buyers(buyer))[1];
+                // const expectedPricePerToken = oneToken.mul(discountStages.length).div(
+                //     calculateTokens(oneToken.mul(discountStages.length), price, stages.discount, BigNumber.Zero)
+                // );
+                // const actualPricePerToken = (await sut.buyers(buyer))[1];
 
-                expectedPricePerToken.minus(actualPricePerToken)
-                    .abs()
-                    .lte(0.5)
-                    .should.be.true;
+                // expectedPricePerToken.minus(actualPricePerToken)
+                //     .abs()
+                //     .lte(0.5)
+                //     .should.be.true;
             });
         });
 

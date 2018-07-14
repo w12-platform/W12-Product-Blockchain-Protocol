@@ -4,8 +4,68 @@ import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./WToken.sol";
+import "./IW12Crowdsale.sol";
 
 
 contract W12Fund is Ownable, ReentrancyGuard {
+    using SafeMath for uint;
 
+    IW12Crowdsale public crowdsale;
+    address public swap;
+    WToken public wToken;
+    mapping (address=>TokenPriceInfo) public buyers;
+    uint totalFunded;
+
+    struct TokenPriceInfo {
+        uint totalBought;
+        uint averagePrice;
+        uint totalFunded;
+    }
+
+    event FundsReceived(address indexed buyer, uint amount);
+
+    function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
+        require(_crowdsale != address(0));
+
+        crowdsale = _crowdsale;
+        wToken = _crowdsale.getWToken();
+    }
+
+    function setSwap(address _swap) onlyOwner external {
+        require(_swap != address(0));
+
+        swap = _swap;
+    }
+
+    function recordPurchase(address buyer, uint tokenAmount) external payable {
+        uint tokensBoughtBefore = buyers[buyer].totalBought;
+
+        buyers[buyer].averagePrice = (buyers[buyer].averagePrice * tokensBoughtBefore)
+            .add(msg.value)
+            .div(tokensBoughtBefore.add(tokenAmount));
+        buyers[buyer].totalBought = tokensBoughtBefore.add(tokenAmount);
+        buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
+
+        totalFunded += msg.value;
+
+        emit FundsReceived(buyer, msg.value);
+    }
+
+    function getInvestmentsInfo(address buyer) external view returns (uint totalTokensBought, uint averageTokenPrice) {
+        require(buyer != address(0));
+
+        return (buyers[buyer].totalBought, buyers[buyer].averagePrice);
+    }
+
+    function refund(uint wtokensToRefund) external nonReentrant {
+        require(wToken.balanceOf(msg.sender) >= wtokensToRefund);
+        require(buyers[msg.sender].totalBought >= wtokensToRefund);
+
+        require(wToken.transferFrom(msg.sender, swap, wtokensToRefund));
+
+        uint share = totalFunded.div(buyers[msg.sender].totalFunded);
+        uint refundTokensShare = buyers[msg.sender].totalBought.div(wtokensToRefund);
+
+        msg.sender.transfer(share.div(refundTokensShare));
+    }
 }

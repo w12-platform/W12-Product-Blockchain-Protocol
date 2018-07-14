@@ -1,5 +1,8 @@
 pragma solidity ^0.4.24;
 
+import "./WToken.sol";
+
+
 interface IW12Crowdsale {
     function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external;
 
@@ -7,9 +10,11 @@ interface IW12Crowdsale {
 
     function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external;
 
+    function getWToken() external view returns(WToken);
+
     function () payable external;
 }
 
 interface IW12CrowdsaleFactory {
-    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint8 serviceFee, address fund, address owner) external returns (IW12Crowdsale);
+    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint8 serviceFee, address swap, address owner) external returns (IW12Crowdsale);
 }
