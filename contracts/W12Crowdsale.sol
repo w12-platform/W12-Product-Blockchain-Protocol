@@ -24,6 +24,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint32 voteEndDate;
     }
 
+    struct TokenPrice {
+        uint totalBought;
+        uint averagePrice;
+    }
+
     WToken public token;
     uint32 public startDate;
     uint public price;
@@ -33,6 +38,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     Stage[] public stages;
     Milestone[] public milestones;
+
+    mapping (address=>TokenPrice) public buyers;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
     event StagesUpdated();
@@ -150,6 +157,13 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             serviceWallet.transfer(msg.value.mul(serviceFee).div(100));
 
         fund.transfer(address(this).balance);
+
+        uint tokensBoughtBefore = buyers[msg.sender].totalBought;
+
+        buyers[msg.sender].averagePrice = (buyers[msg.sender].averagePrice * tokensBoughtBefore)
+            .add(msg.value)
+            .div(tokensBoughtBefore.add(tokenAmount));
+        buyers[msg.sender].totalBought = tokensBoughtBefore.add(tokenAmount);
 
         emit TokenPurchase(msg.sender, msg.value, tokenAmount);
     }

@@ -160,6 +160,21 @@ contract('W12Crowdsale', async (accounts) => {
 
                     balanceAfter.minus(balanceBefore).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero));
                 }
+
+                const totalTokensBought = await token.balanceOf(buyer);
+                const stages = discountStages.reduce((k, l) => { return { discount: (k.discount + l.discount) / 2 }; });
+                (await sut.buyers(buyer))[0].should.bignumber.equal(totalTokensBought);
+
+
+                const expectedPricePerToken = oneToken.mul(discountStages.length).div(
+                    calculateTokens(oneToken.mul(discountStages.length), price, stages.discount, BigNumber.Zero)
+                );
+                const actualPricePerToken = (await sut.buyers(buyer))[1];
+
+                expectedPricePerToken.minus(actualPricePerToken)
+                    .abs()
+                    .lte(0.5)
+                    .should.be.true;
             });
         });
 
