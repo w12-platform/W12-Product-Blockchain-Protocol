@@ -166,7 +166,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
             if(lastStage.volumeBoundaries.length > 0)
                 for (uint i = 0; i < lastStage.volumeBoundaries.length - 1; i++)
-                    if(msg.value > lastLowerBoundary && msg.value < lastStage.volumeBoundaries[i]) {
+                    if(msg.value >= lastLowerBoundary && msg.value < lastStage.volumeBoundaries[i]) {
                         volumeBonus = lastStage.volumeBonuses[i];
                         break;
                     }

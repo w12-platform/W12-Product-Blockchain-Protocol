@@ -1,6 +1,7 @@
 import * as time from '../openzeppelin-solidity/test/helpers/increaseTime';
 
 const BigNumber = web3.BigNumber;
+BigNumber.Zero = new BigNumber(0);
 
 require('chai')
     .use(require('chai-as-promised'))
@@ -26,6 +27,7 @@ contract('W12Crowdsale', async (accounts) => {
     const tokenOwner = accounts[9];
     let factory;
     let startDate;
+    let price;
     const serviceWallet = generateRandomAddress();
     const fund = generateRandomAddress();
 
@@ -40,6 +42,8 @@ contract('W12Crowdsale', async (accounts) => {
         sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
         await token.addTrustedAccount(sut.address, {from: tokenOwner});
         await token.mint(sut.address, oneToken.mul(10000), 0, {from: tokenOwner});
+
+        price = await sut.price();
     });
 
     describe('constructor', async () => {
@@ -57,91 +61,168 @@ contract('W12Crowdsale', async (accounts) => {
     });
 
     describe('token purchase', async () => {
-        let expectedStages;
+        let discountStages;
+        const buyer = accounts[8];
 
-        beforeEach(async () => {
-            expectedStages = [
-                {
-                    name: 'Phase 0',
-                    endDate: startDate + time.duration.minutes(60),
-                    vestingTime: 0,
-                    discount: 0
-                },
-                {
-                    name: 'Phase 5',
-                    endDate: startDate + time.duration.minutes(90),
-                    vestingTime: startDate + time.duration.minutes(210),
-                    discount: 5
-                },
-                {
-                    name: 'Phase 10',
-                    endDate: startDate + time.duration.minutes(120),
-                    vestingTime: startDate + time.duration.minutes(180),
-                    discount: 10
+        /**
+         *
+         * @param {BigNumber} weiAmountPaid
+         * @param {BigNumber} weiBasePrice
+         * @param {BigNumber} stageDiscount
+         * @param {BigNumber} volumeBonus
+         */
+        function calculateTokens(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus) {
+            return weiAmountPaid.div(weiBasePrice
+                .mul(new BigNumber(100).minus(stageDiscount))
+                .div(100)
+            ).mul(volumeBonus.plus(100))
+            .div(100)
+            .toFixed(0);
+        }
+
+        describe('with discounts stages', async () => {
+            beforeEach(async () => {
+                discountStages = [
+                    {
+                        name: 'Phase 0',
+                        endDate: startDate + time.duration.minutes(60),
+                        vestingTime: 0,
+                        discount: 0
+                    },
+                    {
+                        name: 'Phase 5',
+                        endDate: startDate + time.duration.minutes(90),
+                        vestingTime: startDate + time.duration.minutes(210),
+                        discount: 5
+                    },
+                    {
+                        name: 'Phase 10',
+                        endDate: startDate + time.duration.minutes(120),
+                        vestingTime: startDate + time.duration.minutes(180),
+                        discount: 10
+                    }
+                ];
+
+                await sut.setStages(
+                    discountStages.map(s => s.endDate),
+                    discountStages.map(s => s.discount),
+                    discountStages.map(s => s.vestingTime),
+                    {from: tokenOwner}
+                );
+            });
+
+            it('should set stages', async () => {
+                const actualNumberOfStages = await sut.stagesLength().should.be.fulfilled;
+
+                actualNumberOfStages.should.bignumber.equal(discountStages.length);
+
+                let counter = discountStages.length;
+                discountStages.forEach(async expectedStage => {
+                    const actualStage = await sut.stages(--counter).should.be.fulfilled;
+
+                    actualStage[0].should.bignumber.equal(expectedStage.endDate);
+                    actualStage[1].should.bignumber.equal(expectedStage.discount);
+                    actualStage[2].should.bignumber.equal(expectedStage.vestingTime);
+                });
+            });
+
+            it('should set milestones', async () => {
+                await sut.setStageVolumeBonuses(0,
+                    [oneToken, oneToken.mul(2), oneToken.mul(10)],
+                    [1, 2, 10],
+                    {from: tokenOwner}).should.be.fulfilled;
+
+                const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
+                const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
+
+                actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
+                actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
+            });
+
+            it('should sell some tokens', async () => {
+                time.increaseTimeTo(startDate + 10);
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                (await token.balanceOf(buyer)).should.bignumber.equal(100);
+                web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
+                web3.eth.getBalance(fund).should.bignumber.equal(9000);
+            });
+
+            it('should sell tokens from each stage', async () => {
+                for (const stage of discountStages) {
+                    const balanceBefore = await token.balanceOf(buyer);
+                    time.increaseTimeTo(stage.endDate - 30);
+
+                    await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
+
+                    const balanceAfter = await token.balanceOf(buyer);
+
+                    balanceAfter.minus(balanceBefore).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero));
                 }
-            ];
-
-            await sut.setStages(
-                expectedStages.map(s => s.endDate),
-                expectedStages.map(s => s.discount),
-                expectedStages.map(s => s.vestingTime),
-                {from: tokenOwner}
-            );
-        });
-
-        it('should be able to set stages', async () => {
-            const actualNumberOfStages = await sut.stagesLength().should.be.fulfilled;
-
-            actualNumberOfStages.should.bignumber.equal(expectedStages.length);
-
-            let counter = expectedStages.length;
-            expectedStages.forEach(async expectedStage => {
-                const actualStage = await sut.stages(--counter).should.be.fulfilled;
-
-                actualStage[0].should.bignumber.equal(expectedStage.endDate);
-                actualStage[1].should.bignumber.equal(expectedStage.discount);
-                actualStage[2].should.bignumber.equal(expectedStage.vestingTime);
             });
         });
 
-        it('should be able to set milestones', async () => {
-            await sut.setStageVolumeBonuses(0,
-                [oneToken, oneToken.mul(2), oneToken.mul(10)],
-                [1, 2, 10],
-                {from: tokenOwner}).should.be.fulfilled;
+        describe('with volume bonuses', async () => {
+            beforeEach(async () => {
+                discountStages = [
+                    {
+                        name: 'Phase 0',
+                        endDate: startDate + time.duration.minutes(60),
+                        vestingTime: 0,
+                        discount: 0,
+                        volumeBonuses: [
+                            {
+                                boundary: new BigNumber(10000000),
+                                bonus: BigNumber.Zero
+                            },
+                            {
+                                boundary: new BigNumber(100000000),
+                                bonus: new BigNumber(1)
+                            },
+                            {
+                                boundary: new BigNumber(1000000000),
+                                bonus: new BigNumber(10)
+                            }
+                        ]
+                    }
+                ];
 
-            const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
-            const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
+                await sut.setStages(
+                    discountStages.map(s => s.endDate),
+                    discountStages.map(s => s.discount),
+                    discountStages.map(s => s.vestingTime),
+                    {from: tokenOwner}
+                ).should.be.fulfilled;
 
-            actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
-            actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
-        });
+                await sut.setStageVolumeBonuses(0,
+                    discountStages[0].volumeBonuses.map(vb => vb.boundary),
+                    discountStages[0].volumeBonuses.map(vb => vb.bonus),
+                    {from: tokenOwner}
+                ).should.be.fulfilled;
+            });
 
-        it('should be able to buy some tokens', async () => {
-            time.increaseTimeTo(startDate + 10);
-            const buyer = accounts[8];
+            it('should sell tokens with volume bonuses', async () => {
+                const stage = discountStages[0];
+                let totalBoughtBefore;
+                let balance;
 
-            await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
-
-            (await token.balanceOf(buyer)).should.bignumber.equal(100);
-            web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
-            web3.eth.getBalance(fund).should.bignumber.equal(9000);
-        });
-
-        it('should be able to buy tokens from each stage', async () => {
-            const buyer = accounts[8];
-            const price = await sut.price();
-
-            for (const stage of expectedStages) {
-                const balanceBefore = await token.balanceOf(buyer);
                 time.increaseTimeTo(stage.endDate - 30);
 
-                await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
+                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.minus(1), from: buyer }).should.be.fulfilled;
+                balance = await token.balanceOf(buyer);
+                balance.should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.minus(1), price, BigNumber.Zero, BigNumber.Zero));
+                totalBoughtBefore = balance;
 
-                const balanceAfter = await token.balanceOf(buyer);
+                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary, from: buyer }).should.be.fulfilled;
+                balance = await token.balanceOf(buyer);
+                balance.minus(totalBoughtBefore).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary, price, BigNumber.Zero, stage.volumeBonuses[1].bonus));
+                totalBoughtBefore = balance;
 
-                balanceAfter.should.bignumber.equal(balanceBefore.add(oneToken.div(price.mul(100 - stage.discount).div(100))).toFixed(0));
-            }
+                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.plus(1), from: buyer }).should.be.fulfilled;
+                balance = await token.balanceOf(buyer);
+                balance.minus(totalBoughtBefore).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.plus(1), price, BigNumber.Zero, stage.volumeBonuses[1].bonus));
+            });
         });
     });
 });
