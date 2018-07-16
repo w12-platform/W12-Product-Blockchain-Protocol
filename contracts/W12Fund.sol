@@ -22,7 +22,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
         uint totalFunded;
     }
 
-    event FundsReceived(address indexed buyer, uint amount);
+    event FundsReceived(address indexed buyer, uint etherAmount, uint tokenAmount);
 
     function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
         require(_crowdsale != address(0));
@@ -37,18 +37,16 @@ contract W12Fund is Ownable, ReentrancyGuard {
         swap = _swap;
     }
 
-    function recordPurchase(address buyer, uint tokenAmount) external payable {
+    function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
         uint tokensBoughtBefore = buyers[buyer].totalBought;
 
-        buyers[buyer].averagePrice = (buyers[buyer].averagePrice * tokensBoughtBefore)
-            .add(msg.value)
-            .div(tokensBoughtBefore.add(tokenAmount));
         buyers[buyer].totalBought = tokensBoughtBefore.add(tokenAmount);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
+        buyers[buyer].averagePrice = buyers[buyer].totalFunded.div(buyers[buyer].totalBought);
 
         totalFunded += msg.value;
 
-        emit FundsReceived(buyer, msg.value);
+        emit FundsReceived(buyer, msg.value, tokenAmount);
     }
 
     function getInvestmentsInfo(address buyer) external view returns (uint totalTokensBought, uint averageTokenPrice) {
@@ -67,5 +65,11 @@ contract W12Fund is Ownable, ReentrancyGuard {
         uint refundTokensShare = buyers[msg.sender].totalBought.div(wtokensToRefund);
 
         msg.sender.transfer(share.div(refundTokensShare));
+    }
+
+    modifier onlyFrom(address sender) {
+        require(msg.sender == sender);
+
+        _;
     }
 }
