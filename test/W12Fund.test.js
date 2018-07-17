@@ -27,7 +27,7 @@ contract('W12Fund', async (accounts) => {
             sut = await W12FundStub.new(crowdsale = accounts[1], swap = utils.generateRandomAddress(), { from: sutOwner });
         });
 
-        it('should record puchases', async () => {
+        it('should record purchases', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
             const expectedBuyer = utils.generateRandomAddress();
             const expectedTokenAmount = 100000;
@@ -40,7 +40,7 @@ contract('W12Fund', async (accounts) => {
             receipt.logs[0].args.tokenAmount.should.bignumber.equal(expectedTokenAmount);
         });
 
-        it('should reject record puchases when called not from crowdsale address', async () => {
+        it('should reject record purchases when called not from crowdsale address', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
             const expectedBuyer = utils.generateRandomAddress();
 
@@ -55,7 +55,7 @@ contract('W12Fund', async (accounts) => {
             actualResult[1].should.bignumber.equal(BigNumber.Zero);
         });
 
-        it('should record average price of token puchases', async () => {
+        it('should record average price of token purchase', async () => {
             const buyer = accounts[2];
             const purchases = [
                 {
