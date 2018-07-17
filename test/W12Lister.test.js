@@ -1,20 +1,10 @@
-const BigNumber = web3.BigNumber;
+require('../shared/tests/setup.js');
 
-require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .should();
-
-const crypto = require('crypto');
+const utils = require('../shared/tests/utils.js');
 
 const W12Lister = artifacts.require('W12Lister');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-function generateRandomAddress() {
-    return `0x${crypto.randomBytes(20).toString('hex')}`;
-};
 
 contract('W12Lister', async (accounts) => {
     let sut;
@@ -67,8 +57,8 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should allow to add different tokens for the same owner', async () => {
-            await sut.whitelistToken(accounts[1], generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
-            await sut.whitelistToken(accounts[1], generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
         });
 
         describe('when token is listed', async () => {
@@ -110,7 +100,7 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should reject whitelisting a token', async () => {
-            await sut.whitelistToken(generateRandomAddress(), generateRandomAddress(), "", "", 1, 1, 1, fromTokenOwner).should.be.rejected;
+            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1, 1, fromTokenOwner).should.be.rejected;
         });
 
         describe('when owner set the crowdsale', async () => {

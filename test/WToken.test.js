@@ -1,14 +1,10 @@
-import assertRevert from '../openzeppelin-solidity/test/helpers/assertRevert';
-const WToken = artifacts.require('WToken');
-const BigNumber = web3.BigNumber;
+require('../shared/tests/setup.js');
 
-require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .should();
+const utils = require('../shared/tests/utils.js');
+
+const WToken = artifacts.require('WToken');
 
 contract('WToken', function ([_, owner, recipient, anotherAccount]) {
-  const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
   beforeEach(async function () {
     this.token = await WToken.new("WToken", "WToken", 18, {gas: 7000000});
@@ -49,7 +45,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
         const amount = 101;
 
         it('reverts', async function () {
-          await assertRevert(this.token.transfer(to, amount, { from: owner }));
+          await openzeppelinHelpers.assertRevert(this.token.transfer(to, amount, { from: owner }));
         });
       });
 
@@ -82,7 +78,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
       const to = ZERO_ADDRESS;
 
       it('reverts', async function () {
-        await assertRevert(this.token.transfer(to, 100, { from: owner }));
+        await openzeppelinHelpers.assertRevert(this.token.transfer(to, 100, { from: owner }));
       });
     });
   });
@@ -233,7 +229,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 101;
 
           it('reverts', async function () {
-            await assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
           });
         });
       });
@@ -247,7 +243,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 100;
 
           it('reverts', async function () {
-            await assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
           });
         });
 
@@ -255,7 +251,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 101;
 
           it('reverts', async function () {
-            await assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
           });
         });
       });
@@ -270,7 +266,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
       });
 
       it('reverts', async function () {
-        await assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+        await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
       });
     });
   });

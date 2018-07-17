@@ -1,25 +1,11 @@
-import * as time from '../openzeppelin-solidity/test/helpers/increaseTime';
+require('../shared/tests/setup.js');
 
-const BigNumber = web3.BigNumber;
-BigNumber.Zero = new BigNumber(0);
-
-require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .use(require('chai-arrays'))
-    .should();
-
-const crypto = require('crypto');
+const utils = require('../shared/tests/utils.js');
 
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const WToken = artifacts.require('WToken');
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const oneToken = new BigNumber(10).pow(18);
-
-function generateRandomAddress() {
-    return `0x${crypto.randomBytes(20).toString('hex')}`;
-};
 
 contract('W12Crowdsale', async (accounts) => {
     let sut;
@@ -28,8 +14,8 @@ contract('W12Crowdsale', async (accounts) => {
     let factory;
     let startDate;
     let price;
-    const serviceWallet = generateRandomAddress();
-    const swap = generateRandomAddress();
+    const serviceWallet = utils.generateRandomAddress();
+    const swap = utils.generateRandomAddress();
     let fund;
 
     beforeEach(async () => {
@@ -87,20 +73,20 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + time.duration.minutes(60),
+                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(60),
                         vestingTime: 0,
                         discount: 0
                     },
                     {
                         name: 'Phase 5',
-                        endDate: startDate + time.duration.minutes(90),
-                        vestingTime: startDate + time.duration.minutes(210),
+                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(90),
+                        vestingTime: startDate + openzeppelinHelpers.time.duration.minutes(210),
                         discount: 5
                     },
                     {
                         name: 'Phase 10',
-                        endDate: startDate + time.duration.minutes(120),
-                        vestingTime: startDate + time.duration.minutes(180),
+                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(120),
+                        vestingTime: startDate + openzeppelinHelpers.time.duration.minutes(180),
                         discount: 10
                     }
                 ];
@@ -142,7 +128,7 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should sell some tokens', async () => {
-                time.increaseTimeTo(startDate + 10);
+                openzeppelinHelpers.time.increaseTimeTo(startDate + 10);
 
                 await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
@@ -154,7 +140,7 @@ contract('W12Crowdsale', async (accounts) => {
             it('should sell tokens from each stage', async () => {
                 for (const stage of discountStages) {
                     const balanceBefore = await token.balanceOf(buyer);
-                    time.increaseTimeTo(stage.endDate - 30);
+                    openzeppelinHelpers.time.increaseTimeTo(stage.endDate - 30);
 
                     await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
 
@@ -170,7 +156,7 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + time.duration.minutes(60),
+                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(60),
                         vestingTime: 0,
                         discount: 0,
                         volumeBonuses: [
@@ -209,7 +195,7 @@ contract('W12Crowdsale', async (accounts) => {
                 let totalBoughtBefore;
                 let balance;
 
-                time.increaseTimeTo(stage.endDate - 30);
+                openzeppelinHelpers.time.increaseTimeTo(stage.endDate - 30);
 
                 await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.minus(1), from: buyer }).should.be.fulfilled;
                 balance = await token.balanceOf(buyer);
