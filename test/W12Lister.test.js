@@ -41,9 +41,9 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should check that input addresses are not zeros', async () => {
-            await sut.whitelistToken(accounts[1], ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(ZERO_ADDRESS, ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(accounts[1], utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
         });
 
         it('should reject add the same token for the same owner multiple times', async () => {
@@ -78,7 +78,7 @@ contract('W12Lister', async (accounts) => {
                 placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
                 placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
                 placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
-                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(ZERO_ADDRESS);
+                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const swapAddress = await sut.swap();
                 const serviceWalletAddress = await sut.serviceWallet();
@@ -124,7 +124,7 @@ contract('W12Lister', async (accounts) => {
 
                     const crowdsaleAddress = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
 
-                    crowdsaleAddress.should.not.be.equal(ZERO_ADDRESS);
+                    crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
                 });
             });
         });

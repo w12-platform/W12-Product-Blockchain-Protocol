@@ -45,7 +45,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
         const amount = 101;
 
         it('reverts', async function () {
-          await openzeppelinHelpers.assertRevert(this.token.transfer(to, amount, { from: owner }));
+          await (this.token.transfer(to, amount, { from: owner })).should.be.rejectedWith(utils.EVMRevert);
         });
       });
 
@@ -75,10 +75,10 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
     });
 
     describe('when the recipient is the zero address', function () {
-      const to = ZERO_ADDRESS;
+      const to = utils.ZERO_ADDRESS;
 
       it('reverts', async function () {
-        await openzeppelinHelpers.assertRevert(this.token.transfer(to, 100, { from: owner }));
+        await (this.token.transfer(to, 100, { from: owner })).should.be.rejectedWith(utils.EVMRevert);
       });
     });
   });
@@ -162,7 +162,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
 
     describe('when the spender is the zero address', function () {
       const amount = 100;
-      const spender = ZERO_ADDRESS;
+      const spender = utils.ZERO_ADDRESS;
 
       it('approves the requested amount', async function () {
         await this.token.approve(spender, amount, { from: owner });
@@ -229,7 +229,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 101;
 
           it('reverts', async function () {
-            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await (this.token.transferFrom(owner, to, amount, { from: spender })).should.be.rejectedWith(utils.EVMRevert);
           });
         });
       });
@@ -243,7 +243,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 100;
 
           it('reverts', async function () {
-            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await (this.token.transferFrom(owner, to, amount, { from: spender })).should.be.rejectedWith(utils.EVMRevert);
           });
         });
 
@@ -251,7 +251,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
           const amount = 101;
 
           it('reverts', async function () {
-            await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+            await (this.token.transferFrom(owner, to, amount, { from: spender })).should.be.rejectedWith(utils.EVMRevert);
           });
         });
       });
@@ -259,14 +259,14 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
 
     describe('when the recipient is the zero address', function () {
       const amount = 100;
-      const to = ZERO_ADDRESS;
+      const to = utils.ZERO_ADDRESS;
 
       beforeEach(async function () {
         await this.token.approve(spender, amount, { from: owner });
       });
 
       it('reverts', async function () {
-        await openzeppelinHelpers.assertRevert(this.token.transferFrom(owner, to, amount, { from: spender }));
+        await (this.token.transferFrom(owner, to, amount, { from: spender })).should.be.rejectedWith(utils.EVMRevert);
       });
     });
   });
@@ -350,7 +350,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
 
     describe('when the spender is the zero address', function () {
       const amount = 100;
-      const spender = ZERO_ADDRESS;
+      const spender = utils.ZERO_ADDRESS;
 
       it('decreases the requested amount', async function () {
         await this.token.decreaseApproval(spender, amount, { from: owner });
@@ -449,7 +449,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
     });
 
     describe('when the spender is the zero address', function () {
-      const spender = ZERO_ADDRESS;
+      const spender = utils.ZERO_ADDRESS;
 
       it('approves the requested amount', async function () {
         await this.token.increaseApproval(spender, amount, { from: owner });

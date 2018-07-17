@@ -73,20 +73,20 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(60),
+                        endDate: startDate + utils.time.duration.minutes(60),
                         vestingTime: 0,
                         discount: 0
                     },
                     {
                         name: 'Phase 5',
-                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(90),
-                        vestingTime: startDate + openzeppelinHelpers.time.duration.minutes(210),
+                        endDate: startDate + utils.time.duration.minutes(90),
+                        vestingTime: startDate + utils.time.duration.minutes(210),
                         discount: 5
                     },
                     {
                         name: 'Phase 10',
-                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(120),
-                        vestingTime: startDate + openzeppelinHelpers.time.duration.minutes(180),
+                        endDate: startDate + utils.time.duration.minutes(120),
+                        vestingTime: startDate + utils.time.duration.minutes(180),
                         discount: 10
                     }
                 ];
@@ -128,7 +128,7 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should sell some tokens', async () => {
-                openzeppelinHelpers.time.increaseTimeTo(startDate + 10);
+                utils.time.increaseTimeTo(startDate + 10);
 
                 await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
@@ -140,7 +140,7 @@ contract('W12Crowdsale', async (accounts) => {
             it('should sell tokens from each stage', async () => {
                 for (const stage of discountStages) {
                     const balanceBefore = await token.balanceOf(buyer);
-                    openzeppelinHelpers.time.increaseTimeTo(stage.endDate - 30);
+                    utils.time.increaseTimeTo(stage.endDate - 30);
 
                     await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
 
@@ -156,7 +156,7 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + openzeppelinHelpers.time.duration.minutes(60),
+                        endDate: startDate + utils.time.duration.minutes(60),
                         vestingTime: 0,
                         discount: 0,
                         volumeBonuses: [
@@ -195,7 +195,7 @@ contract('W12Crowdsale', async (accounts) => {
                 let totalBoughtBefore;
                 let balance;
 
-                openzeppelinHelpers.time.increaseTimeTo(stage.endDate - 30);
+                utils.time.increaseTimeTo(stage.endDate - 30);
 
                 await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.minus(1), from: buyer }).should.be.fulfilled;
                 balance = await token.balanceOf(buyer);
