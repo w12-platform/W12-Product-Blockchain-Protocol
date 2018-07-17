@@ -1,20 +1,10 @@
-const BigNumber = web3.BigNumber;
+require('../shared/tests/setup.js');
 
-require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .should();
-
-const crypto = require('crypto');
+const utils = require('../shared/tests/utils.js');
 
 const W12Lister = artifacts.require('W12Lister');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-function generateRandomAddress() {
-    return `0x${crypto.randomBytes(20).toString('hex')}`;
-};
 
 contract('W12Lister', async (accounts) => {
     let sut;
@@ -51,9 +41,9 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should check that input addresses are not zeros', async () => {
-            await sut.whitelistToken(accounts[1], ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(ZERO_ADDRESS, ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(accounts[1], utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
         });
 
         it('should reject add the same token for the same owner multiple times', async () => {
@@ -67,8 +57,8 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should allow to add different tokens for the same owner', async () => {
-            await sut.whitelistToken(accounts[1], generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
-            await sut.whitelistToken(accounts[1], generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
         });
 
         describe('when token is listed', async () => {
@@ -88,7 +78,7 @@ contract('W12Lister', async (accounts) => {
                 placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
                 placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
                 placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
-                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(ZERO_ADDRESS);
+                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const swapAddress = await sut.swap();
                 const serviceWalletAddress = await sut.serviceWallet();
@@ -110,7 +100,7 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should reject whitelisting a token', async () => {
-            await sut.whitelistToken(generateRandomAddress(), generateRandomAddress(), "", "", 1, 1, 1, fromTokenOwner).should.be.rejected;
+            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1, 1, fromTokenOwner).should.be.rejected;
         });
 
         describe('when owner set the crowdsale', async () => {
@@ -134,7 +124,7 @@ contract('W12Lister', async (accounts) => {
 
                     const crowdsaleAddress = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
 
-                    crowdsaleAddress.should.not.be.equal(ZERO_ADDRESS);
+                    crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
                 });
             });
         });

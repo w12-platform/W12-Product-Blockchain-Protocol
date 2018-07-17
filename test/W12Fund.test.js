@@ -1,26 +1,12 @@
-import * as time from '../openzeppelin-solidity/test/helpers/increaseTime';
+require('../shared/tests/setup.js');
 
-const BigNumber = web3.BigNumber;
-BigNumber.Zero = new BigNumber(0);
-
-require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .use(require('chai-arrays'))
-    .should();
-
-const crypto = require('crypto');
+const utils = require('../shared/tests/utils.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12FundStub = artifacts.require('W12FundStub');
 const WToken = artifacts.require('WToken');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const oneToken = new BigNumber(10).pow(18);
-
-function generateRandomAddress() {
-    return `0x${crypto.randomBytes(20).toString('hex')}`;
-};
 
 contract('W12Fund', async (accounts) => {
     let sut, swap, crowdsale;
@@ -28,7 +14,7 @@ contract('W12Fund', async (accounts) => {
 
     describe('initialization methods', async () => {
         beforeEach(async () => {
-            sut = await W12Fund.new(crowdsale = generateRandomAddress(), swap = generateRandomAddress(), { from: sutOwner });
+            sut = await W12Fund.new(crowdsale = utils.generateRandomAddress(), swap = utils.generateRandomAddress(), { from: sutOwner });
         });
 
         it('should set owner', async () => {
@@ -38,12 +24,12 @@ contract('W12Fund', async (accounts) => {
 
     describe('stubbed fund', async () => {
         beforeEach(async () => {
-            sut = await W12FundStub.new(crowdsale = accounts[1], swap = generateRandomAddress(), { from: sutOwner });
+            sut = await W12FundStub.new(crowdsale = accounts[1], swap = utils.generateRandomAddress(), { from: sutOwner });
         });
 
         it('should record puchases', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = generateRandomAddress();
+            const expectedBuyer = utils.generateRandomAddress();
             const expectedTokenAmount = 100000;
 
             const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, { value: expectedAmount, from: crowdsale }).should.be.fulfilled;
@@ -56,14 +42,14 @@ contract('W12Fund', async (accounts) => {
 
         it('should reject record puchases when called not from crowdsale address', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = generateRandomAddress();
+            const expectedBuyer = utils.generateRandomAddress();
 
-            await sut.recordPurchase(expectedBuyer, expectedAmount, { from: generateRandomAddress() }).should.be.rejected;
+            await sut.recordPurchase(expectedBuyer, expectedAmount, { from: utils.generateRandomAddress() }).should.be.rejected;
         });
 
 
         it('should return zeros if there was no prior investment records', async () => {
-            const actualResult = await sut.getInvestmentsInfo(generateRandomAddress()).should.be.fulfilled;
+            const actualResult = await sut.getInvestmentsInfo(utils.generateRandomAddress()).should.be.fulfilled;
 
             actualResult[0].should.bignumber.equal(BigNumber.Zero);
             actualResult[1].should.bignumber.equal(BigNumber.Zero);
