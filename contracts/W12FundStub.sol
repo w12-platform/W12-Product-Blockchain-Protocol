@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../W12Fund.sol";
+import "./W12Fund.sol";
 
 
 contract W12FundStub is W12Fund {
