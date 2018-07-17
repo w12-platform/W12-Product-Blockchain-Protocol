@@ -133,6 +133,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function buyTokens() payable nonReentrant public {
         require(msg.value > 0);
         require(startDate <= now);
+        require(stages.length > 0);
 
         (uint8 discount, uint32 vesting, uint8 volumeBonus) = getCurrentStage();
 
@@ -185,5 +186,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function () payable external {
         buyTokens();
+    }
+
+    function claimRemainingTokens() external onlyOwner {
+        require(stages.length == 0);
+
+        require(token.transfer(owner, token.balanceOf(address(this))));
     }
 }
