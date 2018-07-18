@@ -10,6 +10,7 @@ contract('W12Lister', async (accounts) => {
     let sut;
     let token;
     let factory;
+    let lastDate;
     const wallet = accounts[9];
     const oneToken = new BigNumber(1).pow(18);
 
@@ -17,6 +18,7 @@ contract('W12Lister', async (accounts) => {
         factory = await W12CrowdsaleFactory.new();
         sut = await W12Lister.new(wallet, factory.address);
         token = await WToken.new('TestToken', 'TT', 18);
+        lastDate = web3.eth.getBlock('latest').timestamp;
     });
 
     describe('when called by the owner', async () => {
@@ -113,9 +115,9 @@ contract('W12Lister', async (accounts) => {
             });
 
             describe('token owner', async () => {
-                it('should initialize crowdsale', async () => {
+                it('should be able to initialize crowdsale', async () => {
                     await sut.initCrowdsale(
-                            Date.UTC(2018, 11, 1) / 1000,
+                            lastDate + 100,
                             token.address,
                             oneToken.mul(10),
                             oneToken,
@@ -125,6 +127,33 @@ contract('W12Lister', async (accounts) => {
                     const crowdsaleAddress = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
 
                     crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                });
+            });
+
+            describe('when crowdsale is set to run', async () => {
+                let crowdsale;
+
+                beforeEach(async () => {
+                    await sut.initCrowdsale(
+                        lastDate + 10,
+                        token.address,
+                        oneToken.mul(10),
+                        oneToken,
+                        fromTokenOwner
+                    ).should.be.fulfilled;
+
+                    crowdsale = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
+                });
+
+                it('crowdsale should be activated at time to sell tokens', async () => {
+                    utils.time.increaseTimeTo(lastDate + 10);
+
+                    const txHash = await web3.eth.sendTransaction({ from: accounts[0], value: web3.toWei(0.1, 'ether') });
+                    const transactionReceipt = web3.eth.getTransaction(txHash);
+
+                    transactionReceipt.should.exist;
+                    transactionReceipt.should.have.property('blockNumber');
+                    transactionReceipt.blockNumber.should.be.above(0);
                 });
             });
         });
