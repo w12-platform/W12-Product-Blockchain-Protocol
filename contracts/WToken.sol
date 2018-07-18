@@ -18,7 +18,7 @@ contract WToken is DetailedERC20, Ownable {
 
     mapping (address => bool) trustedAccounts;
 
-    event VestingTransfer(address indexed _from, address indexed _to, uint256 value, uint256 agingTime);
+    event VestingTransfer(address _from, address _to, uint256 value, uint256 agingTime);
 
     /**
     * @dev total number of tokens in existence
@@ -46,6 +46,7 @@ contract WToken is DetailedERC20, Ownable {
         balances[_to] += _value;
 
         emit Transfer(msg.sender, _to, _value);
+
         return true;
     }
 
@@ -55,6 +56,8 @@ contract WToken is DetailedERC20, Ownable {
         if (_vestingTime > now) {
             _addToVesting(address(0x0), _to, _vestingTime, _value);
         }
+
+        emit VestingTransfer(msg.sender, _to, _value, _vestingTime);
 
         return true;
     }

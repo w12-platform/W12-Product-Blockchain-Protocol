@@ -3,6 +3,7 @@ require('../shared/tests/setup.js');
 const utils = require('../shared/tests/utils.js');
 
 const W12Lister = artifacts.require('W12Lister');
+const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
 
@@ -12,7 +13,7 @@ contract('W12Lister', async (accounts) => {
     let factory;
     let lastDate;
     const wallet = accounts[9];
-    const oneToken = new BigNumber(1).pow(18);
+    const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
@@ -132,6 +133,7 @@ contract('W12Lister', async (accounts) => {
 
             describe('when crowdsale is set to run', async () => {
                 let crowdsale;
+                let fundAddress;
 
                 beforeEach(async () => {
                     await sut.initCrowdsale(
@@ -142,18 +144,54 @@ contract('W12Lister', async (accounts) => {
                         fromTokenOwner
                     ).should.be.fulfilled;
 
-                    crowdsale = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
+                    crowdsale = W12Crowdsale.at(await sut.getTokenCrowdsale(token.address));
+                    fundAddress = await crowdsale.fund();
+
+                    const discountStages = [
+                        {
+                            name: 'Phase 0',
+                            endDate: lastDate + utils.time.duration.minutes(60),
+                            vestingTime: 0,
+                            discount: 0,
+                            volumeBonuses: [
+                                {
+                                    boundary: new BigNumber(10000000),
+                                    bonus: BigNumber.Zero
+                                },
+                                {
+                                    boundary: new BigNumber(100000000),
+                                    bonus: new BigNumber(1)
+                                },
+                                {
+                                    boundary: new BigNumber(1000000000),
+                                    bonus: new BigNumber(10)
+                                }
+                            ]
+                        }
+                    ];
+
+                    await crowdsale.setStages(
+                        discountStages.map(s => s.endDate),
+                        discountStages.map(s => s.discount),
+                        discountStages.map(s => s.vestingTime),
+                        fromTokenOwner
+                    ).should.be.fulfilled;
+
+                    await crowdsale.setStageVolumeBonuses(0,
+                        discountStages[0].volumeBonuses.map(vb => vb.boundary),
+                        discountStages[0].volumeBonuses.map(vb => vb.bonus),
+                        fromTokenOwner
+                    ).should.be.fulfilled;
                 });
 
                 it('crowdsale should be activated at time to sell tokens', async () => {
-                    utils.time.increaseTimeTo(lastDate + 10);
+                    utils.time.increaseTimeTo(lastDate + 100);
+                    const fundBalanceBefore = web3.eth.getBalance(fundAddress);
 
-                    const txHash = await web3.eth.sendTransaction({ from: accounts[0], value: web3.toWei(0.1, 'ether') });
-                    const transactionReceipt = web3.eth.getTransaction(txHash);
+                    await crowdsale.buyTokens({ from: accounts[5], value: web3.toWei(1, 'ether') }).should.be.fulfilled;
+                    const fundBalanceAfter = web3.eth.getBalance(fundAddress);
 
-                    transactionReceipt.should.exist;
-                    transactionReceipt.should.have.property('blockNumber');
-                    transactionReceipt.blockNumber.should.be.above(0);
+                    (fundBalanceAfter.gte(fundBalanceBefore)).should.be.true;
                 });
             });
         });

@@ -158,6 +158,10 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return token;
     }
 
+    function getFund() external view returns(W12Fund) {
+        return fund;
+    }
+
     function getCurrentStage() internal returns(uint8 discount, uint32 vesting, uint8 volumeBonus) {
         if(stages.length == 0)
             return (0, 0, 0);
