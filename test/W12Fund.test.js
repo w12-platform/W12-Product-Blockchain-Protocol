@@ -50,7 +50,6 @@ contract('W12Fund', async (accounts) => {
             await sut.recordPurchase(expectedBuyer, expectedAmount, { from: utils.generateRandomAddress() }).should.be.rejected;
         });
 
-
         it('should return zeros if there was no prior investment records', async () => {
             const actualResult = await sut.getInvestmentsInfo(utils.generateRandomAddress()).should.be.fulfilled;
 
@@ -111,7 +110,7 @@ contract('W12Fund', async (accounts) => {
             await wtoken.approve(sut.address, oneToken.mul(10000), {from: buyer2});
         });
 
-        describe('test getRefundAmount method', async () => {
+        describe('test `getRefundAmount` method', async () => {
             it('should return correct amount', async () => {
                 // case 1
                 // W12Fund.totalFunded: 0.1
@@ -216,11 +215,12 @@ contract('W12Fund', async (accounts) => {
             });
         });
 
-        describe('test refund method', async () => {
-            it('should refund successful', async () => {
+        describe('test `refund` method', async () => {
+            it('should refund', async () => {
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
                 const tokensToReturn = oneToken.mul(20);
+
                 await sut.recordPurchase(buyer1, tokens, {
                     from: crowdsale,
                     value: funds
@@ -234,7 +234,6 @@ contract('W12Fund', async (accounts) => {
                     tokensToReturn
                 );
 
-
                 const buyer1BalanceBefore = web3.eth.getBalance(buyer1);
                 const refundOperation = await sut.refund(tokensToReturn, {from: buyer1}).should.be.fulfilled;
                 const gasUsed = refundOperation.receipt.gasUsed;
@@ -242,10 +241,13 @@ contract('W12Fund', async (accounts) => {
                 const transaction = await web3.eth.getTransaction(refundOperation.tx);
                 const gasPrice = transaction.gasPrice;
                 const operationCost = gasPrice.mul(gasUsed);
-
+                const investmentsInfo = await sut.getInvestmentsInfo(buyer1).should.be.fulfilled;
 
                 web3.eth.getBalance(sut.address).should.bignumber.eq(funds.minus(expectedRefundAmount));
                 web3.eth.getBalance(buyer1).should.bignumber.eq(buyer1BalanceBefore.plus(expectedRefundAmount).minus(operationCost));
+
+                investmentsInfo[0].should.bignumber.equal(0);
+                investmentsInfo[1].should.bignumber.equal(0);
 
                 logs.length.should.be.equal(1);
                 logs[0].event.should.be.equal('FundsRefunded');
@@ -263,7 +265,23 @@ contract('W12Fund', async (accounts) => {
                     value: funds
                 }).should.be.fulfilled;
 
-                const refundOperation = await sut.refund(0, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
+                await sut.refund(0, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should reject refund if provided tokens amount gte investment number', async () => {
+                const funds = new BigNumber(web3.toWei(0.1, 'ether'));
+                const tokens = oneToken.mul(20);
+
+                await sut.recordPurchase(buyer1, tokens, {
+                    from: crowdsale,
+                    value: funds
+                }).should.be.fulfilled;
+
+                await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should reject refund if address is not an investor address', async () => {
+                await sut.refund(1, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
             });
         })
     });
