@@ -74,6 +74,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     */
     function getRefundAmount(uint wtokensToRefund) public view returns (uint) {
         uint result = 0;
+        uint max = uint(-1) / 10 ** 8;
         address buyer = msg.sender;
 
         if (
@@ -84,13 +85,14 @@ contract W12Fund is Ownable, ReentrancyGuard {
                             && buyers[buyer].totalBought >= wtokensToRefund
         ) {
             uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
+            uint precisionComponent = allowedFund >= max ? 1 : 10 ** 8;
 
             result = result.add(
                 allowedFund
-                    .mul(10 ** 8)
+                    .mul(precisionComponent)
                     .div(buyers[buyer].totalBought)
                     .mul(wtokensToRefund)
-                    .div(10 ** 8)
+                    .div(precisionComponent)
             );
         }
 
