@@ -14,7 +14,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     address public swap;
     WToken public wToken;
     mapping (address=>TokenPriceInfo) public buyers;
-    uint totalFunded;
+    uint public totalFunded;
 
     struct TokenPriceInfo {
         uint totalBought;
@@ -23,6 +23,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     }
 
     event FundsReceived(address indexed buyer, uint etherAmount, uint tokenAmount);
+    event FundsRefunded(address indexed buyer, uint etherAmount, uint tokenAmount);
 
     function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
         require(_crowdsale != address(0));
@@ -55,16 +56,65 @@ contract W12Fund is Ownable, ReentrancyGuard {
         return (buyers[buyer].totalBought, buyers[buyer].averagePrice);
     }
 
+    /**
+        calculation parameters:
+
+            a = address(this).balance
+            b = totalFunded
+            c = buyers[buyer].totalFunded
+            d = buyers[buyer].totalBought
+            e = wtokensToRefund
+
+        formula:
+            ( ( c * (a / b) ) / d ) * e = (refund amount)
+
+        adapted:
+            1. c * b / a = A_1
+            2. A_1 * 10 ** 8 / d * e / 10 ** 8
+    */
+    function getRefundAmount(uint wtokensToRefund) public view returns (uint) {
+        uint result = 0;
+        uint max = uint(-1) / 10 ** 8;
+        address buyer = msg.sender;
+
+        if (
+            wtokensToRefund > 0
+                && buyers[buyer].totalBought > 0
+                    && address(this).balance > 0
+                        && wToken.balanceOf(buyer) >= wtokensToRefund
+                            && buyers[buyer].totalBought >= wtokensToRefund
+        ) {
+            uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
+            uint precisionComponent = allowedFund >= max ? 1 : 10 ** 8;
+
+            result = result.add(
+                allowedFund
+                    .mul(precisionComponent)
+                    .div(buyers[buyer].totalBought)
+                    .mul(wtokensToRefund)
+                    .div(precisionComponent)
+            );
+        }
+
+        return result;
+    }
+
     function refund(uint wtokensToRefund) external nonReentrant {
-        require(wToken.balanceOf(msg.sender) >= wtokensToRefund);
-        require(buyers[msg.sender].totalBought >= wtokensToRefund);
+        uint transferAmount = getRefundAmount(wtokensToRefund);
+        address buyer = msg.sender;
 
-        require(wToken.transferFrom(msg.sender, swap, wtokensToRefund));
+        require(transferAmount > 0);
+        require(wToken.transferFrom(buyer, swap, wtokensToRefund));
 
-        uint share = totalFunded.div(buyers[msg.sender].totalFunded);
-        uint refundTokensShare = buyers[msg.sender].totalBought.div(wtokensToRefund);
+        buyers[buyer].totalBought = buyers[buyer].totalBought.sub(wtokensToRefund);
+        buyers[buyer].totalFunded = buyers[buyer].totalFunded.sub(wtokensToRefund.mul(buyers[buyer].averagePrice));
+        buyers[buyer].averagePrice = buyers[buyer].totalFunded > 0 && buyers[buyer].totalBought > 0
+            ? buyers[buyer].totalFunded.div(buyers[buyer].totalBought)
+            : 0;
 
-        msg.sender.transfer(share.div(refundTokensShare));
+        buyer.transfer(transferAmount);
+
+        emit FundsRefunded(buyer, transferAmount, wtokensToRefund);
     }
 
     modifier onlyFrom(address sender) {
