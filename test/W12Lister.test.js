@@ -191,7 +191,7 @@ contract('W12Lister', async (accounts) => {
                     await crowdsale.buyTokens({ from: accounts[5], value: web3.toWei(1, 'ether') }).should.be.fulfilled;
                     const fundBalanceAfter = web3.eth.getBalance(fundAddress);
 
-                    (fundBalanceAfter.gte(fundBalanceBefore)).should.be.true;
+                    (fundBalanceAfter.gt(fundBalanceBefore)).should.be.true;
                 });
             });
         });
