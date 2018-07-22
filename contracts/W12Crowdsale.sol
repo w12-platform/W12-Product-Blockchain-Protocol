@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../solidity-bytes-utils/contracts/BytesLib.sol";
 import "./WToken.sol";
 import "./IW12Crowdsale.sol";
 import "./W12Fund.sol";
@@ -10,6 +11,8 @@ import "./W12Fund.sol";
 
 contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
+    using BytesLib for bytes;
+
 
     struct Stage {
         uint32 endDate;
@@ -21,8 +24,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     struct Milestone {
         uint32 endDate;
-        uint8 tranchePercent;
+        uint8  tranchePercent;
         uint32 voteEndDate;
+        uint32 withdrawalWindow;
+        bytes name;
+        bytes description;
     }
 
     WToken public token;
@@ -113,21 +119,30 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         stages[stage].volumeBonuses = volumeBonuses;
     }
 
-    function setMilestones(uint32[] endDates, uint8[] tranchePercents, uint32[] voteEndDates) external onlyOwner {
-        require(endDates.length <= uint8(-1));
-        require(endDates.length > 0);
-        require(endDates.length == tranchePercents.length);
-        require(endDates.length == voteEndDates.length);
+    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner {
+        require(dates.length <= uint8(-1));
+        require(dates.length > 3);
+        require(dates.length % 3 == 0);
 
-        uint8 length = uint8(endDates.length);
         delete milestones;
 
-        for(uint8 i = 0; i < length; i++)
+        uint32 offset = 0;
+
+        for(uint8 i = 0; i < uint8(dates.length); i += 3) {
+            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3]);
+            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3], offsets[i / 3 + 1]);
+
             milestones.push(Milestone({
-                endDate: endDates[i],
-                tranchePercent: tranchePercents[i],
-                voteEndDate: voteEndDates[i]
+                endDate: dates[i],
+                tranchePercent: tranchePercents[i / 3],
+                voteEndDate: dates[i + 1],
+                withdrawalWindow: dates[i + 2],
+                name: name,
+                description: description
             }));
+
+            offset += offsets[i / 3] + offsets[i / 3 + 1];
+        }
     }
 
     function buyTokens() payable nonReentrant public {

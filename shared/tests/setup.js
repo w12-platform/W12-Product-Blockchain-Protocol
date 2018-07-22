@@ -10,3 +10,4 @@ require('chai')
     .use(require('chai-arrays'))
     .should();
 
+global.bytes = require('utf8-bytes');

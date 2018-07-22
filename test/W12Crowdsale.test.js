@@ -149,6 +149,70 @@ contract('W12Crowdsale', async (accounts) => {
                     balanceAfter.minus(balanceBefore).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero));
                 }
             });
+
+            it('should set milestones', async () => {
+                const expMils = [
+                    {
+                        name: "Milestone 1 name",
+                        description: "Milestone 2 description",
+                        endDate: startDate + utils.time.duration.days(10),
+                        tranchePercent: 25,
+                        voteEndDate: startDate + utils.time.duration.days(17),
+                        withdrawalWindow: startDate + utils.time.duration.days(20)
+                    },
+                    {
+                        name: "Milestone 2 name",
+                        description: "Milestone 2 description",
+                        endDate: startDate + utils.time.duration.days(20),
+                        tranchePercent: 35,
+                        voteEndDate: startDate + utils.time.duration.days(27),
+                        withdrawalWindow: startDate + utils.time.duration.days(30)
+                    },
+                    {
+                        name: "Milestone 3 name",
+                        description: "Milestone 3 description",
+                        endDate: startDate + utils.time.duration.days(20),
+                        tranchePercent: 35,
+                        voteEndDate: startDate + utils.time.duration.days(27),
+                        withdrawalWindow: startDate + utils.time.duration.days(30)
+                    }
+                ];
+
+                let bytesString = "0x";
+                let lengths = [];
+
+                for (const milestone of expMils) {
+                    let utfBytes = bytes(milestone.name).map(num => num.toString(16)).join('');
+                    lengths.push(utfBytes.length / 2);
+                    bytesString += utfBytes;
+
+                    utfBytes = bytes(milestone.description).map(num => num.toString(16)).join('');
+                    lengths.push(utfBytes.length / 2);
+                    bytesString += utfBytes;
+                }
+
+                await sut.setMilestones(
+                    [expMils[0].endDate, expMils[0].voteEndDate, expMils[0].withdrawalWindow,
+                    expMils[1].endDate, expMils[1].voteEndDate, expMils[1].withdrawalWindow,
+                    expMils[2].endDate, expMils[2].voteEndDate, expMils[2].withdrawalWindow],
+                    expMils.map(m => m.tranchePercent),
+                    lengths,
+                    bytesString,
+                    {from: tokenOwner}
+                ).should.be.fulfilled;
+
+                console.log(lengths)
+
+                let actualStageCount = await sut.milestonesLength().should.be.fulfilled;
+
+                actualStageCount.should.bignumber.equal(expMils.length);
+
+                while (--actualStageCount >= 0) {
+                    const milestone = await sut.milestones(actualStageCount);
+                    console.log(`milestone ${actualStageCount} name: ${milestone[4]}`);
+                    console.log(`milestone ${actualStageCount} desc: ${milestone[5]}`);
+                }
+            });
         });
 
         describe('with volume bonuses', async () => {

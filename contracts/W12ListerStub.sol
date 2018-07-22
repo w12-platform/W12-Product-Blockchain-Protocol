@@ -11,5 +11,5 @@ contract W12ListerStub is W12Lister {
         _;
     }
 
-    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory) W12Lister(_serviceWallet, _factory) public { }
+    constructor(IW12CrowdsaleFactory _factory) W12Lister(msg.sender, _factory) public { }
 }
