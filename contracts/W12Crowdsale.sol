@@ -115,19 +115,21 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(volumeBoundaries.length == volumeBonuses.length);
         require(stage < stages.length);
 
+        delete stages[stage].volumeBoundaries;
+        delete stages[stage].volumeBonuses;
+
         stages[stage].volumeBoundaries = volumeBoundaries;
         stages[stage].volumeBonuses = volumeBonuses;
     }
 
     function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner {
+        require(milestones.length == 0);
         require(dates.length <= uint8(-1));
         require(dates.length > 3);
         require(dates.length % 3 == 0);
         require(tranchePercents.length.mul(2) == offsets.length);
         require(tranchePercents.length.mul(3) == dates.length);
         require(namesAndDescriptions.length >= tranchePercents.length * 2);
-
-        delete milestones;
 
         uint offset = 0;
 
