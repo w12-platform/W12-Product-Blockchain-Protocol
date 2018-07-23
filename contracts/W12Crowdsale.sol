@@ -123,14 +123,26 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(dates.length <= uint8(-1));
         require(dates.length > 3);
         require(dates.length % 3 == 0);
+        require(tranchePercents.length.mul(2) == offsets.length);
+        require(tranchePercents.length.mul(3) == dates.length);
+        require(namesAndDescriptions.length >= tranchePercents.length * 2);
 
         delete milestones;
 
-        uint32 offset = 0;
+        uint offset = 0;
 
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
+            require(dates[i] > now);
+            require(dates[i + 1] > now);
+            require(dates[i + 2] > now);
+            require(offset.add(offsets[i / 3]).add(offsets[i / 3 + 1]) <= namesAndDescriptions.length);
+            require(tranchePercents[i / 3] < 100);
+
             bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
             bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
+
+            require(name.length > 0);
+            require(description.length > 0);
 
             milestones.push(Milestone({
                 endDate: dates[i],
