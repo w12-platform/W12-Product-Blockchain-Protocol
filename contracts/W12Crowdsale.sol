@@ -129,8 +129,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint32 offset = 0;
 
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
-            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3]);
-            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3], offsets[i / 3 + 1]);
+            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
+            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
 
             milestones.push(Milestone({
                 endDate: dates[i],

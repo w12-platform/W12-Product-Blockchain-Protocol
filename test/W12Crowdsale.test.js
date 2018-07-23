@@ -185,10 +185,12 @@ contract('W12Crowdsale', async (accounts) => {
                     let utfBytes = bytes(milestone.name).map(num => num.toString(16)).join('');
                     lengths.push(utfBytes.length / 2);
                     bytesString += utfBytes;
+                    milestone.nameHex = `0x${utfBytes}`;
 
                     utfBytes = bytes(milestone.description).map(num => num.toString(16)).join('');
                     lengths.push(utfBytes.length / 2);
                     bytesString += utfBytes;
+                    milestone.descriptionHex = `0x${utfBytes}`;
                 }
 
                 await sut.setMilestones(
@@ -201,16 +203,19 @@ contract('W12Crowdsale', async (accounts) => {
                     {from: tokenOwner}
                 ).should.be.fulfilled;
 
-                console.log(lengths)
-
                 let actualStageCount = await sut.milestonesLength().should.be.fulfilled;
 
                 actualStageCount.should.bignumber.equal(expMils.length);
 
                 while (--actualStageCount >= 0) {
                     const milestone = await sut.milestones(actualStageCount);
-                    console.log(`milestone ${actualStageCount} name: ${milestone[4]}`);
-                    console.log(`milestone ${actualStageCount} desc: ${milestone[5]}`);
+
+                    milestone[0].should.bignumber.equal(expMils[actualStageCount].endDate);
+                    milestone[1].should.bignumber.equal(expMils[actualStageCount].tranchePercent);
+                    milestone[2].should.bignumber.equal(expMils[actualStageCount].voteEndDate);
+                    milestone[3].should.bignumber.equal(expMils[actualStageCount].withdrawalWindow);
+                    milestone[4].should.be.equal(expMils[actualStageCount].nameHex);
+                    milestone[5].should.be.equal(expMils[actualStageCount].descriptionHex);
                 }
             });
         });
