@@ -16,4 +16,9 @@ contract W12FundStub is W12Fund {
 
         msg.sender.transfer(amount);
     }
+
+    // allow any sender
+    modifier onlyFrom(address sender) {
+        _;
+    }
 }

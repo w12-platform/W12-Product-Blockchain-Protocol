@@ -15,6 +15,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     WToken public wToken;
     mapping (address=>TokenPriceInfo) public buyers;
     uint public totalFunded;
+    uint public totalRefunded;
 
     struct TokenPriceInfo {
         uint totalBought;
@@ -76,13 +77,17 @@ contract W12Fund is Ownable, ReentrancyGuard {
         uint result = 0;
         uint max = uint(-1) / 10 ** 8;
         address buyer = msg.sender;
+        (uint32 start, uint32 end) = getRefundPeriod();
 
         if (
-            wtokensToRefund > 0
-                && buyers[buyer].totalBought > 0
-                    && address(this).balance > 0
-                        && wToken.balanceOf(buyer) >= wtokensToRefund
-                            && buyers[buyer].totalBought >= wtokensToRefund
+            start > 0
+                && end >= now
+                    && start < now
+                        && wtokensToRefund > 0
+                            && buyers[buyer].totalBought > 0
+                                && address(this).balance > 0
+                                    && wToken.balanceOf(buyer) >= wtokensToRefund
+                                        && buyers[buyer].totalBought >= wtokensToRefund
         ) {
             uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
             uint precisionComponent = allowedFund >= max ? 1 : 10 ** 8;
@@ -99,6 +104,12 @@ contract W12Fund is Ownable, ReentrancyGuard {
         return result;
     }
 
+    function getRefundPeriod() public view returns (uint32, uint32) {
+        (,, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
+
+        return (voteEndDate, withdrawalWindow);
+    }
+
     function refund(uint wtokensToRefund) external nonReentrant {
         uint transferAmount = getRefundAmount(wtokensToRefund);
         address buyer = msg.sender;
@@ -111,6 +122,9 @@ contract W12Fund is Ownable, ReentrancyGuard {
         buyers[buyer].averagePrice = buyers[buyer].totalFunded > 0 && buyers[buyer].totalBought > 0
             ? buyers[buyer].totalFunded.div(buyers[buyer].totalBought)
             : 0;
+
+        // update total refunded amount counter
+        totalRefunded = totalRefunded.add(transferAmount);
 
         buyer.transfer(transferAmount);
 
