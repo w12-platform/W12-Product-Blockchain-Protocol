@@ -1,0 +1,30 @@
+const utils = require('../../shared/tests/utils.js');
+
+const WToken = artifacts.require('WToken');
+
+async function createW12Token(owner) {
+    const id = nanoid();
+    const name = `Test Token ${id}`;
+    const symbol = `TT${id.slice(0, 2)}`;
+    const decimals = 18;
+
+    const token = await WToken.new(name, symbol, decimals, { from: owner });
+
+    return {
+        id,
+        args: {
+            name,
+            symbol,
+            decimals,
+        },
+        token,
+        owner,
+        txParams: {
+            from: owner
+        }
+    };
+}
+
+module.exports = {
+    createW12Token
+}
