@@ -32,6 +32,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     WToken public token;
+    uint tokenDecimals;
     uint32 public startDate;
     uint public price;
     uint8 public serviceFee;
@@ -50,6 +51,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(_fund != address(0));
 
         token = WToken(_token);
+        tokenDecimals = token.decimals();
 
         __setParameters(_startDate, _price, _serviceWallet);
         serviceFee = _serviceFee;
@@ -171,7 +173,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint tokenAmount = msg.value
             .mul(100 + volumeBonus)
             .div(stagePrice)
-            .div(100);
+            .mul(10**(tokenDecimals - 2));
 
         require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
 

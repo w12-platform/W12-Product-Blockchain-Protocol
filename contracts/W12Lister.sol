@@ -31,6 +31,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         IW12Crowdsale crowdsaleAddress;
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
+        address tokenAddress;
     }
 
     constructor(address _serviceWallet, IW12CrowdsaleFactory _factory) public {
@@ -64,6 +65,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens[index].decimals = decimals;
         approvedTokens[index].feePercent = feePercent;
         approvedTokens[index].ethFeePercent = ethFeePercent;
+        approvedTokens[index].tokenAddress = tokenAddress;
 
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
     }

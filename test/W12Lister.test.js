@@ -108,11 +108,11 @@ contract('W12Lister', async (accounts) => {
 
         describe('when owner set the crowdsale', async () => {
             beforeEach(async () => {
-                await sut.whitelistToken(fromTokenOwner.from, token.address, "TestTokenz", "TT", 18, 30, 30, fromSystemAccount);    // availabale via platform
-                await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);                                   // not available on platform
-                await token.approve(sut.address, oneToken.mul(10000), fromTokenOwner);                                              // available via platfrom
+                await sut.whitelistToken(fromTokenOwner.from, token.address, "TestTokenz", "TT", 18, 30, 30, fromSystemAccount);
+                await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);
+                await token.approve(sut.address, oneToken.mul(10000), fromTokenOwner);
 
-                await sut.placeToken(token.address, oneToken.mul(10), fromTokenOwner).should.be.fulfilled;                          // available via platfrom
+                await sut.placeToken(token.address, oneToken.mul(10), fromTokenOwner).should.be.fulfilled;
             });
 
             describe('token owner', async () => {
@@ -123,7 +123,7 @@ contract('W12Lister', async (accounts) => {
                             oneToken.mul(10),
                             oneToken,
                             fromTokenOwner
-                        ).should.be.fulfilled;                                                                                      // available via platfrom
+                        ).should.be.fulfilled;
 
                     const crowdsaleAddress = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
 

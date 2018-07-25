@@ -29,7 +29,7 @@ contract('W12Crowdsale', async (accounts) => {
         sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
         fund = crowdsaleCreatedLogEntry.args.fundAddress;
         await token.addTrustedAccount(sut.address, {from: tokenOwner});
-        await token.mint(sut.address, oneToken.mul(10000), 0, {from: tokenOwner});
+        await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner});
 
         price = await sut.price();
     });
@@ -64,8 +64,8 @@ contract('W12Crowdsale', async (accounts) => {
                 .mul(new BigNumber(100).minus(stageDiscount))
                 .div(100)
             ).mul(volumeBonus.plus(100))
-            .div(100)
-            .toFixed(0);
+            .mul(oneToken)
+            .div(100);
         }
 
         describe('with discounts stages', async () => {
@@ -132,7 +132,7 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
-                (await token.balanceOf(buyer)).should.bignumber.equal(100);
+                (await token.balanceOf(buyer)).should.bignumber.equal(oneToken.mul(100));
                 web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
                 web3.eth.getBalance(fund).should.bignumber.equal(9000);
             });
@@ -146,7 +146,7 @@ contract('W12Crowdsale', async (accounts) => {
 
                     const balanceAfter = await token.balanceOf(buyer);
 
-                    balanceAfter.minus(balanceBefore).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero));
+                    balanceAfter.minus(balanceBefore).toPrecision(6).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
                 }
             });
 
@@ -278,7 +278,7 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.plus(1), from: buyer }).should.be.fulfilled;
                 balance = await token.balanceOf(buyer);
-                balance.minus(totalBoughtBefore).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.plus(1), price, BigNumber.Zero, stage.volumeBonuses[1].bonus));
+                balance.minus(totalBoughtBefore).toPrecision(8).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.plus(1), price, BigNumber.Zero, stage.volumeBonuses[1].bonus).toPrecision(8));
             });
         });
     });
