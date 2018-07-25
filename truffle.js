@@ -9,6 +9,9 @@ module.exports = {
             network_id: '*', // Match any network id
             gas: 12000000,
             gasPrice: 0
-        },
+        }
+    },
+    mocha: {
+        // grep:
     }
 };

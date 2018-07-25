@@ -11,3 +11,4 @@ require('chai')
     .should();
 
 global.bytes = require('utf8-bytes');
+global.nanoid = require('nanoid');

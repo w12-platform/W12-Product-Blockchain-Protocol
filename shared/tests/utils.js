@@ -49,10 +49,54 @@ function round(number) {
     return new BigNumber(number.toFixed(0, 1));
 }
 
+function encodeMilestoneParameters(
+    name,
+    description,
+    tranchePercent,
+    endDate,
+    voteEndDate,
+    withdrawalWindow
+) {
+    const result = {
+        dates: [
+            endDate, voteEndDate, withdrawalWindow
+        ],
+        tranchePercent,
+        offsets: [],
+        namesAndDescriptions: '0x',
+        descriptionHex: null,
+        nameHex: null
+    };
+
+    let utfBytes = bytes(name).map(num => num.toString(16)).join('');
+
+    result.offsets.push(utfBytes.length / 2);
+    result.namesAndDescriptions += utfBytes;
+    result.nameHex = `0x${utfBytes}`;
+
+    utfBytes = bytes(description).map(num => num.toString(16)).join('');
+
+    result.offsets.push(utfBytes.length / 2);
+    result.namesAndDescriptions += utfBytes;
+    result.descriptionHex = `0x${utfBytes}`;
+
+    return result;
+}
+
+async function getTransactionCost(txOutput) {
+    const gasUsed = txOutput.receipt.gasUsed;
+    const transaction = await web3.eth.getTransaction(txOutput.tx);
+    const gasPrice = transaction.gasPrice;
+
+    return gasPrice.mul(gasUsed);
+}
+
 module.exports = {
     time,
     EVMRevert,
     ZERO_ADDRESS,
     generateRandomAddress,
-    calculateRefundAmount
+    calculateRefundAmount,
+    encodeMilestoneParameters,
+    getTransactionCost
 }

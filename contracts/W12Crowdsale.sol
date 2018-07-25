@@ -13,7 +13,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using BytesLib for bytes;
 
-
     struct Stage {
         uint32 endDate;
         uint8 discount;
@@ -161,12 +160,55 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         }
     }
 
+    // returns last milestone if completely ended or active milestone at now
+    function getCurrentMilestone() external view returns (
+        uint32,
+        uint8,
+        uint32,
+        uint32,
+        bytes,
+        bytes
+    ) {
+        if(milestones.length == 0 || startDate > now)
+            return (0, 0, 0, 0, new bytes(0), new bytes(0));
+
+        Milestone memory last = milestones[milestones.length - 1];
+
+        if (last.withdrawalWindow < now) {
+            return (
+                last.endDate,
+                last.tranchePercent,
+                last.voteEndDate,
+                last.withdrawalWindow,
+                last.name,
+                last.description
+            );
+        }
+
+        for (uint i = 0; i < milestones.length - 1; i++) {
+            if (milestones[i].withdrawalWindow >= now) {
+                return (
+                    milestones[i].endDate,
+                    milestones[i].tranchePercent,
+                    milestones[i].voteEndDate,
+                    milestones[i].withdrawalWindow,
+                    milestones[i].name,
+                    milestones[i].description
+                );
+            }
+        }
+    }
+
     function buyTokens() payable nonReentrant public {
         require(msg.value > 0);
         require(startDate <= now);
         require(stages.length > 0);
 
         (uint8 discount, uint32 vesting, uint8 volumeBonus) = getCurrentStage();
+
+        if(stages.length == 0)
+            // return funds if ICO was closed
+            msg.sender.transfer(msg.value);
 
         uint stagePrice = discount > 0 ? price.mul(100 - discount).div(100) : price;
 
