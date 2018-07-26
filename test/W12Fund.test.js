@@ -343,6 +343,166 @@ contract('W12Fund', async (accounts) => {
 
                 await Fund.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
             });
-        })
+        });
+
+        describe('test `getTrancheAmount` method', async () => {
+            it('should return zero if crowdsale was not started yet', async () => {
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[0];
+
+                await Fund.sendTransaction({ value: totalFundedAmount, from: account }).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = 0;
+                const result = await Fund.getTrancheAmount({ from: account }).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+
+            it('should return zero if withdrawal window was not open yet', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const firstMilestoneEnd = firstMilestone.endDate;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[0];
+
+                await utils.time.increaseTimeTo(firstMilestoneEnd - 60);
+
+                await Fund.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = 0;
+                const result = await Fund.getTrancheAmount({from: account}).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+
+            it('should return zero if balance is empty', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const withdrawalWindow = firstMilestone.withdrawalWindow;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[0];
+
+                await utils.time.increaseTimeTo(withdrawalWindow - 60);
+
+                const expected = 0;
+                const result = await Fund.getTrancheAmount({from: account}).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+
+            it('should return none zero if balance is filled', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const withdrawalWindow = firstMilestone.withdrawalWindow;
+                const percent = firstMilestone.tranchePercent;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[0];
+
+                await utils.time.increaseTimeTo(withdrawalWindow - 60);
+
+                await Fund.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = utils.round(totalFundedAmount.mul(percent).div(100));
+                const result = await Fund.getTrancheAmount({from: account}).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+
+            it('should return none zero in case, where balance is filled and there is refunded resources', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const withdrawalWindow = firstMilestone.withdrawalWindow;
+                const percent = firstMilestone.tranchePercent;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const totalRefundedAmount = totalFundedAmount.mul(0.1) // 10 wei
+                const diff = totalFundedAmount.minus(totalRefundedAmount);
+                const account = accounts[0];
+
+                await utils.time.increaseTimeTo(withdrawalWindow - 60);
+
+                await Fund.sendTransaction({value: diff, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+                await Fund._setTotalRefunded(totalRefundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = utils.round(diff.mul(percent).div(100));
+                const result = await Fund.getTrancheAmount({from: account}).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+
+            it('should return none zero in case, where balance is filled and last milestone was end', async () => {
+                const lastMilestone = MilestoneFixture.milestones[2];
+                const withdrawalWindow = lastMilestone.withdrawalWindow;
+                const percent = lastMilestone.tranchePercent;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[0];
+
+                await utils.time.increaseTimeTo(withdrawalWindow + 60);
+
+                await Fund.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = utils.round(totalFundedAmount.mul(percent).div(100));
+                const result = await Fund.getTrancheAmount({from: account}).should.be.fulfilled;
+
+                result.should.bignumber.eq(expected);
+            });
+        });
+
+        describe('test `tranche` method', async () => {
+            it('should revert if sender is not owner', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const withdrawalWindow = firstMilestone.withdrawalWindow;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = accounts[5];
+
+                await utils.time.increaseTimeTo(withdrawalWindow - 60);
+
+                await Fund.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                await Fund.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if tranche amount is zero', async () => {
+                const account = await Fund.owner();
+
+                await Fund.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should call tranche successful', async () => {
+                const firstMilestone = MilestoneFixture.milestones[0];
+                const withdrawalWindow = firstMilestone.withdrawalWindow;
+                const percent = firstMilestone.tranchePercent;
+                const totalFundedAmount = new BigNumber(100); // 100 wei
+                const account = await Fund.owner();
+
+                await utils.time.increaseTimeTo(withdrawalWindow - 60);
+
+                await Fund.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+                await Fund._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+
+                const expected = utils.round(totalFundedAmount.mul(percent).div(100));
+                const expectedFundBalance = totalFundedAmount.minus(expected);
+                const accountBalanceBefore = await web3.eth.getBalance(account);
+
+                const tx = await Fund.tranche({from: account}).should.be.fulfilled;
+                const cost = await utils.getTransactionCost(tx);
+                const log = tx.logs[0];
+                const expectedAccountBalance = accountBalanceBefore.plus(expected).minus(cost);
+                const fundBalance = await web3.eth.getBalance(Fund.address);
+                const accountBalance = await web3.eth.getBalance(account);
+
+                fundBalance.should.bignumber.eq(expectedFundBalance);
+                accountBalance.should.bignumber.eq(expectedAccountBalance);
+
+                (await Fund.completedTranches(withdrawalWindow)).should.be.equal(true);
+                (await Fund.getTrancheAmount()).should.bignumber.eq(0);
+
+                log.should.to.be;
+                log.event.should.be.equal('TrancheOperation');
+                log.args.receiver.should.be.equal(account);
+                log.args.amount.should.bignumber.eq(expected);
+            });
+        });
     });
 });

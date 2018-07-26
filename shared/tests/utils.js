@@ -93,6 +93,7 @@ async function getTransactionCost(txOutput) {
 
 module.exports = {
     time,
+    round,
     EVMRevert,
     ZERO_ADDRESS,
     generateRandomAddress,

@@ -17,6 +17,16 @@ contract W12FundStub is W12Fund {
         msg.sender.transfer(amount);
     }
 
+    function _setTotalFunded(uint amount) external {
+        totalFunded = amount;
+    }
+
+    function _setTotalRefunded(uint amount) external {
+        totalRefunded = amount;
+    }
+
+    function() payable external {}
+
     // allow any sender
     modifier onlyFrom(address sender) {
         _;
