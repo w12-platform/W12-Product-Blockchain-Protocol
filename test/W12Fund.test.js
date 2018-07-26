@@ -495,6 +495,9 @@ contract('W12Fund', async (accounts) => {
                 fundBalance.should.bignumber.eq(expectedFundBalance);
                 accountBalance.should.bignumber.eq(expectedAccountBalance);
 
+                (await Fund.completedTranches(withdrawalWindow)).should.be.equal(true);
+                (await Fund.getTrancheAmount()).should.bignumber.eq(0);
+
                 log.should.to.be;
                 log.event.should.be.equal('TrancheOperation');
                 log.args.receiver.should.be.equal(account);

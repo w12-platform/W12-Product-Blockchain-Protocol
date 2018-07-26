@@ -14,6 +14,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     address public swap;
     WToken public wToken;
     mapping (address=>TokenPriceInfo) public buyers;
+    mapping (uint32 => bool) public completedTranches;
     uint public totalFunded;
     uint public totalRefunded;
 
@@ -114,9 +115,12 @@ contract W12Fund is Ownable, ReentrancyGuard {
     function getTrancheAmount() public view returns (uint) {
         uint result = 0;
         (uint8 tranchePercent, uint32 start, uint32 end) = getTrancheParameters();
+        
+        bool completed = completedTranches[end];
 
         if (
-            start > 0
+            !completed
+            && start > 0
             && end >= now
             && start < now
             && tranchePercent > 0
@@ -137,6 +141,12 @@ contract W12Fund is Ownable, ReentrancyGuard {
     function getTrancheParameters() public view returns (uint8, uint32, uint32) {
         (, uint8 tranchePercent, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
 
+        bool completed = completedTranches[withdrawalWindow];
+
+        if (completed) {
+            return (0, 0, 0);
+        }
+
         return (
             tranchePercent,
             voteEndDate,
@@ -148,8 +158,11 @@ contract W12Fund is Ownable, ReentrancyGuard {
 
     function tranche() external onlyOwner nonReentrant {
         uint trancheAmount = getTrancheAmount();
+        (,, uint32 withdrawalWindow) = getTrancheParameters();
 
         require(trancheAmount > 0);
+
+        completedTranches[withdrawalWindow] = true;
 
         msg.sender.transfer(trancheAmount);
 
