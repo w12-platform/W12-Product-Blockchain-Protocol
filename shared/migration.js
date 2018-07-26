@@ -1,7 +1,7 @@
-require('./tests/setup.js');
+require('../shared/tests/setup.js');
 
-const utils = require('./tests/utils.js');
-const crowdsaleFixtures = require('../test/fixtures/crowdsale.js');
+const utils = require('../shared/tests/utils.js');
+const crowdsaleFixtures = require('./fixtures/crowdsale.js');
 
 const W12Lister = artifacts.require('W12Lister');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
@@ -30,7 +30,7 @@ contract('W12Lister', async (accounts) => {
 
     const _Factory = await W12CrowdsaleFactory.new({ from: factoryOwner }).should.be.fulfilled;
     const _W12Lister = await W12Lister.new(serviceWalletAddress, _Factory.address, { from: listerOwner }).should.be.fulfilled;
-    const _ERC20Token = await ERC20.new('TestToken', 'TT', 18, { from: erc20TokenOwner }).should.be.fulfilled;
+    const _ERC20Token = await ERC20.new('TestToken', 'TT', 18, { from: erc20TokenOwner, gas: 90000000 }).should.be.fulfilled;
     const tokenAddress = _ERC20Token.address;
     const listerAddress = _W12Lister.address;
     const factoryAddress = _Factory.address;
@@ -157,8 +157,8 @@ contract('W12Lister', async (accounts) => {
 
     const testAccountRefund = await _W12Fund.getRefundAmount(testAccountBalance_WToken, { from: testAccount }).should.be.fulfilled;
 
-    // await _WToken.approve(_W12Fund.address, oneToken.mul(2), { from: testAccount }).should.be.fulfilled;
-    // await _W12Fund.refund(oneToken.mul(2), { from: testAccount }).should.be.fulfilled;
+    // await _WToken.approve(_W12Fund.address, 1, { from: testAccount }).should.be.fulfilled;
+    // await _W12Fund.refund(1, { from: testAccount }).should.be.fulfilled;
 
     testAccountBalance_WToken = (await _WToken.balanceOf(testAccount));
 

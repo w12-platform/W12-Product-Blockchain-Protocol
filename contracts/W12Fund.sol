@@ -115,7 +115,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
     function getTrancheAmount() public view returns (uint) {
         uint result = 0;
         (uint8 tranchePercent, uint32 start, uint32 end) = getTrancheParameters();
-        
+
         bool completed = completedTranches[end];
 
         if (
