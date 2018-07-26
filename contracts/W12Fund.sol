@@ -25,6 +25,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
 
     event FundsReceived(address indexed buyer, uint etherAmount, uint tokenAmount);
     event FundsRefunded(address indexed buyer, uint etherAmount, uint tokenAmount);
+    event TrancheOperation(address indexed receiver, uint amount);
 
     function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
         require(_crowdsale != address(0));
@@ -81,13 +82,13 @@ contract W12Fund is Ownable, ReentrancyGuard {
 
         if (
             start > 0
-                && end >= now
-                    && start < now
-                        && wtokensToRefund > 0
-                            && buyers[buyer].totalBought > 0
-                                && address(this).balance > 0
-                                    && wToken.balanceOf(buyer) >= wtokensToRefund
-                                        && buyers[buyer].totalBought >= wtokensToRefund
+            && end >= now
+            && start < now
+            && wtokensToRefund > 0
+            && buyers[buyer].totalBought > 0
+            && address(this).balance > 0
+            && wToken.balanceOf(buyer) >= wtokensToRefund
+            && buyers[buyer].totalBought >= wtokensToRefund
         ) {
             uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
             uint precisionComponent = allowedFund >= max ? 1 : 10 ** 8;
@@ -108,6 +109,51 @@ contract W12Fund is Ownable, ReentrancyGuard {
         (,, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
 
         return (voteEndDate, withdrawalWindow);
+    }
+
+    function getTrancheAmount() public view returns (uint) {
+        uint result = 0;
+        (uint8 tranchePercent, uint32 start, uint32 end) = getTrancheParameters();
+
+        if (
+            start > 0
+            && end >= now
+            && start < now
+            && tranchePercent > 0
+            && address(this).balance > 0
+        ) {
+            uint allowedFund = totalFunded.sub(totalRefunded);
+
+            result = result.add(
+                allowedFund
+                .mul(tranchePercent)
+                .div(100)
+            );
+        }
+
+        return result;
+    }
+
+    function getTrancheParameters() public view returns (uint8, uint32, uint32) {
+        (, uint8 tranchePercent, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
+
+        return (
+            tranchePercent,
+            voteEndDate,
+            withdrawalWindow < now && withdrawalWindow > 0
+                ? uint32(-1)
+                : withdrawalWindow
+        );
+    }
+
+    function tranche() external onlyOwner nonReentrant {
+        uint trancheAmount = getTrancheAmount();
+
+        require(trancheAmount > 0);
+
+        msg.sender.transfer(trancheAmount);
+
+        emit TrancheOperation(msg.sender, trancheAmount);
     }
 
     function refund(uint wtokensToRefund) external nonReentrant {
