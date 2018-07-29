@@ -131,4 +131,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         return approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress;
     }
+
+    function getSwap() view external returns (W12AtomicSwap) {
+        return swap;
+    }
 }
