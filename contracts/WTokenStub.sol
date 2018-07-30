@@ -11,5 +11,9 @@ contract WTokenStub is WToken {
         _;
     }
 
+    modifier onlyTrusted(address caller) {
+        _;
+    }
+
     constructor(string _name, string _symbol, uint8 _decimals) WToken(_name, _symbol, _decimals) public { }
 }
