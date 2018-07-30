@@ -33,13 +33,19 @@ contract('W12Fund', async (accounts) => {
 
     describe('stubbed fund', async () => {
         beforeEach(async () => {
-            sut = await W12FundStub.new(crowdsale = accounts[1], swap = utils.generateRandomAddress(), utils.generateRandomAddress(), { from: sutOwner });
+            W12TokenFixture = await tokesFixtures.createW12Token(wtokenOwner);
+            sut = await W12FundStub.new(
+                crowdsale = accounts[1],
+                swap = utils.generateRandomAddress(),
+                W12TokenFixture.token.address,
+                { from: sutOwner }
+            );
         });
 
         it('should record purchases', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
             const expectedBuyer = utils.generateRandomAddress();
-            const expectedTokenAmount = 100000;
+            const expectedTokenAmount = oneToken.mul(1000);
 
             const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, { value: expectedAmount, from: crowdsale }).should.be.fulfilled;
 
@@ -68,19 +74,19 @@ contract('W12Fund', async (accounts) => {
             const purchases = [
                 {
                     amount: web3.toWei(0.5, 'ether'),
-                    tokens: web3.toWei(0.005, 'ether')
+                    tokens: oneToken.mul(5)
                 },
                 {
                     amount: web3.toWei(0.7, 'ether'),
-                    tokens: web3.toWei(0.015, 'ether')
+                    tokens: oneToken.mul(15)
                 },
                 {
                     amount: web3.toWei(0.15, 'ether'),
-                    tokens: web3.toWei(0.105, 'ether')
+                    tokens: oneToken.mul(105)
                 },
                 {
                     amount: web3.toWei(1, 'ether'),
-                    tokens: web3.toWei(0.2, 'ether')
+                    tokens: oneToken.mul(200)
                 }
             ];
             let totalPaid = BigNumber.Zero;
@@ -96,7 +102,7 @@ contract('W12Fund', async (accounts) => {
             const actualResult = await sut.getInvestmentsInfo(buyer).should.be.fulfilled;
 
             actualResult[0].should.bignumber.equal(totalTokensBought);
-            actualResult[1].should.bignumber.equal(totalPaid.div(totalTokensBought).toFixed(0));
+            actualResult[1].should.bignumber.equal(utils.round(totalPaid.mul(oneToken).div(totalTokensBought)));
         });
     });
 
@@ -346,6 +352,7 @@ contract('W12Fund', async (accounts) => {
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
                 const tokensToReturn = oneToken.mul(20);
+                const tokenDecimals = W12TokenFixture.args.decimals;
 
                 await Fund.recordPurchase(buyer1, tokens, {
                     from: crowdsaleOwner,
@@ -357,7 +364,8 @@ contract('W12Fund', async (accounts) => {
                     web3.toWei(0.1, 'ether'),
                     web3.toWei(0.1, 'ether'),
                     tokens,
-                    tokensToReturn
+                    tokensToReturn,
+                    tokenDecimals
                 );
 
                 const buyer1BalanceBefore = web3.eth.getBalance(buyer1);

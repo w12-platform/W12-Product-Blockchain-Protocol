@@ -24,7 +24,7 @@ contract('W12Lister', async (accounts) => {
     const oneToken = new BigNumber(10).pow(18);
     const mintAmount = oneToken.mul(1000000);
     const forSaleAmount = mintAmount;
-    const tokenPrice = new BigNumber(10); // 10 wei
+    const tokenPrice = oneToken;
     const currentTime = web3.eth.getBlock('latest').timestamp;
     const crowdsaleStartTime = currentTime + utils.time.duration.minutes(2);
 
@@ -138,12 +138,12 @@ contract('W12Lister', async (accounts) => {
     await utils.time.increaseTimeTo(crowdsaleStartTime + utils.time.duration.minutes(2));
 
     // at 0 stage
-    await _W12Crowdsale.buyTokens({ from: testAccount, value: tokenPrice.mul(100) }).should.be.fulfilled;
+    await _W12Crowdsale.buyTokens({ from: testAccount, value: tokenPrice.mul(1) }).should.be.fulfilled;
 
     await utils.time.increaseTimeTo(crowdsaleStartTime + utils.time.duration.minutes(5));
 
     // at 1 stage
-    await _W12Crowdsale.buyTokens({ from: testAccount, value: tokenPrice.mul(200) }).should.be.fulfilled;
+    await _W12Crowdsale.buyTokens({ from: testAccount, value: tokenPrice.mul(2) }).should.be.fulfilled;
 
     const _WToken = WToken.at(await _W12Crowdsale.token());
     const _W12Fund = W12Fund.at(await _W12Crowdsale.fund());
