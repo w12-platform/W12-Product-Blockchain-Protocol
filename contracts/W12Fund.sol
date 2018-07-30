@@ -125,8 +125,6 @@ contract W12Fund is Ownable, ReentrancyGuard {
         
         bool completed = completedTranches[end];
 
-        bool completed = completedTranches[end];
-
         if (
             !completed
             && start > 0
