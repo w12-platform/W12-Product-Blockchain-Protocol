@@ -13,7 +13,7 @@ async function setPurchaseRecords(Fund, records, tokenPrice, tokenDecimals, from
         const boughtTokens = tokens.mul(multiplier);
         const cost = tokenPrice.mul(tokens);
 
-        await await Fund.recordPurchase(buyer, boughtTokens, {
+        await Fund.recordPurchase(buyer, boughtTokens, {
             from: from,
             value: cost
         })
