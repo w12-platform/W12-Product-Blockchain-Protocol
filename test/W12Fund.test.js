@@ -4,6 +4,7 @@ const utils = require('../shared/tests/utils.js');
 
 const crowdsaleFixtures = require('./fixtures/crowdsale.js');
 const tokesFixtures = require('./fixtures/tokens.js');
+const fundFixtures = require('./fixtures/fund.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12FundStub = artifacts.require('W12FundStub');
@@ -32,13 +33,19 @@ contract('W12Fund', async (accounts) => {
 
     describe('stubbed fund', async () => {
         beforeEach(async () => {
-            sut = await W12FundStub.new(crowdsale = accounts[1], swap = utils.generateRandomAddress(), utils.generateRandomAddress(), { from: sutOwner });
+            W12TokenFixture = await tokesFixtures.createW12Token(wtokenOwner);
+            sut = await W12FundStub.new(
+                crowdsale = accounts[1],
+                swap = utils.generateRandomAddress(),
+                W12TokenFixture.token.address,
+                { from: sutOwner }
+            );
         });
 
         it('should record purchases', async () => {
             const expectedAmount = web3.toWei(1, 'ether');
             const expectedBuyer = utils.generateRandomAddress();
-            const expectedTokenAmount = 100000;
+            const expectedTokenAmount = oneToken.mul(1000);
 
             const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, { value: expectedAmount, from: crowdsale }).should.be.fulfilled;
 
@@ -67,19 +74,19 @@ contract('W12Fund', async (accounts) => {
             const purchases = [
                 {
                     amount: web3.toWei(0.5, 'ether'),
-                    tokens: web3.toWei(0.005, 'ether')
+                    tokens: oneToken.mul(5)
                 },
                 {
                     amount: web3.toWei(0.7, 'ether'),
-                    tokens: web3.toWei(0.015, 'ether')
+                    tokens: oneToken.mul(15)
                 },
                 {
                     amount: web3.toWei(0.15, 'ether'),
-                    tokens: web3.toWei(0.105, 'ether')
+                    tokens: oneToken.mul(105)
                 },
                 {
                     amount: web3.toWei(1, 'ether'),
-                    tokens: web3.toWei(0.2, 'ether')
+                    tokens: oneToken.mul(200)
                 }
             ];
             let totalPaid = BigNumber.Zero;
@@ -95,15 +102,16 @@ contract('W12Fund', async (accounts) => {
             const actualResult = await sut.getInvestmentsInfo(buyer).should.be.fulfilled;
 
             actualResult[0].should.bignumber.equal(totalTokensBought);
-            actualResult[1].should.bignumber.equal(totalPaid.div(totalTokensBought).toFixed(0));
+            actualResult[1].should.bignumber.equal(utils.round(totalPaid.mul(oneToken).div(totalTokensBought)));
         });
     });
 
     describe('refund', async () => {
-        const crawdsaleOwner = accounts[0];
+        const crowdsaleOwner = accounts[0];
         const fundOwner = accounts[0];
         const tokenOwner = accounts[1];
         const mintAmount = oneToken.mul(10000);
+        const tokenPrice = new BigNumber(1000);
 
         beforeEach(async () => {
             W12TokenFixture = await tokesFixtures.createW12Token(tokenOwner);
@@ -112,22 +120,22 @@ contract('W12Fund', async (accounts) => {
                     startDate: web3.eth.getBlock('latest').timestamp + 60,
                     serviceWalletAddress: utils.generateRandomAddress(),
                     swapAddress: utils.generateRandomAddress(),
-                    price: 10,
+                    price: tokenPrice,
                     serviceFee: 10,
                     fundAddress: utils.generateRandomAddress()
                 },
-                crawdsaleOwner,
+                crowdsaleOwner,
                 W12TokenFixture.token
             );
             StagesFixture = await crowdsaleFixtures.setTestStages(
                 web3.eth.getBlock('latest').timestamp + 60,
                 W12CrowdsaleFixture.W12Crowdsale,
-                crawdsaleOwner
+                crowdsaleOwner
             );
             MilestoneFixture = await crowdsaleFixtures.setTestMilestones(
                 web3.eth.getBlock('latest').timestamp + 60,
                 W12CrowdsaleFixture.W12Crowdsale,
-                crawdsaleOwner
+                crowdsaleOwner
             );
 
             Fund = await W12FundStub.new(
@@ -144,108 +152,196 @@ contract('W12Fund', async (accounts) => {
         });
 
         describe('test `getRefundAmount` method', async () => {
-            it('should return correct amount', async () => {
-                utils.time.increaseTimeTo(MilestoneFixture.milestones[0].withdrawalWindow - 60);
-                // case 1
-                // W12Fund.totalFunded: 0.1
-                // W12Fund balance: 0.1 ETH
-                // investors:
-                //   buyer1: 20 tokens, 0.1 ETH
-                await Fund.recordPurchase(buyer1, oneToken.mul(20), {
-                    from: crawdsaleOwner,
-                    value: web3.toWei(0.1, 'ether')
+            it('full refund in case with one investor', async () => {
+                const withdrawalEndDate = MilestoneFixture.milestones[0].withdrawalWindow;
+                const purchaseTokens = new BigNumber(20);
+                const purchaseTokensRecord = oneToken.mul(20);
+                const purchaseCost = purchaseTokens.mul(tokenPrice);
+                const tokenDecimals = W12TokenFixture.args.decimals;
+
+                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+
+                await Fund.recordPurchase(buyer1, purchaseTokensRecord, {
+                    from: crowdsaleOwner,
+                    value: purchaseCost
                 }).should.be.fulfilled;
 
-                const expectedRefundAmount1 = utils.calculateRefundAmount(
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    oneToken.mul(20),
-                    oneToken.mul(20)
+                const tokensToReturn = purchaseTokensRecord;
+                const expectedRefundAmount = utils.calculateRefundAmount(
+                    purchaseCost,
+                    purchaseCost,
+                    purchaseCost,
+                    purchaseTokensRecord,
+                    tokensToReturn,
+                    tokenDecimals
                 );
 
-                const tokensToReturn1 = oneToken.mul(20);
-                const refundAmount1 = await Fund.getRefundAmount(tokensToReturn1, { from: buyer1 }).should.be.fulfilled;
 
-                refundAmount1.should.bignumber.eq(expectedRefundAmount1);
+                const refundAmount = await Fund.getRefundAmount(tokensToReturn, {from: buyer1}).should.be.fulfilled;
 
-                // case 2
-                // W12Fund.totalFunded: 0.3
-                // W12Fund balance: 0.3 ETH
-                // investors:
-                //   buyer1: 20 tokens, 0.1 ETH
-                //   buyer2: 30 tokens, 0.2 ETH
-                await Fund.recordPurchase(buyer2, oneToken.mul(30), {
-                    from: crawdsaleOwner,
-                    value: web3.toWei(0.2, 'ether')
-                }).should.be.fulfilled;
+                refundAmount.should.bignumber.eq(expectedRefundAmount);
+            });
 
-                const expectedRefundAmount2 = utils.calculateRefundAmount(
-                    web3.toWei(0.3, 'ether'),
-                    web3.toWei(0.3, 'ether'),
-                    web3.toWei(0.2, 'ether'),
-                    oneToken.mul(30),
-                    oneToken.mul(15)
+            it('partial refund in case with two investors', async () => {
+                const withdrawalEndDate = MilestoneFixture.milestones[0].withdrawalWindow;
+                const records = [
+                    {
+                        buyer: buyer1,
+                        tokens: new BigNumber(20),
+                    },
+                    {
+                        buyer: buyer2,
+                        tokens: new BigNumber(30),
+                    }
+                ];
+
+                const tokenDecimals = W12TokenFixture.args.decimals;
+
+                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+
+                const recordsResult = await fundFixtures.setPurchaseRecords(
+                    Fund,
+                    records,
+                    tokenPrice,
+                    tokenDecimals,
+                    crowdsaleOwner
+                ).should.be.fulfilled;
+
+                const tokensToReturn = recordsResult.args[1].boughtTokens.div(2); // 15 * 10 ** 18
+                const expectedRefundAmount = utils.calculateRefundAmount(
+                    recordsResult.totalCost,
+                    recordsResult.totalCost,
+                    recordsResult.args[1].cost,
+                    recordsResult.args[1].boughtTokens,
+                    tokensToReturn,
+                    tokenDecimals
                 );
-                const tokensToReturn2 = oneToken.mul(15);
-                const refundAmount2 = await Fund.getRefundAmount(tokensToReturn2, {from: buyer2}).should.be.fulfilled;
 
-                refundAmount2.should.bignumber.eq(expectedRefundAmount2);
 
-                // case 3
-                // W12Fund.totalFunded: 0.3
-                // W12Fund balance: 0.2 ETH
-                // investors:
-                //   buyer1: 20 tokens, 0.1 ETH
-                //   buyer2: 30 tokens, 0.2 ETH
+                const refundAmount2 = await Fund.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
 
-                await Fund._receiveFunds(web3.toWei(0.1, 'ether'), { from: buyer1 });
+                refundAmount2.should.bignumber.eq(expectedRefundAmount);
+            });
 
-                const expectedRefundAmount3 = utils.calculateRefundAmount(
-                    web3.toWei(0.2, 'ether'),
-                    web3.toWei(0.3, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    oneToken.mul(20),
-                    oneToken.mul(20)
+            it('partial refund in case with two investors and some refunded amount', async () => {
+                const withdrawalEndDate = MilestoneFixture.milestones[0].withdrawalWindow;
+                const records = [
+                    {
+                        buyer: buyer1,
+                        tokens: new BigNumber(20),
+                    },
+                    {
+                        buyer: buyer2,
+                        tokens: new BigNumber(30),
+                    }
+                ];
+
+                const tokenDecimals = W12TokenFixture.args.decimals;
+                const someAccount = accounts[5];
+
+                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+
+                const recordsResult = await fundFixtures.setPurchaseRecords(
+                    Fund,
+                    records,
+                    tokenPrice,
+                    tokenDecimals,
+                    crowdsaleOwner
+                ).should.be.fulfilled;
+
+                const refundedAmount = recordsResult.totalCost.mul(0.2);
+                const newFundedAmount = recordsResult.totalCost.minus(refundedAmount);
+
+                await Fund._setTotalRefunded(refundedAmount, {from: someAccount}).should.be.fulfilled;
+                await Fund._receiveFunds(refundedAmount, {from: someAccount}).should.be.fulfilled;
+
+                const tokensToReturn = recordsResult.args[1].boughtTokens.div(2); // 15 * 10 ** 18
+                const expectedRefundAmount = utils.calculateRefundAmount(
+                    newFundedAmount,
+                    recordsResult.totalCost,
+                    recordsResult.args[1].cost,
+                    recordsResult.args[1].boughtTokens,
+                    tokensToReturn,
+                    tokenDecimals
                 );
-                const tokensToReturn3 = oneToken.mul(20);
-                const refundAmount3 = await Fund.getRefundAmount(tokensToReturn3, {from: buyer1}).should.be.fulfilled;
 
-                refundAmount3.should.bignumber.eq(expectedRefundAmount3);
+                const refundAmount = await Fund.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
 
-                // case 4
-                // W12Fund.totalFunded: 0.3
-                // W12Fund balance: 0.2 ETH
-                // investors:
-                //   buyer1: 20 tokens, 0.1 ETH
-                //   buyer2: 30 tokens, 0.2 ETH
+                refundAmount.should.bignumber.eq(expectedRefundAmount);
+            });
 
-                const expectedRefundAmount4 = web3.toWei(0, 'ether');
-                const tokensToReturn4 = oneToken.mul(20);
-                const refundAmount4 = await Fund.getRefundAmount(tokensToReturn4, {from: utils.generateRandomAddress()}).should.be.fulfilled;
+            it('should not refund on none investor address', async () => {
+                const withdrawalEndDate = MilestoneFixture.milestones[0].withdrawalWindow;
+                const records = [
+                    {
+                        buyer: buyer1,
+                        tokens: new BigNumber(20),
+                    },
+                    {
+                        buyer: buyer2,
+                        tokens: new BigNumber(30),
+                    }
+                ];
 
-                refundAmount4.should.bignumber.eq(expectedRefundAmount4);
+                const tokenDecimals = W12TokenFixture.args.decimals;
 
-                // case 5
-                // W12Fund.totalFunded: 0.3
-                // W12Fund balance: 0 ETH
-                // investors:
-                //   buyer1: 20 tokens, 0.1 ETH
-                //   buyer2: 30 tokens, 0.2 ETH
+                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
 
-                await Fund._receiveFunds(web3.toWei(0.2, 'ether'), {from: buyer1});
+                const recordsResult = await fundFixtures.setPurchaseRecords(
+                    Fund,
+                    records,
+                    tokenPrice,
+                    tokenDecimals,
+                    crowdsaleOwner
+                ).should.be.fulfilled;
 
-                const expectedRefundAmount5 = utils.calculateRefundAmount(
-                    web3.toWei(0, 'ether'),
-                    web3.toWei(0.3, 'ether'),
-                    web3.toWei(0.2, 'ether'),
-                    oneToken.mul(30),
-                    oneToken.mul(20)
+                const expectedRefundAmount = BigNumber.Zero;
+                const tokensToReturn = recordsResult.args[0].boughtTokens;
+                const refundAmount = await Fund.getRefundAmount(tokensToReturn, {from: utils.generateRandomAddress()}).should.be.fulfilled;
+
+                refundAmount.should.bignumber.eq(expectedRefundAmount);
+            });
+
+            it('should not refund in case with empty fund balance', async () => {
+                const withdrawalEndDate = MilestoneFixture.milestones[0].withdrawalWindow;
+                const records = [
+                    {
+                        buyer: buyer1,
+                        tokens: new BigNumber(20),
+                    },
+                    {
+                        buyer: buyer2,
+                        tokens: new BigNumber(30),
+                    }
+                ];
+
+                const tokenDecimals = W12TokenFixture.args.decimals;
+                const someAccount = accounts[5];
+
+                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+
+                const recordsResult = await fundFixtures.setPurchaseRecords(
+                    Fund,
+                    records,
+                    tokenPrice,
+                    tokenDecimals,
+                    crowdsaleOwner
+                ).should.be.fulfilled;
+
+                await Fund._receiveFunds(recordsResult.totalCost, {from: someAccount});
+
+                const tokensToReturn = recordsResult.args[1].boughtTokens.mul(0.4);
+                const expectedRefundAmount = utils.calculateRefundAmount(
+                    0,
+                    recordsResult.totalCost,
+                    recordsResult.totalBought,
+                    recordsResult.args[1].boughtTokens,
+                    tokensToReturn,
+                    tokenDecimals
                 );
-                const tokensToReturn5 = oneToken.mul(20);
-                const refundAmount5 = await Fund.getRefundAmount(tokensToReturn5, {from: buyer2}).should.be.fulfilled;
+                const refundAmount = await Fund.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
 
-                refundAmount5.should.bignumber.eq(expectedRefundAmount5);
+                refundAmount.should.bignumber.eq(expectedRefundAmount);
             });
         });
 
@@ -256,9 +352,10 @@ contract('W12Fund', async (accounts) => {
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
                 const tokensToReturn = oneToken.mul(20);
+                const tokenDecimals = W12TokenFixture.args.decimals;
 
                 await Fund.recordPurchase(buyer1, tokens, {
-                    from: crawdsaleOwner,
+                    from: crowdsaleOwner,
                     value: funds
                 }).should.be.fulfilled;
 
@@ -267,7 +364,8 @@ contract('W12Fund', async (accounts) => {
                     web3.toWei(0.1, 'ether'),
                     web3.toWei(0.1, 'ether'),
                     tokens,
-                    tokensToReturn
+                    tokensToReturn,
+                    tokenDecimals
                 );
 
                 const buyer1BalanceBefore = web3.eth.getBalance(buyer1);
@@ -303,7 +401,7 @@ contract('W12Fund', async (accounts) => {
                 const tokens = oneToken.mul(20);
 
                 await Fund.recordPurchase(buyer1, tokens, {
-                    from: crawdsaleOwner,
+                    from: crowdsaleOwner,
                     value: funds
                 }).should.be.fulfilled;
 
@@ -317,7 +415,7 @@ contract('W12Fund', async (accounts) => {
                 const tokens = oneToken.mul(20);
 
                 await Fund.recordPurchase(buyer1, tokens, {
-                    from: crawdsaleOwner,
+                    from: crowdsaleOwner,
                     value: funds
                 }).should.be.fulfilled;
 
@@ -337,7 +435,7 @@ contract('W12Fund', async (accounts) => {
                 const tokens = oneToken.mul(20);
 
                 await Fund.recordPurchase(buyer1, tokens, {
-                    from: crawdsaleOwner,
+                    from: crowdsaleOwner,
                     value: funds
                 }).should.be.fulfilled;
 
