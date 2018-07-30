@@ -6,7 +6,7 @@ async function createW12Token(owner) {
     const id = nanoid();
     const name = `Test Token ${id}`;
     const symbol = `TT${id.slice(0, 2)}`;
-    const decimals = 18;
+    const decimals = new BigNumber(18);
 
     const token = await WToken.new(name, symbol, decimals, { from: owner });
 

@@ -15,17 +15,22 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
          c = buyers[buyer].totalFunded
          d = buyers[buyer].totalBought
          e = wtokensToRefund
+         f = token decimals
 
      formula:
 
          ( ( c * (a / b) ) / d ) * e = (refund amount)
  */
-function calculateRefundAmount(a, b, c, d, e) {
+function calculateRefundAmount(a, b, c, d, e, f) {
     a = new BigNumber(a);
     b = new BigNumber(b);
     c = new BigNumber(c);
     d = new BigNumber(d);
     e = new BigNumber(e);
+    f = new BigNumber(f);
+
+    const p_com = (new BigNumber(10)).pow(f.plus(8));
+    const max = BigNumber.UINT_MAX.div(p_com);
 
     let result = new BigNumber(0);
 
@@ -34,9 +39,10 @@ function calculateRefundAmount(a, b, c, d, e) {
 
     if (d.gt(0) && a.gt(0)) {
         const allowedFund = round(c.mul(b).div(a));
+        const p = allowedFund.lte(max) ? p_com : 1;
 
         result = result.plus(
-            round(round(allowedFund.mul(10 ** 8).div(d)).mul(e).div(10 ** 8))
+            round(round(allowedFund.mul(p).div(d)).mul(e).div(p))
         );
     }
 
