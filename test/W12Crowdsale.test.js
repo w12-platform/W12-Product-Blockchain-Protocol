@@ -262,7 +262,7 @@ contract('W12Crowdsale', async (accounts) => {
                     {from: tokenOwner}
                 ).should.be.fulfilled;
 
-                utils.time.increaseTimeTo(expMils[0].withdrawalWindow);
+                await utils.time.increaseTimeTo(expMils[0].withdrawalWindow);
 
                 const milestone = await sut.getCurrentMilestone().should.be.fulfilled;
 

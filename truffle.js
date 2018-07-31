@@ -15,10 +15,10 @@ module.exports = {
         },
         test: {
             provider() {
-                return new HDWalletProvider(deployConfig.mnemonic, `https://ropsten.infura.io/${deployConfig.infuraKey}`)
+                return new HDWalletProvider(deployConfig.mnemonic, `https://rinkeby.infura.io/${deployConfig.infuraKey}`)
             },
-            network_id: 3
-        }
+            network_id: 4
+        },
     },
     mocha: {
         // grep: ''
