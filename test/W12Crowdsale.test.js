@@ -2,6 +2,8 @@ require('../shared/tests/setup.js');
 
 const utils = require('../shared/tests/utils.js');
 
+const W12Lister = artifacts.require('W12Lister');
+const W12AtomicSwap = artifacts.require('W12AtomicSwap');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const WToken = artifacts.require('WToken');
@@ -9,6 +11,8 @@ const oneToken = new BigNumber(10).pow(18);
 
 contract('W12Crowdsale', async (accounts) => {
     let sut;
+    let atomicSwap;
+    let swapAddress;
     let token;
     const tokenOwner = accounts[9];
     let factory;
@@ -32,6 +36,9 @@ contract('W12Crowdsale', async (accounts) => {
         await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner});
 
         price = await sut.price();
+
+        swapAddress = await (await W12Lister.new(tokenOwner, factory.address)).swap();
+        atomicSwap = await W12AtomicSwap.new(swapAddress);
     });
 
     describe('constructor', async () => {
@@ -173,6 +180,20 @@ contract('W12Crowdsale', async (accounts) => {
 
                 (await token.vestingBalanceOf(buyer, 0)).should.bignumber.equal(0);
                 (await token.accountBalance(buyer)).should.bignumber.equal(oneToken.mul(100));
+            });
+
+            it('should atomicSwap exchange', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(10));
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                (await token.balanceOf(buyer)).should.bignumber.equal(oneToken.mul(100));
+
+                await token.approve(swapAddress, oneToken.mul(100), { from: buyer }).should.be.fulfilled;
+
+                (await token.allowance(buyer, swapAddress)).should.bignumber.equal(oneToken.mul(100));
+
+                await atomicSwap.exchange(token.address, 1).should.be.fulfilled;
             });
 
             it('should set milestones', async () => {
