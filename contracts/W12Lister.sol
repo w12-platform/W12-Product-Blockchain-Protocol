@@ -1,10 +1,11 @@
 pragma solidity ^0.4.23;
 
 import "./WToken.sol";
-import "./W12AtomicSwap.sol";
 import "./W12TokenLedger.sol";
 import "./IW12Crowdsale.sol";
-
+import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -12,7 +13,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     mapping (address => uint16) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     uint16 public approvedTokensLength;
-    W12AtomicSwap public swap;
+    address public swap;
     W12TokenLedger public ledger;
     address public serviceWallet;
     IW12CrowdsaleFactory public factory;
@@ -34,12 +35,14 @@ contract W12Lister is Ownable, ReentrancyGuard {
         address tokenAddress;
     }
 
-    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory) public {
+    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, address _swap) public {
         require(_serviceWallet != address(0x0));
         require(_factory != address(0x0));
+        require(_ledger != address(0x0));
+        require(_swap != address(0x0));
 
-        ledger = new W12TokenLedger();
-        swap = new W12AtomicSwap(ledger);
+        ledger = _ledger;
+        swap = _swap;
         serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
@@ -132,7 +135,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         return approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress;
     }
 
-    function getSwap() view external returns (W12AtomicSwap) {
+    function getSwap() view external returns (address) {
         return swap;
     }
 }

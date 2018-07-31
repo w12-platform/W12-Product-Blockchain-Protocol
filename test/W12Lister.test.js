@@ -3,6 +3,8 @@ require('../shared/tests/setup.js');
 const utils = require('../shared/tests/utils.js');
 
 const W12Lister = artifacts.require('W12Lister');
+const W12AtomicSwap = artifacts.require('W12AtomicSwap');
+const W12TokenLedger = artifacts.require('W12TokenLedger');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
@@ -17,7 +19,15 @@ contract('W12Lister', async (accounts) => {
 
     beforeEach(async () => {
         factory = await W12CrowdsaleFactory.new();
-        sut = await W12Lister.new(wallet, factory.address);
+
+        const W12TokenLedgerInstance = await W12TokenLedger.new();
+        const W12AtomicSwapInstance = await W12AtomicSwap.new(W12TokenLedgerInstance.address);
+
+        sut = await W12Lister.new(wallet, factory.address, W12TokenLedgerInstance.address, W12AtomicSwapInstance.address);
+
+        await W12TokenLedgerInstance.transferOwnership(sut.address);
+        await W12AtomicSwapInstance.transferOwnership(sut.address);
+
         token = await WToken.new('TestToken', 'TT', 18);
         lastDate = web3.eth.getBlock('latest').timestamp;
     });
@@ -99,7 +109,13 @@ contract('W12Lister', async (accounts) => {
         const fromTokenOwner = { from: accounts[1] };
 
         beforeEach(async () => {
-            sut = await W12Lister.new(accounts[1], factory.address, fromSystemAccount);
+            const W12TokenLedgerInstance = await W12TokenLedger.new();
+            const W12AtomicSwapInstance = await W12AtomicSwap.new(W12TokenLedgerInstance.address);
+
+            sut = await W12Lister.new(accounts[1], factory.address, W12TokenLedgerInstance.address, W12AtomicSwapInstance.address, fromSystemAccount);
+
+            await W12TokenLedgerInstance.transferOwnership(sut.address);
+            await W12AtomicSwapInstance.transferOwnership(sut.address);
         });
 
         it('should reject whitelisting a token', async () => {
