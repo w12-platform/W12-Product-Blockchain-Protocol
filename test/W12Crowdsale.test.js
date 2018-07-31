@@ -137,6 +137,11 @@ contract('W12Crowdsale', async (accounts) => {
                 web3.eth.getBalance(fund).should.bignumber.equal(9000);
             });
 
+            it('should close crowdsale after time runs out', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(150));
+                await sut.buyTokens({ value: oneToken, from: buyer }).should.be.rejected;
+            });
+
             it('should sell tokens from each stage', async () => {
                 for (const stage of discountStages) {
                     const balanceBefore = await token.balanceOf(buyer);
