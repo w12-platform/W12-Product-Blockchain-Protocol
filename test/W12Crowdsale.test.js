@@ -137,6 +137,11 @@ contract('W12Crowdsale', async (accounts) => {
                 web3.eth.getBalance(fund).should.bignumber.equal(9000);
             });
 
+            it('should close crowdsale after time runs out', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(150));
+                await sut.buyTokens({ value: oneToken, from: buyer }).should.be.rejected;
+            });
+
             it('should sell tokens from each stage', async () => {
                 for (const stage of discountStages) {
                     const balanceBefore = await token.balanceOf(buyer);
@@ -148,6 +153,26 @@ contract('W12Crowdsale', async (accounts) => {
 
                     balanceAfter.minus(balanceBefore).toPrecision(6).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
                 }
+            });
+
+            it('should vesting balance in past', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(10));
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                (await token.vestingBalanceOf(buyer, 0)).should.bignumber.equal(0);
+                (await token.accountBalance(buyer)).should.bignumber.equal(oneToken.mul(100));
+            });
+
+            it('should vesting balance in future', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(115));
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(200));
+
+                (await token.vestingBalanceOf(buyer, 0)).should.bignumber.equal(0);
+                (await token.accountBalance(buyer)).should.bignumber.equal(oneToken.mul(100));
             });
 
             it('should set milestones', async () => {
