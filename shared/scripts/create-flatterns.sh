@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 PATHS=`ls contracts/`
 
-rm -rf flats/
+rm -rf flats/*
 
 for FILE in $PATHS;
 do
