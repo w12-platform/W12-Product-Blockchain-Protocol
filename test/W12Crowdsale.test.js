@@ -155,6 +155,26 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
+            it('should vesting balance in past', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(10));
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                (await token.vestingBalanceOf(buyer, 0)).should.bignumber.equal(0);
+                (await token.accountBalance(buyer)).should.bignumber.equal(oneToken.mul(100));
+            });
+
+            it('should vesting balance in future', async () => {
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(115));
+
+                await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
+
+                utils.time.increaseTimeTo(startDate + utils.time.duration.minutes(200));
+
+                (await token.vestingBalanceOf(buyer, 0)).should.bignumber.equal(0);
+                (await token.accountBalance(buyer)).should.bignumber.equal(oneToken.mul(100));
+            });
+
             it('should set milestones', async () => {
                 startDate = web3.eth.getBlock('latest').timestamp + 60;
 
