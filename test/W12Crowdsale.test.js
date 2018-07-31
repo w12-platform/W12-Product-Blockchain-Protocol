@@ -151,6 +151,8 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should set milestones', async () => {
+                startDate = web3.eth.getBlock('latest').timestamp + 60;
+
                 const expMils = [
                     {
                         name: "Milestone 1 name",

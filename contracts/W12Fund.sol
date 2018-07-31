@@ -41,12 +41,18 @@ contract W12Fund is Ownable, ReentrancyGuard {
         swap = _swap;
     }
 
+    function getAveragePrice(uint funded, uint tokens) public view returns (uint) {
+        uint decimals = wToken.decimals();
+
+        return funded.mul(10 ** decimals).div(tokens);
+    }
+
     function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
         uint tokensBoughtBefore = buyers[buyer].totalBought;
 
         buyers[buyer].totalBought = tokensBoughtBefore.add(tokenAmount);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
-        buyers[buyer].averagePrice = buyers[buyer].totalFunded.div(buyers[buyer].totalBought);
+        buyers[buyer].averagePrice = getAveragePrice(buyers[buyer].totalFunded, buyers[buyer].totalBought);
 
         totalFunded += msg.value;
 
@@ -77,7 +83,8 @@ contract W12Fund is Ownable, ReentrancyGuard {
     */
     function getRefundAmount(uint wtokensToRefund) public view returns (uint) {
         uint result = 0;
-        uint max = uint(-1) / 10 ** 8;
+        uint decimals = wToken.decimals();
+        uint max = uint(-1) / 10 ** (decimals + 8);
         address buyer = msg.sender;
         (uint32 start, uint32 end) = getRefundPeriod();
 
@@ -92,7 +99,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
             && buyers[buyer].totalBought >= wtokensToRefund
         ) {
             uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
-            uint precisionComponent = allowedFund >= max ? 1 : 10 ** 8;
+            uint precisionComponent = allowedFund >= max ? 1 : 10 ** (decimals + 8);
 
             result = result.add(
                 allowedFund
@@ -171,15 +178,18 @@ contract W12Fund is Ownable, ReentrancyGuard {
 
     function refund(uint wtokensToRefund) external nonReentrant {
         uint transferAmount = getRefundAmount(wtokensToRefund);
+        uint decimals = wToken.decimals();
         address buyer = msg.sender;
 
         require(transferAmount > 0);
         require(wToken.transferFrom(buyer, swap, wtokensToRefund));
 
-        buyers[buyer].totalBought = buyers[buyer].totalBought.sub(wtokensToRefund);
-        buyers[buyer].totalFunded = buyers[buyer].totalFunded.sub(wtokensToRefund.mul(buyers[buyer].averagePrice));
+        buyers[buyer].totalBought = buyers[buyer].totalBought
+            .sub(wtokensToRefund);
+        buyers[buyer].totalFunded = buyers[buyer].totalFunded
+            .sub(wtokensToRefund.mul(buyers[buyer].averagePrice).div(10 ** decimals));
         buyers[buyer].averagePrice = buyers[buyer].totalFunded > 0 && buyers[buyer].totalBought > 0
-            ? buyers[buyer].totalFunded.div(buyers[buyer].totalBought)
+            ? getAveragePrice(buyers[buyer].totalFunded, buyers[buyer].totalBought)
             : 0;
 
         // update total refunded amount counter
