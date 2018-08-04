@@ -2,7 +2,7 @@ const utils = require('../../shared/tests/utils.js');
 
 const WToken = artifacts.require('WToken');
 
-async function createW12Token(owner) {
+async function createToken(owner) {
     const id = nanoid();
     const name = `Test Token ${id}`;
     const symbol = `TT${id.slice(0, 2)}`;
@@ -26,5 +26,5 @@ async function createW12Token(owner) {
 }
 
 module.exports = {
-    createW12Token
+    createToken
 }

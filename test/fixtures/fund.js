@@ -1,4 +1,4 @@
-async function setPurchaseRecords(Fund, records, tokenPrice, tokenDecimals, from) {
+async function setPurchaseRecords(fund, records, tokenPrice, tokenDecimals, from) {
     tokenPrice = new BigNumber(tokenPrice);
     tokenDecimals = new BigNumber(tokenDecimals);
 
@@ -13,10 +13,10 @@ async function setPurchaseRecords(Fund, records, tokenPrice, tokenDecimals, from
         const boughtTokens = tokens.mul(multiplier);
         const cost = tokenPrice.mul(tokens);
 
-        await Fund.recordPurchase(buyer, boughtTokens, {
+        await fund.recordPurchase(buyer, boughtTokens, {
             from: from,
             value: cost
-        })
+        });
 
         totalCost = totalCost.plus(cost);
         totalBought = totalBought.plus(boughtTokens);
@@ -33,7 +33,7 @@ async function setPurchaseRecords(Fund, records, tokenPrice, tokenDecimals, from
         args: result,
         totalCost,
         totalBought,
-        Fund,
+        fund,
         records,
         tokenPrice,
         tokenDecimals,

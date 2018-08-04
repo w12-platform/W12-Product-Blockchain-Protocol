@@ -2,7 +2,7 @@ require('../shared/tests/setup.js');
 
 const utils = require('../shared/tests/utils.js');
 
-const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
+const W12Fund = artifacts.require('W12Fund');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const WToken = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
@@ -11,7 +11,6 @@ contract('W12Crowdsale', async (accounts) => {
     let sut;
     let token;
     const tokenOwner = accounts[9];
-    let factory;
     let startDate;
     let price;
     const serviceWallet = utils.generateRandomAddress();
@@ -19,17 +18,14 @@ contract('W12Crowdsale', async (accounts) => {
     let fund;
 
     beforeEach(async () => {
-        factory = await W12CrowdsaleFactory.new();
-        token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner});
+        token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner}).should.be.fulfilled;
+        fund = await W12Fund.new({from: tokenOwner}).should.be.fulfilled;
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        const txOutput = await factory.createCrowdsale(token.address, startDate, 100, serviceWallet, 10, swap, tokenOwner);
-        const crowdsaleCreatedLogEntry = txOutput.logs.filter(l => l.event === 'CrowdsaleCreated')[0];
-
-        sut = W12Crowdsale.at(crowdsaleCreatedLogEntry.args.crowdsaleAddress);
-        fund = crowdsaleCreatedLogEntry.args.fundAddress;
-        await token.addTrustedAccount(sut.address, {from: tokenOwner});
-        await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner});
+        sut = await W12Crowdsale.new(token.address, 18, startDate, 100, serviceWallet, 10, fund.address, {from: tokenOwner}).should.be.fulfilled;
+        await token.addTrustedAccount(sut.address, {from: tokenOwner}).should.be.fulfilled;
+        await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner}).should.be.fulfilled;
+        await fund.setCrowdsale(sut.address, {from: tokenOwner}).should.be.fulfilled;
 
         price = await sut.price();
     });
@@ -44,7 +40,7 @@ contract('W12Crowdsale', async (accounts) => {
         });
 
         it('should reject crowdsale with start date in the past', async () => {
-            await factory.createCrowdsale(token.address, startDate - 100, 100, serviceWallet, 10, tokenOwner).should.be.rejected;
+            await W12Crowdsale.new(token.address, 18, startDate - 1000, 100, serviceWallet, 10, fund.address, {from: tokenOwner}).should.be.rejected;
         });
     });
 
@@ -134,7 +130,7 @@ contract('W12Crowdsale', async (accounts) => {
 
                 (await token.balanceOf(buyer)).should.bignumber.equal(oneToken.mul(100));
                 web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
-                web3.eth.getBalance(fund).should.bignumber.equal(9000);
+                web3.eth.getBalance(fund.address).should.bignumber.equal(9000);
             });
 
             it('should sell tokens from each stage', async () => {
@@ -150,198 +146,95 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
-            it('should set milestones', async () => {
-                startDate = web3.eth.getBlock('latest').timestamp + 60;
+            describe('when working with milestones', async () => {
+                let expectedMilestones;
+                let encodedMilestones;
 
-                const expMils = [
-                    {
-                        name: "Milestone 1 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(10),
-                        tranchePercent: 25,
-                        voteEndDate: startDate + utils.time.duration.days(17),
-                        withdrawalWindow: startDate + utils.time.duration.days(20)
-                    },
-                    {
-                        name: "Milestone 2 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(20),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(27),
-                        withdrawalWindow: startDate + utils.time.duration.days(30)
-                    },
-                    {
-                        name: "Milestone 3 name",
-                        description: "Milestone 3 description",
-                        endDate: startDate + utils.time.duration.days(30),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(37),
-                        withdrawalWindow: startDate + utils.time.duration.days(40)
-                    }
-                ];
+                beforeEach(async () => {
+                    startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-                const encodedMils = expMils.map(item => {
-                    return utils.encodeMilestoneParameters(
-                        item.name,
-                        item.description,
-                        item.tranchePercent,
-                        item.endDate,
-                        item.voteEndDate,
-                        item.withdrawalWindow
+                    expectedMilestones = [
+                        {
+                            name: "Milestone 1 name",
+                            description: "Milestone 2 description",
+                            endDate: startDate + utils.time.duration.days(10),
+                            tranchePercent: 30,
+                            voteEndDate: startDate + utils.time.duration.days(17),
+                            withdrawalWindow: startDate + utils.time.duration.days(20)
+                        },
+                        {
+                            name: "Milestone 2 name",
+                            description: "Milestone 2 description",
+                            endDate: startDate + utils.time.duration.days(20),
+                            tranchePercent: 35,
+                            voteEndDate: startDate + utils.time.duration.days(27),
+                            withdrawalWindow: startDate + utils.time.duration.days(30)
+                        },
+                        {
+                            name: "Milestone 3 name",
+                            description: "Milestone 3 description",
+                            endDate: startDate + utils.time.duration.days(30),
+                            tranchePercent: 35,
+                            voteEndDate: startDate + utils.time.duration.days(37),
+                            withdrawalWindow: startDate + utils.time.duration.days(40)
+                        }
+                    ];
+
+                    encodedMilestones = expectedMilestones.map(item => {
+                        return utils.encodeMilestoneParameters(
+                            item.name,
+                            item.description,
+                            item.tranchePercent,
+                            item.endDate,
+                            item.voteEndDate,
+                            item.withdrawalWindow
+                        );
+                    });
+
+                    await sut.setMilestones(
+                        encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                        encodedMilestones.map(m => m.tranchePercent),
+                        encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                        encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                        {from: tokenOwner}
                     );
                 });
 
-                await sut.setMilestones(
-                    encodedMils.reduce((result, item) => result.concat(item.dates), []),
-                    encodedMils.map(m => m.tranchePercent),
-                    encodedMils.reduce((result, item) => result.concat(item.offsets), []),
-                    encodedMils.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
-                    {from: tokenOwner}
-                ).should.be.fulfilled;
+                it('should set milestones', async () => {
+                    let actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
 
-                let actualStageCount = await sut.milestonesLength().should.be.fulfilled;
+                    actualMilestonesCount.should.bignumber.equal(expectedMilestones.length);
 
-                actualStageCount.should.bignumber.equal(expMils.length);
+                    while (--actualMilestonesCount >= 0) {
+                        const milestone = await sut.milestones(actualMilestonesCount);
 
-                while (--actualStageCount >= 0) {
-                    const milestone = await sut.milestones(actualStageCount);
-
-                    milestone[0].should.bignumber.equal(expMils[actualStageCount].endDate);
-                    milestone[1].should.bignumber.equal(expMils[actualStageCount].tranchePercent);
-                    milestone[2].should.bignumber.equal(expMils[actualStageCount].voteEndDate);
-                    milestone[3].should.bignumber.equal(expMils[actualStageCount].withdrawalWindow);
-                    milestone[4].should.be.equal(encodedMils[actualStageCount].nameHex);
-                    milestone[5].should.be.equal(encodedMils[actualStageCount].descriptionHex);
-                }
-            });
-
-            it('should return current milestone', async () => {
-                const expMils = [
-                    {
-                        name: "Milestone 1 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(10),
-                        tranchePercent: 25,
-                        voteEndDate: startDate + utils.time.duration.days(17),
-                        withdrawalWindow: startDate + utils.time.duration.days(20)
-                    },
-                    {
-                        name: "Milestone 2 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(20),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(27),
-                        withdrawalWindow: startDate + utils.time.duration.days(30)
-                    },
-                    {
-                        name: "Milestone 3 name",
-                        description: "Milestone 3 description",
-                        endDate: startDate + utils.time.duration.days(30),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(37),
-                        withdrawalWindow: startDate + utils.time.duration.days(40)
+                        milestone[0].should.bignumber.equal(expectedMilestones[actualMilestonesCount].endDate);
+                        milestone[1].should.bignumber.equal(expectedMilestones[actualMilestonesCount].tranchePercent);
+                        milestone[2].should.bignumber.equal(expectedMilestones[actualMilestonesCount].voteEndDate);
+                        milestone[3].should.bignumber.equal(expectedMilestones[actualMilestonesCount].withdrawalWindow);
+                        milestone[4].should.be.equal(encodedMilestones[actualMilestonesCount].nameHex);
+                        milestone[5].should.be.equal(encodedMilestones[actualMilestonesCount].descriptionHex);
                     }
-                ];
-
-                const encodedMils = expMils.map(item => {
-                    return utils.encodeMilestoneParameters(
-                        item.name,
-                        item.description,
-                        item.tranchePercent,
-                        item.endDate,
-                        item.voteEndDate,
-                        item.withdrawalWindow
-                    );
                 });
 
-                await sut.setMilestones(
-                    encodedMils.reduce((result, item) => result.concat(item.dates), []),
-                    encodedMils.map(m => m.tranchePercent),
-                    encodedMils.reduce((result, item) => result.concat(item.offsets), []),
-                    encodedMils.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
-                    {from: tokenOwner}
-                ).should.be.fulfilled;
+                it('should return current milestone index', async () => {
+                    utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
+                    (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(0);
 
-                await utils.time.increaseTimeTo(expMils[0].withdrawalWindow);
+                    let expectedIndex = 0;
+                    for (const milestone of expectedMilestones) {
+                        utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
 
-                const milestone = await sut.getCurrentMilestone().should.be.fulfilled;
+                        const actualIndex = await sut.getCurrentMilestoneIndex().should.be.fulfilled;
 
-                milestone[0].should.bignumber.equal(expMils[0].endDate);
-                milestone[1].should.bignumber.equal(expMils[0].tranchePercent);
-                milestone[2].should.bignumber.equal(expMils[0].voteEndDate);
-                milestone[3].should.bignumber.equal(expMils[0].withdrawalWindow);
-                milestone[4].should.be.equal(encodedMils[0].nameHex);
-                milestone[5].should.be.equal(encodedMils[0].descriptionHex);
-            });
+                        actualIndex.should.bignumber.equal(expectedIndex);
 
-            it('should return last ended milestone', async () => {
-                const expMils = [
-                    {
-                        name: "Milestone 1 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(10),
-                        tranchePercent: 25,
-                        voteEndDate: startDate + utils.time.duration.days(17),
-                        withdrawalWindow: startDate + utils.time.duration.days(20)
-                    },
-                    {
-                        name: "Milestone 2 name",
-                        description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(20),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(27),
-                        withdrawalWindow: startDate + utils.time.duration.days(30)
-                    },
-                    {
-                        name: "Milestone 3 name",
-                        description: "Milestone 3 description",
-                        endDate: startDate + utils.time.duration.days(30),
-                        tranchePercent: 35,
-                        voteEndDate: startDate + utils.time.duration.days(37),
-                        withdrawalWindow: startDate + utils.time.duration.days(40)
+                        expectedIndex++;
                     }
-                ];
 
-                const encodedMils = expMils.map(item => {
-                    return utils.encodeMilestoneParameters(
-                        item.name,
-                        item.description,
-                        item.tranchePercent,
-                        item.endDate,
-                        item.voteEndDate,
-                        item.withdrawalWindow
-                    );
+                    utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
+                    (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(expectedMilestones.length - 1);
                 });
-
-                await sut.setMilestones(
-                    encodedMils.reduce((result, item) => result.concat(item.dates), []),
-                    encodedMils.map(m => m.tranchePercent),
-                    encodedMils.reduce((result, item) => result.concat(item.offsets), []),
-                    encodedMils.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
-                    {from: tokenOwner}
-                ).should.be.fulfilled;
-
-                utils.time.increaseTimeTo(expMils[2].withdrawalWindow + 60);
-
-                const milestone = await sut.getCurrentMilestone().should.be.fulfilled;
-
-                milestone[0].should.bignumber.equal(expMils[2].endDate);
-                milestone[1].should.bignumber.equal(expMils[2].tranchePercent);
-                milestone[2].should.bignumber.equal(expMils[2].voteEndDate);
-                milestone[3].should.bignumber.equal(expMils[2].withdrawalWindow);
-                milestone[4].should.be.equal(encodedMils[2].nameHex);
-                milestone[5].should.be.equal(encodedMils[2].descriptionHex);
-            });
-
-            it('should return empty milestone', async () => {
-                const milestone = await sut.getCurrentMilestone().should.be.fulfilled;
-
-                milestone[0].should.bignumber.equal(0);
-                milestone[1].should.bignumber.equal(0);
-                milestone[2].should.bignumber.equal(0);
-                milestone[3].should.bignumber.equal(0);
-                milestone[4].should.be.equal('0x');
-                milestone[5].should.be.equal('0x');
             });
         });
 

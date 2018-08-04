@@ -4,8 +4,8 @@ import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../solidity-bytes-utils/contracts/BytesLib.sol";
-import "./WToken.sol";
-import "./IW12Crowdsale.sol";
+import "./interfaces/IW12Crowdsale.sol";
+import "./interfaces/IW12Fund.sol";
 import "./W12Fund.sol";
 
 
@@ -36,21 +36,25 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     uint public price;
     uint8 public serviceFee;
     address public serviceWallet;
-    W12Fund public fund;
+    IW12Fund public fund;
 
     Stage[] public stages;
     Milestone[] public milestones;
+    uint32[] public milestoneDates;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
     event StagesUpdated();
+    event MilestonesSet();
 
-    constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, W12Fund _fund) public {
+    event debug(uint value);
+
+    constructor (address _token, uint _tokenDecimals, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, IW12Fund _fund) public {
         require(_token != address(0));
         require(_serviceFee >= 0 && _serviceFee < 100);
         require(_fund != address(0));
 
         token = WToken(_token);
-        tokenDecimals = token.decimals();
+        tokenDecimals = _tokenDecimals;
 
         __setParameters(_startDate, _price, _serviceWallet);
         serviceFee = _serviceFee;
@@ -63,6 +67,17 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function milestonesLength() external view returns (uint) {
         return milestones.length;
+    }
+
+    function getMilestone(uint index) public view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
+        return (
+            milestones[index].endDate,
+            milestones[index].tranchePercent,
+            milestones[index].voteEndDate,
+            milestones[index].withdrawalWindow,
+            milestones[index].name,
+            milestones[index].description
+        );
     }
 
     function getStageVolumeBoundaries(uint stageNumber) external view returns (uint[]) {
@@ -133,11 +148,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(namesAndDescriptions.length >= tranchePercents.length * 2);
 
         uint offset = 0;
+        uint8 totalPercents = 0;
 
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
             require(dates[i] > now);
-            require(dates[i + 1] > now);
-            require(dates[i + 2] > now);
+            require(dates[i + 1] >= dates[i]);
+            require(dates[i + 2] >= dates[i + 1]);
             require(offset.add(offsets[i / 3]).add(offsets[i / 3 + 1]) <= namesAndDescriptions.length);
             require(tranchePercents[i / 3] < 100);
 
@@ -157,46 +173,30 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             }));
 
             offset += offsets[i / 3] + offsets[i / 3 + 1];
+            totalPercents += tranchePercents[i / 3];
         }
+
+        milestoneDates = dates;
+        require(totalPercents == 100);
+    }
+
+    function getCurrentMilestoneIndex() public view returns (uint index) {
+        uint milestonesCount = milestones.length;
+
+        if(milestonesCount == 0)
+            revert();
+
+        for(index = 0; index < milestonesCount && now > milestoneDates[index * 3]; index++) {}
+
+        if(index == milestonesCount)
+            return index - 1;
     }
 
     // returns last milestone if completely ended or active milestone at now
-    function getCurrentMilestone() external view returns (
-        uint32,
-        uint8,
-        uint32,
-        uint32,
-        bytes,
-        bytes
-    ) {
-        if(milestones.length == 0 || startDate > now)
-            return (0, 0, 0, 0, new bytes(0), new bytes(0));
+    function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
+        uint index = getCurrentMilestoneIndex();
 
-        Milestone memory last = milestones[milestones.length - 1];
-
-        if (last.withdrawalWindow < now) {
-            return (
-                last.endDate,
-                last.tranchePercent,
-                last.voteEndDate,
-                last.withdrawalWindow,
-                last.name,
-                last.description
-            );
-        }
-
-        for (uint i = 0; i < milestones.length - 1; i++) {
-            if (milestones[i].withdrawalWindow >= now) {
-                return (
-                    milestones[i].endDate,
-                    milestones[i].tranchePercent,
-                    milestones[i].voteEndDate,
-                    milestones[i].withdrawalWindow,
-                    milestones[i].name,
-                    milestones[i].description
-                );
-            }
-        }
+        return getMilestone(index);
     }
 
     function buyTokens() payable nonReentrant public {
@@ -206,9 +206,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         (uint8 discount, uint32 vesting, uint8 volumeBonus) = getCurrentStage();
 
-        if(stages.length == 0)
-            // return funds if ICO was closed
+        // return funds if ICO was closed
+        if(stages.length == 0) {
             msg.sender.transfer(msg.value);
+            return;
+        }
 
         uint stagePrice = discount > 0 ? price.mul(100 - discount).div(100) : price;
 
@@ -231,7 +233,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return token;
     }
 
-    function getFund() external view returns(W12Fund) {
+    function getFund() external view returns(IW12Fund) {
         return fund;
     }
 
@@ -265,8 +267,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         buyTokens();
     }
 
+    function isEnded() public view returns (bool) {
+        return stages[stages.length - 1].endDate < now;
+    }
+
     function claimRemainingTokens() external onlyOwner {
-        require(stages.length == 0);
+        require(isEnded());
 
         require(token.transfer(owner, token.balanceOf(address(this))));
     }

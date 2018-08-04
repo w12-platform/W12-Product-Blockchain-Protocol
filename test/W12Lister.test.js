@@ -6,6 +6,7 @@ const W12Lister = artifacts.require('W12Lister');
 const W12AtomicSwap = artifacts.require('W12AtomicSwap');
 const W12TokenLedger = artifacts.require('W12TokenLedger');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
+const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
 
@@ -13,20 +14,21 @@ contract('W12Lister', async (accounts) => {
     let sut;
     let token;
     let factory;
+    let fundFactory;
     let lastDate;
     const wallet = accounts[9];
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
-        factory = await W12CrowdsaleFactory.new();
+        const ledger = await W12TokenLedger.new();
+        const swap = await W12AtomicSwap.new(ledger.address);
 
-        const W12TokenLedgerInstance = await W12TokenLedger.new();
-        const W12AtomicSwapInstance = await W12AtomicSwap.new(W12TokenLedgerInstance.address);
+        fundFactory = await W12FundFactory.new();
+        factory = await W12CrowdsaleFactory.new(fundFactory.address);
+        sut = await W12Lister.new(wallet, factory.address, ledger.address, swap.address);
 
-        sut = await W12Lister.new(wallet, factory.address, W12TokenLedgerInstance.address, W12AtomicSwapInstance.address);
-
-        await W12TokenLedgerInstance.transferOwnership(sut.address);
-        await W12AtomicSwapInstance.transferOwnership(sut.address);
+        await ledger.transferOwnership(sut.address);
+        await swap.transferOwnership(sut.address);
 
         token = await WToken.new('TestToken', 'TT', 18);
         lastDate = web3.eth.getBlock('latest').timestamp;
@@ -108,18 +110,8 @@ contract('W12Lister', async (accounts) => {
         const fromSystemAccount = { from: accounts[0] };
         const fromTokenOwner = { from: accounts[1] };
 
-        beforeEach(async () => {
-            const W12TokenLedgerInstance = await W12TokenLedger.new();
-            const W12AtomicSwapInstance = await W12AtomicSwap.new(W12TokenLedgerInstance.address);
-
-            sut = await W12Lister.new(accounts[1], factory.address, W12TokenLedgerInstance.address, W12AtomicSwapInstance.address, fromSystemAccount);
-
-            await W12TokenLedgerInstance.transferOwnership(sut.address);
-            await W12AtomicSwapInstance.transferOwnership(sut.address);
-        });
-
         it('should reject whitelisting a token', async () => {
-            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1, 1, fromTokenOwner).should.be.rejected;
+            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1, 1, {from: accounts[2]}).should.be.rejected;
         });
 
         describe('when owner set the crowdsale', async () => {
@@ -134,9 +126,9 @@ contract('W12Lister', async (accounts) => {
             describe('token owner', async () => {
                 it('should be able to initialize crowdsale', async () => {
                     await sut.initCrowdsale(
-                            lastDate + 100,
+                            lastDate + utils.time.duration.minutes(10),
                             token.address,
-                            oneToken.mul(10),
+                            oneToken.mul(7),
                             oneToken,
                             fromTokenOwner
                         ).should.be.fulfilled;
@@ -153,7 +145,7 @@ contract('W12Lister', async (accounts) => {
 
                 beforeEach(async () => {
                     await sut.initCrowdsale(
-                        lastDate + 10,
+                        lastDate + utils.time.duration.minutes(10),
                         token.address,
                         oneToken.mul(10),
                         oneToken,
@@ -201,7 +193,7 @@ contract('W12Lister', async (accounts) => {
                 });
 
                 it('crowdsale should be activated at time to sell tokens', async () => {
-                    utils.time.increaseTimeTo(lastDate + 100);
+                    utils.time.increaseTimeTo(lastDate + utils.time.duration.minutes(10));
                     const fundBalanceBefore = web3.eth.getBalance(fundAddress);
 
                     await crowdsale.buyTokens({ from: accounts[5], value: web3.toWei(1, 'ether') }).should.be.fulfilled;

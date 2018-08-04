@@ -10,8 +10,9 @@ module.exports = {
             host: '127.0.0.1',
             port: 7545,
             network_id: '*', // Match any network id
-            gas: 12000000,
-            gasPrice: 1
+            gasPrice: 0,
+            gas: 8000000,
+            gasLimit: 8000000
         },
         test: {
             provider() {
@@ -22,5 +23,8 @@ module.exports = {
     },
     mocha: {
         // grep: ''
+    },
+    optimizer: {
+        enabled: true
     }
 };

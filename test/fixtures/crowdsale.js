@@ -1,9 +1,9 @@
 const utils = require('../../shared/tests/utils.js');
 
+const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12Fund = artifacts.require('W12Fund');
-const WToken = artifacts.require('WToken');
 
 
 async function setTestStages (startDate, W12Crowdsale, owner) {
@@ -55,7 +55,8 @@ async function createW12CrowdsaleViaFabric(
     owner,
     token
 ) {
-    const factory = await W12CrowdsaleFactory.new();
+    const fundFactory = await W12FundFactory.new();
+    const factory = await W12CrowdsaleFactory.new(await fundFactory.createFund(swapAddress));
     const txParams = {from: owner};
     const txOutput = await factory.createCrowdsale(
         token.address,
@@ -110,6 +111,7 @@ async function createW12Crowdsale (
     // constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, W12Fund _fund)
     const result = await W12Crowdsale.new(
         token.address,
+        await token.decimals(),
         startDate,
         price,
         serviceWalletAddress,
@@ -140,7 +142,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
             name: "Milestone 1 name",
             description: "Milestone 2 description",
             endDate: startDate + utils.time.duration.days(10),
-            tranchePercent: 25,
+            tranchePercent: 30,
             voteEndDate: startDate + utils.time.duration.days(17),
             withdrawalWindow: startDate + utils.time.duration.days(20)
         },

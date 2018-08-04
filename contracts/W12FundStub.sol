@@ -9,12 +9,7 @@ contract W12FundStub is W12Fund {
         crowdsale = IW12Crowdsale(crowdsaleAddress);
         swap = swapAddress;
         wToken = WToken(wTokenAddress);
-    }
-
-    function _receiveFunds(uint amount) external nonReentrant {
-        require(address(this).balance >= amount);
-
-        msg.sender.transfer(amount);
+        tokenDecimals = wToken.decimals();
     }
 
     function _setTotalFunded(uint amount) external {
@@ -24,8 +19,6 @@ contract W12FundStub is W12Fund {
     function _setTotalRefunded(uint amount) external {
         totalRefunded = amount;
     }
-
-    function() payable external {}
 
     // allow any sender
     modifier onlyFrom(address sender) {

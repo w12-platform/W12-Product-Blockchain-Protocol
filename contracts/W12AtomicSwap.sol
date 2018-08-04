@@ -21,7 +21,6 @@ contract W12AtomicSwap is Ownable, ReentrancyGuard {
 
     function exchange(ERC20 fromToken, uint amount) external nonReentrant {
         require(fromToken != address(0x0));
-        require(toToken != address(0x0));
         // Checking if fromToken is WToken and have actual pair
         ERC20 toToken = ledger.getTokenByWToken(fromToken);
         require(toToken != address(0x0));

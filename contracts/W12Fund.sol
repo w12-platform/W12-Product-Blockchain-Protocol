@@ -4,17 +4,19 @@ import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./WToken.sol";
-import "./IW12Crowdsale.sol";
+import "./interfaces/IW12Crowdsale.sol";
+import "./interfaces/IW12Fund.sol";
 
 
-contract W12Fund is Ownable, ReentrancyGuard {
+contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     IW12Crowdsale public crowdsale;
     address public swap;
     WToken public wToken;
+    uint public tokenDecimals; // TODO: refactor this
     mapping (address=>TokenPriceInfo) public buyers;
-    mapping (uint32 => bool) public completedTranches;
+    mapping (uint32 => bool) public completedTranches; // TODO: refactor this
     uint public totalFunded;
     uint public totalRefunded;
 
@@ -24,8 +26,8 @@ contract W12Fund is Ownable, ReentrancyGuard {
         uint totalFunded;
     }
 
-    event FundsReceived(address indexed buyer, uint etherAmount, uint tokenAmount);
-    event FundsRefunded(address indexed buyer, uint etherAmount, uint tokenAmount);
+    event FundsReceived(address indexed buyer, uint weiAmount, uint tokenAmount);
+    event FundsRefunded(address indexed buyer, uint weiAmount, uint tokenAmount);
     event TrancheOperation(address indexed receiver, uint amount);
 
     function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
@@ -33,6 +35,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
 
         crowdsale = _crowdsale;
         wToken = _crowdsale.getWToken();
+        tokenDecimals = wToken.decimals();
     }
 
     function setSwap(address _swap) onlyOwner external {
@@ -41,20 +44,12 @@ contract W12Fund is Ownable, ReentrancyGuard {
         swap = _swap;
     }
 
-    function getAveragePrice(uint funded, uint tokens) public view returns (uint) {
-        uint decimals = wToken.decimals();
-
-        return funded.mul(10 ** decimals).div(tokens);
-    }
-
     function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
-        uint tokensBoughtBefore = buyers[buyer].totalBought;
-
-        buyers[buyer].totalBought = tokensBoughtBefore.add(tokenAmount);
+        buyers[buyer].totalBought = buyers[buyer].totalBought.add(tokenAmount);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
-        buyers[buyer].averagePrice = getAveragePrice(buyers[buyer].totalFunded, buyers[buyer].totalBought);
+        buyers[buyer].averagePrice = (buyers[buyer].totalFunded.mul(10 ** tokenDecimals)).div(buyers[buyer].totalBought);
 
-        totalFunded += msg.value;
+        totalFunded = totalFunded.add(msg.value);
 
         emit FundsReceived(buyer, msg.value, tokenAmount);
     }
@@ -81,25 +76,20 @@ contract W12Fund is Ownable, ReentrancyGuard {
             1. c * b / a = A_1
             2. A_1 * 10 ** 8 / d * e / 10 ** 8
     */
-    function getRefundAmount(uint wtokensToRefund) public view returns (uint) {
-        uint result = 0;
-        uint decimals = wToken.decimals();
-        uint max = uint(-1) / 10 ** (decimals + 8);
+    function getRefundAmount(uint wtokensToRefund) public view returns (uint result) {
+        uint max = uint(-1) / 10 ** (tokenDecimals + 8);
         address buyer = msg.sender;
-        (uint32 start, uint32 end) = getRefundPeriod();
 
-        if (
-            start > 0
-            && end >= now
-            && start < now
-            && wtokensToRefund > 0
-            && buyers[buyer].totalBought > 0
-            && address(this).balance > 0
-            && wToken.balanceOf(buyer) >= wtokensToRefund
-            && buyers[buyer].totalBought >= wtokensToRefund
-        ) {
+        if(wtokensToRefund == 0
+            || buyers[buyer].totalBought == 0
+            || address(this).balance == 0
+            || wToken.balanceOf(buyer) < wtokensToRefund
+            || buyers[buyer].totalBought < wtokensToRefund)
+            return 0;
+
+        if (address(this).balance > 0) {
             uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
-            uint precisionComponent = allowedFund >= max ? 1 : 10 ** (decimals + 8);
+            uint precisionComponent = allowedFund >= max ? 1 : 10 ** (tokenDecimals + 8);
 
             result = result.add(
                 allowedFund
@@ -109,20 +99,12 @@ contract W12Fund is Ownable, ReentrancyGuard {
                     .div(precisionComponent)
             );
         }
-
-        return result;
-    }
-
-    function getRefundPeriod() public view returns (uint32, uint32) {
-        (,, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
-
-        return (voteEndDate, withdrawalWindow);
     }
 
     function getTrancheAmount() public view returns (uint) {
         uint result = 0;
         (uint8 tranchePercent, uint32 start, uint32 end) = getTrancheParameters();
-        
+
         bool completed = completedTranches[end];
 
         if (
@@ -164,6 +146,8 @@ contract W12Fund is Ownable, ReentrancyGuard {
     }
 
     function tranche() external onlyOwner nonReentrant {
+        require(trancheTransferAllowed());
+
         uint trancheAmount = getTrancheAmount();
         (,, uint32 withdrawalWindow) = getTrancheParameters();
 
@@ -177,9 +161,14 @@ contract W12Fund is Ownable, ReentrancyGuard {
     }
 
     function refund(uint wtokensToRefund) external nonReentrant {
-        uint transferAmount = getRefundAmount(wtokensToRefund);
-        uint decimals = wToken.decimals();
         address buyer = msg.sender;
+        require(refundAllowed());
+        require(wtokensToRefund > 0);
+        require(buyers[buyer].totalBought >= wtokensToRefund);
+        require(wToken.balanceOf(buyer) >= wtokensToRefund);
+        require(wToken.allowance(msg.sender, address(this)) >= wtokensToRefund);
+
+        uint transferAmount = getRefundAmount(wtokensToRefund);
 
         require(transferAmount > 0);
         require(wToken.transferFrom(buyer, swap, wtokensToRefund));
@@ -187,10 +176,7 @@ contract W12Fund is Ownable, ReentrancyGuard {
         buyers[buyer].totalBought = buyers[buyer].totalBought
             .sub(wtokensToRefund);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded
-            .sub(wtokensToRefund.mul(buyers[buyer].averagePrice).div(10 ** decimals));
-        buyers[buyer].averagePrice = buyers[buyer].totalFunded > 0 && buyers[buyer].totalBought > 0
-            ? getAveragePrice(buyers[buyer].totalFunded, buyers[buyer].totalBought)
-            : 0;
+            .sub(wtokensToRefund.mul(buyers[buyer].averagePrice).div(10 ** tokenDecimals));
 
         // update total refunded amount counter
         totalRefunded = totalRefunded.add(transferAmount);
@@ -198,6 +184,33 @@ contract W12Fund is Ownable, ReentrancyGuard {
         buyer.transfer(transferAmount);
 
         emit FundsRefunded(buyer, transferAmount, wtokensToRefund);
+    }
+
+    function refundAllowed() public view returns (bool) {
+        uint currentMilestoneIndex = crowdsale.getCurrentMilestoneIndex();
+
+        // first milestone is reserved for the project to claim initial amount of payments. No refund allowed at this stage.
+        if(currentMilestoneIndex == 0)
+            return false;
+
+        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
+
+        // Refund allowed from ending of previous milestone to closing of withdrawal window
+        return endDate <= now && now < withdrawalWindow;
+    }
+
+    function trancheTransferAllowed() public view returns (bool) {
+        uint currentMilestoneIndex = crowdsale.getCurrentMilestoneIndex();
+
+        if(currentMilestoneIndex == 0)
+            return crowdsale.isEnded();
+
+        (uint32 endDate, , , , , ) = crowdsale.getMilestone(currentMilestoneIndex);
+        (, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
+
+
+        // Refund allowed from ending of previous milestone to closing of withdrawal window
+        return withdrawalWindow <= now && now < endDate;
     }
 
     modifier onlyFrom(address sender) {

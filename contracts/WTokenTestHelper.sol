@@ -2,6 +2,7 @@ pragma solidity ^0.4.23;
 
 import "./WToken.sol";
 
+
 contract WTokenTestHelper {
     address[] public tokens;
     mapping(address => uint256) public tokenIndexes;

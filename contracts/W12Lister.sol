@@ -2,10 +2,11 @@ pragma solidity ^0.4.23;
 
 import "./WToken.sol";
 import "./W12TokenLedger.sol";
-import "./IW12Crowdsale.sol";
+import "./interfaces/IW12CrowdsaleFactory.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -36,10 +37,10 @@ contract W12Lister is Ownable, ReentrancyGuard {
     }
 
     constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, address _swap) public {
-        require(_serviceWallet != address(0x0));
-        require(_factory != address(0x0));
-        require(_ledger != address(0x0));
-        require(_swap != address(0x0));
+        require(_serviceWallet != address(0));
+        require(_factory != address(0));
+        require(_ledger != address(0));
+        require(_swap != address(0));
 
         ledger = _ledger;
         swap = _swap;
@@ -51,8 +52,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
     function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint8 feePercent, uint8 ethFeePercent)
         external onlyOwner {
 
-        require(tokenOwner != address(0x0));
-        require(tokenAddress != address(0x0));
+        require(tokenOwner != address(0));
+        require(tokenAddress != address(0));
         require(feePercent < 100);
         require(ethFeePercent < 100);
         require(!approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[tokenOwner]);
@@ -75,7 +76,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
     function placeToken(address tokenAddress, uint amount) external nonReentrant {
         require(amount > 0);
-        require(tokenAddress != address(0x0));
+        require(tokenAddress != address(0));
         require(approvedTokensIndex[tokenAddress] > 0);
 
         ListedToken storage listedToken = approvedTokens[approvedTokensIndex[tokenAddress]];
@@ -98,7 +99,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         require(balanceAfter == balanceBefore.add(amountWithoutFee));
 
-        if(ledger.getWTokenByToken(tokenAddress) == address(0x0)) {
+        if(ledger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
             ledger.addTokenToListing(ERC20(tokenAddress), wToken);
         }
@@ -130,7 +131,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {
-        require(approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress != address(0x0));
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress != address(0));
 
         return approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress;
     }
