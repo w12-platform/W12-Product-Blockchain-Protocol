@@ -469,4 +469,55 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
       });
     });
   });
+
+  describe('vesting', async function () {
+    describe('when called by the owner', async () => {
+      it('should allow to add trusted accounts', async function () {
+        await this.token.vestingTransfer(recipient, 5, 0, { from: owner }).should.be.rejectedWith(utils.EVMRevert);
+        await this.token.addTrustedAccount(owner).should.be.fulfilled;
+        await this.token.vestingTransfer(recipient, 5, 0, { from: owner }).should.be.fulfilled;
+      });
+    });
+
+    describe('when owner added to trusted accounts', async function () {
+      beforeEach(async function () {
+        await this.token.addTrustedAccount(owner);
+      });
+
+      it('should be applied to a transfer', async function () {
+        const expectedAmount = 13;
+        const expectedVesting = web3.eth.getBlock('latest').timestamp + utils.time.duration.minutes(10);
+
+        const { logs } = await this.token.vestingTransfer(recipient, expectedAmount, expectedVesting, { from: owner }).should.be.fulfilled;
+
+        logs.length.should.be.equal(2);
+        logs[1].event.should.be.equal('VestingTransfer');
+        logs[1].args.from.should.be.equal(owner);
+        logs[1].args.to.should.be.equal(recipient);
+        logs[1].args.value.should.bignumber.equal(expectedAmount);
+        logs[1].args.agingTime.should.bignumber.equal(expectedVesting);
+
+        const actualVestedBalance = await this.token.accountBalance(recipient).should.be.fulfilled;
+
+        actualVestedBalance.should.bignumber.equal(0);
+
+        const actualVestingBalance = await this.token.balanceOf(recipient).should.be.fulfilled;
+
+        actualVestingBalance.should.bignumber.equal(expectedAmount);
+      });
+
+      it('should vest until specified date', async function () {
+        const expectedAmount = 13;
+        const expectedVesting = web3.eth.getBlock('latest').timestamp + utils.time.duration.minutes(10);
+
+        await this.token.vestingTransfer(recipient, expectedAmount, expectedVesting, { from: owner }).should.be.fulfilled;
+
+        await this.token.transfer(anotherAccount, 1, { from: recipient }).should.be.rejectedWith(utils.EVMRevert);
+
+        utils.time.increaseTimeTo(expectedVesting + 10);
+
+        await this.token.transfer(anotherAccount, 1, { from: recipient }).should.be.fulfilled;
+      });
+    });
+  });
 });
