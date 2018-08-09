@@ -12,6 +12,7 @@ contract('W12Crowdsale', async (accounts) => {
     let token;
     const tokenOwner = accounts[9];
     let startDate;
+    let endDate;
     let price;
     const serviceWallet = utils.generateRandomAddress();
     const swap = utils.generateRandomAddress();
@@ -65,6 +66,7 @@ contract('W12Crowdsale', async (accounts) => {
         }
 
         describe('with discounts stages', async () => {
+
             beforeEach(async () => {
                 discountStages = [
                     {
@@ -93,12 +95,16 @@ contract('W12Crowdsale', async (accounts) => {
                     discountStages.map(s => s.vestingTime),
                     {from: tokenOwner}
                 );
+
+                endDate = discountStages[2].endDate;
             });
 
             it('should set stages', async () => {
                 const actualNumberOfStages = await sut.stagesLength().should.be.fulfilled;
+                const actualEndDate = await sut.getEndDate().should.be.fulfilled;
 
                 actualNumberOfStages.should.bignumber.equal(discountStages.length);
+                actualEndDate.should.bignumber.equal(endDate);
 
                 let counter = discountStages.length;
                 discountStages.forEach(async expectedStage => {
@@ -131,6 +137,32 @@ contract('W12Crowdsale', async (accounts) => {
                 (await token.balanceOf(buyer)).should.bignumber.equal(oneToken.mul(100));
                 web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
                 web3.eth.getBalance(fund.address).should.bignumber.equal(9000);
+            });
+
+            it('should end at the end date', async () => {
+                utils.time.increaseTimeTo(endDate + 10);
+
+                (await sut.isEnded()).should.be.equal(true);
+            });
+
+            it('should return unsold tokens after the end', async () => {
+                utils.time.increaseTimeTo(endDate + 10);
+
+                const crowdsaleBalanceBefore = await token.balanceOf(sut.address);
+                const ownerBalanceBefore = await token.balanceOf(tokenOwner);
+
+                await sut.claimRemainingTokens({from: tokenOwner}).should.be.fulfilled;
+
+                const crowdsaleBalanceAfter = await token.balanceOf(sut.address);
+                const ownerBalanceAfter = await token.balanceOf(tokenOwner);
+
+                crowdsaleBalanceAfter.should.bignumber.equal(0);
+                ownerBalanceAfter.should.bignumber.equal(crowdsaleBalanceBefore.plus(ownerBalanceBefore));
+            });
+
+            it('shouldn\'t return unsold tokens before the end', async () => {
+                (await sut.isEnded()).should.be.equal(false);
+                await sut.claimRemainingTokens({from: tokenOwner}).should.be.rejectedWith(utils.EVMRevert);
             });
 
             it('should sell tokens from each stage', async () => {

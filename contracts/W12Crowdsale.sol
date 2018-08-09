@@ -180,6 +180,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(totalPercents == 100);
     }
 
+    function getEndDate() external view returns (uint32) {
+        require(stages.length > 0);
+
+        return stages[0].endDate;
+    }
+
     function getCurrentMilestoneIndex() public view returns (uint index) {
         uint milestonesCount = milestones.length;
 
@@ -202,6 +208,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function buyTokens() payable nonReentrant public {
         require(msg.value > 0);
         require(startDate <= now);
+        require(!isEnded());
         require(stages.length > 0);
 
         (uint8 discount, uint32 vesting, uint8 volumeBonus) = getCurrentStage();
@@ -268,7 +275,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function isEnded() public view returns (bool) {
-        return stages[stages.length - 1].endDate < now;
+        return stages.length == 0 || stages[0].endDate < now;
     }
 
     function claimRemainingTokens() external onlyOwner {
