@@ -198,7 +198,15 @@ contract WToken is DetailedERC20, Ownable {
     }
 
     function accountBalance(address _address) public view returns (uint256 balance) {
-        return balances[_address] - vestingBalanceOf[_address][0];
+        balance = balances[_address];
+
+        if (vestingBalanceOf[_address][0] == 0) return;
+
+        for (uint256 k = 0; k < vestingTimes[_address].length; k++) {
+            if (vestingTimes[_address][k] >= now) {
+                balance -= vestingBalanceOf[_address][vestingTimes[_address][k]];
+            }
+        }
     }
 
     function addTrustedAccount(address caller) external onlyOwner {

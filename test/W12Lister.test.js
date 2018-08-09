@@ -137,6 +137,36 @@ contract('W12Lister', async (accounts) => {
 
                     crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
                 });
+
+                it('shouldn\'t be able to initialize crowdsale with a start date in a past', async () => {
+                    await sut.initCrowdsale(
+                            lastDate - utils.time.duration.minutes(10),
+                            token.address,
+                            oneToken.mul(7),
+                            oneToken,
+                            fromTokenOwner
+                        ).should.be.rejectedWith(utils.EVMRevert);
+                });
+
+                describe('shouldn\'t be able to initialize crowdsale with amount of tokens greater than placed', async () => {
+                    const invalidAmounts = [
+                        oneToken.mul(7.1),
+                        oneToken.mul(10),
+                        oneToken.mul(-1)
+                    ];
+
+                    for (const amount of invalidAmounts) {
+                        it(`when amount is equal to ${amount.toNumber()}`, async () => {
+                            await sut.initCrowdsale(
+                                lastDate + utils.time.duration.minutes(10),
+                                token.address,
+                                amount,
+                                oneToken,
+                                fromTokenOwner
+                            ).should.be.rejectedWith(utils.EVMRevert);
+                        })
+                    }
+                });
             });
 
             describe('when crowdsale is set to run', async () => {
@@ -147,7 +177,7 @@ contract('W12Lister', async (accounts) => {
                     await sut.initCrowdsale(
                         lastDate + utils.time.duration.minutes(10),
                         token.address,
-                        oneToken.mul(10),
+                        oneToken.mul(6.9),
                         oneToken,
                         fromTokenOwner
                     ).should.be.fulfilled;
@@ -200,6 +230,25 @@ contract('W12Lister', async (accounts) => {
                     const fundBalanceAfter = web3.eth.getBalance(fundAddress);
 
                     (fundBalanceAfter.gt(fundBalanceBefore)).should.be.true;
+                });
+
+                describe('shouldn\'t be able to re-initialize crowdsale with amount of tokens greater than placed', async () => {
+                    const invalidAmounts = [
+                        oneToken.mul(0.11),
+                        oneToken.mul(1)
+                    ];
+
+                    for (const amount of invalidAmounts) {
+                        it(`when amount is equal to ${amount.toNumber()}`, async () => {
+                            await sut.initCrowdsale(
+                                lastDate + utils.time.duration.minutes(10),
+                                token.address,
+                                amount,
+                                oneToken,
+                                fromTokenOwner
+                            ).should.be.rejectedWith(utils.EVMRevert);
+                        })
+                    }
                 });
             });
         });
