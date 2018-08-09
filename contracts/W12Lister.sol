@@ -109,7 +109,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
     function initCrowdsale(uint32 startDate, address tokenAddress, uint amountForSale, uint price) external nonReentrant {
         require(approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[msg.sender] == true);
-        require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount <= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount >= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(wtoken),
