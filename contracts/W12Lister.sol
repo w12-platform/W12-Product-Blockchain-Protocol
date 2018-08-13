@@ -112,7 +112,10 @@ contract W12Lister is Ownable, ReentrancyGuard {
         require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount >= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
-        IW12Crowdsale crowdsaleAddress = factory.createCrowdsale(address(wtoken),
+        IW12Crowdsale crowdsale;
+
+        if (approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress == address(0)) {
+            crowdsale = factory.createCrowdsale(address(wtoken),
             startDate,
             price,
             serviceWallet,
@@ -120,12 +123,16 @@ contract W12Lister is Ownable, ReentrancyGuard {
             swap,
             msg.sender);
 
+            approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsale;
+        } else {
+            crowdsale.setParameters(startDate, price, serviceWallet);
+        }
+
         approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]]
             .wTokensIssuedAmount.add(amountForSale);
 
-        approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsaleAddress;
-        wtoken.mint(crowdsaleAddress, amountForSale, 0);
-        wtoken.addTrustedAccount(crowdsaleAddress);
+        wtoken.mint(crowdsale, amountForSale, 0);
+        wtoken.addTrustedAccount(crowdsale);
 
         emit CrowdsaleInitialized(startDate, tokenAddress, amountForSale);
     }
