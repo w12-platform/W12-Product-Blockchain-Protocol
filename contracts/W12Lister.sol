@@ -110,31 +110,42 @@ contract W12Lister is Ownable, ReentrancyGuard {
     function initCrowdsale(uint32 startDate, address tokenAddress, uint amountForSale, uint price) external nonReentrant {
         require(approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[msg.sender] == true);
         require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount >= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress == address(0));
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
-        IW12Crowdsale crowdsale;
 
-        if (approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress == address(0)) {
-            crowdsale = factory.createCrowdsale(address(wtoken),
-            startDate,
-            price,
-            serviceWallet,
-            approvedTokens[approvedTokensIndex[tokenAddress]].ethFeePercent,
-            swap,
-            msg.sender);
+        IW12Crowdsale crowdsale = factory.createCrowdsale(address(wtoken),
+        startDate,
+        price,
+        serviceWallet,
+        approvedTokens[approvedTokensIndex[tokenAddress]].ethFeePercent,
+        swap,
+        msg.sender);
 
-            approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsale;
-        } else {
-            crowdsale.setParameters(startDate, price, serviceWallet);
-        }
+        approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress = crowdsale;
+        wtoken.addTrustedAccount(crowdsale);
+
+        addTokensToCrowdsale(tokenAddress, amountForSale);
+
+        emit CrowdsaleInitialized(startDate, tokenAddress, amountForSale);
+    }
+
+    function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[msg.sender] == true);
+        require(approvedTokens[approvedTokensIndex[tokenAddress]].tokensForSaleAmount >= approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount.add(amountForSale));
+
+        WToken token = ledger.getWTokenByToken(tokenAddress);
+
+        require(token != address(0));
+
+        IW12Crowdsale crowdsale = approvedTokens[approvedTokensIndex[tokenAddress]].crowdsaleAddress;
+
+        require(crowdsale != address(0));
 
         approvedTokens[approvedTokensIndex[tokenAddress]].wTokensIssuedAmount = approvedTokens[approvedTokensIndex[tokenAddress]]
             .wTokensIssuedAmount.add(amountForSale);
 
-        wtoken.mint(crowdsale, amountForSale, 0);
-        wtoken.addTrustedAccount(crowdsale);
-
-        emit CrowdsaleInitialized(startDate, tokenAddress, amountForSale);
+        token.mint(crowdsale, amountForSale, 0);
     }
 
     function getTokenCrowdsale(address tokenAddress) view external returns (address) {

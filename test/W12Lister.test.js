@@ -232,6 +232,22 @@ contract('W12Lister', async (accounts) => {
                     (fundBalanceAfter.gt(fundBalanceBefore)).should.be.true;
                 });
 
+                it('should be able to add tokens to existed crowdsale', async () => {
+                    const crowdsaleAddressBefore = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
+
+                    crowdsaleAddressBefore.should.not.be.equal(utils.ZERO_ADDRESS);
+
+                    await sut.addTokensToCrowdsale(
+                            token.address,
+                            oneToken.mul(0.1),
+                            fromTokenOwner
+                        ).should.be.fulfilled;
+
+                    const crowdsaleAddressAfter = await sut.getTokenCrowdsale(token.address).should.be.fulfilled;
+
+                    crowdsaleAddressBefore.should.be.equal(crowdsaleAddressAfter);
+                });
+
                 describe('shouldn\'t be able to re-initialize crowdsale with amount of tokens greater than placed', async () => {
                     const invalidAmounts = [
                         oneToken.mul(0.11),
