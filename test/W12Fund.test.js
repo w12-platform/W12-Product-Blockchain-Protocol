@@ -110,6 +110,7 @@ contract('W12Fund', async (accounts) => {
 
         beforeEach(async () => {
             tokenFixture = await TokenFixture.createToken(tokenOwner);
+
             crowdsaleFixture = await CrowdsaleFixture.createW12Crowdsale(
                 {
                     startDate: web3.eth.getBlock('latest').timestamp + 60,
@@ -122,11 +123,13 @@ contract('W12Fund', async (accounts) => {
                 crowdsaleOwner,
                 tokenFixture.token
             );
+
             stagesFixture = await CrowdsaleFixture.setTestStages(
                 web3.eth.getBlock('latest').timestamp + 60,
                 crowdsaleFixture.W12Crowdsale,
                 crowdsaleOwner
             );
+
             milestoneFixture = await CrowdsaleFixture.setTestMilestones(
                 web3.eth.getBlock('latest').timestamp + 60,
                 crowdsaleFixture.W12Crowdsale,
@@ -147,34 +150,36 @@ contract('W12Fund', async (accounts) => {
         });
 
         describe('test `getRefundAmount` method', async () => {
-            it('should give full refund in case with one investor', async () => {
-                const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
-                const purchaseTokens = new BigNumber(20);
-                const purchaseTokensRecord = oneToken.mul(20);
-                const purchaseCost = purchaseTokens.mul(tokenPrice);
-                const tokenDecimals = tokenFixture.args.decimals;
+            for (const milestoneIndex of [0,1,2]) {
+                it(`should give full refund after milestone #${milestoneIndex} in case with one investor`, async () => {
+                    const withdrawalEndDate = milestoneFixture.milestones[milestoneIndex].withdrawalWindow;
+                    const purchaseTokens = new BigNumber(20);
+                    const purchaseTokensRecord = oneToken.mul(20);
+                    const purchaseCost = purchaseTokens.mul(tokenPrice);
+                    const tokenDecimals = tokenFixture.args.decimals;
 
-                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+                    await utils.time.increaseTimeTo(withdrawalEndDate - 60);
 
-                await sut.recordPurchase(buyer1, purchaseTokensRecord, {
-                    from: crowdsaleOwner,
-                    value: purchaseCost
-                }).should.be.fulfilled;
+                    await sut.recordPurchase(buyer1, purchaseTokensRecord, {
+                        from: crowdsaleOwner,
+                        value: purchaseCost
+                    }).should.be.fulfilled;
 
-                const tokensToReturn = purchaseTokensRecord;
-                const expectedRefundAmount = utils.calculateRefundAmount(
-                    purchaseCost,
-                    purchaseCost,
-                    purchaseCost,
-                    purchaseTokensRecord,
-                    tokensToReturn,
-                    tokenDecimals
-                );
+                    const tokensToReturn = purchaseTokensRecord;
+                    const expectedRefundAmount = utils.calculateRefundAmount(
+                        purchaseCost,
+                        purchaseCost,
+                        purchaseCost,
+                        purchaseTokensRecord,
+                        tokensToReturn,
+                        tokenDecimals
+                    );
 
-                const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: buyer1}).should.be.fulfilled;
+                    const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: buyer1}).should.be.fulfilled;
 
-                refundAmount.should.bignumber.eq(expectedRefundAmount);
-            });
+                    refundAmount.should.bignumber.eq(expectedRefundAmount);
+                });
+            }
 
             it('partial refund in case with two investors', async () => {
                 const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;

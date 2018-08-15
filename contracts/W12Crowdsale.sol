@@ -154,7 +154,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             require(dates[i] > now);
             require(dates[i + 1] >= dates[i]);
             require(dates[i + 2] >= dates[i + 1]);
-            require(tranchePercents[i / 3] <= 100);
 
             bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
             bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
