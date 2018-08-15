@@ -141,7 +141,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner {
         require(milestones.length == 0);
         require(dates.length <= uint8(-1));
-        require(dates.length > 3);
+        require(dates.length >= 3);
         require(dates.length % 3 == 0);
         require(tranchePercents.length.mul(2) == offsets.length);
         require(tranchePercents.length.mul(3) == dates.length);
@@ -154,8 +154,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             require(dates[i] > now);
             require(dates[i + 1] >= dates[i]);
             require(dates[i + 2] >= dates[i + 1]);
-            require(offset.add(offsets[i / 3]).add(offsets[i / 3 + 1]) <= namesAndDescriptions.length);
-            require(tranchePercents[i / 3] < 100);
+            require(tranchePercents[i / 3] <= 100);
 
             bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
             bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
@@ -177,7 +176,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         }
 
         milestoneDates = dates;
-        require(totalPercents == 100);
+        // require(totalPercents == 100);
     }
 
     function getEndDate() external view returns (uint32) {

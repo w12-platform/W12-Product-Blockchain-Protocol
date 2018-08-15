@@ -178,6 +178,42 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
+            it('should accept single milestone', async () => {
+                startDate = web3.eth.getBlock('latest').timestamp + 60;
+
+                const encodedMilestones = [{
+                    name: "Single milestone",
+                    description: "Single milestone with 100% tranche",
+                    endDate: startDate,
+                    voteEndDate: startDate + 60,
+                    withdrawalWindow: startDate + 120
+                }].map(item => {
+                    return utils.encodeMilestoneParameters(
+                        item.name,
+                        item.description,
+                        item.tranchePercent,
+                        item.endDate,
+                        item.voteEndDate,
+                        item.withdrawalWindow
+                    );
+                });
+
+                console.log(encodedMilestones);
+
+
+                await sut.setMilestones(
+                    encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                    encodedMilestones.map(m => m.tranchePercent),
+                    encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                    encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                    {from: tokenOwner}
+                ).should.be.fulfilled;
+
+                // const actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
+
+                // actualMilestonesCount.should.bignumber.equal(1);
+            });
+
             describe('when working with milestones', async () => {
                 let expectedMilestones;
                 let encodedMilestones;
