@@ -256,7 +256,7 @@ contract('W12Fund', async (accounts) => {
         describe('test `refund` method', async () => {
             for (const milestoneIndex of [0,1,2]) {
                 it(`should refund buyer after milestone #${milestoneIndex} ended`, async () => {
-                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 60);
+                    await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 60);
 
                     const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                     const tokens = oneToken.mul(20);
@@ -302,16 +302,16 @@ contract('W12Fund', async (accounts) => {
                 });
 
                 it(`should allow refund between milestone ${milestoneIndex} end date and the end of withdrawal window`, async () => {
-                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].endDate + 5);
+                    await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].endDate + 5);
                     (await sut.refundAllowed()).should.be.true;
 
-                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 5);
+                    await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 5);
                     (await sut.refundAllowed()).should.be.true;
                 });
             }
 
             it('should reject refund if provide zero tokens', async () => {
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
+                await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
 
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
@@ -325,7 +325,7 @@ contract('W12Fund', async (accounts) => {
             });
 
             it('should reject refund if provided tokens amount gte investment number', async () => {
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].voteEndDate - 60);
+                await utils.time.increaseTimeTo(milestoneFixture.milestones[0].voteEndDate - 60);
 
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
@@ -339,7 +339,7 @@ contract('W12Fund', async (accounts) => {
             });
 
             it('should reject refund if address is not an investor address', async () => {
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
+                await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
 
                 await sut.refund(1, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
             });
@@ -353,11 +353,11 @@ contract('W12Fund', async (accounts) => {
                     value: funds
                 }).should.be.fulfilled;
 
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].endDate - 60);
+                await utils.time.increaseTimeTo(milestoneFixture.milestones[0].endDate - 60);
 
                 await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
 
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow + 60);
+                await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow + 60);
 
                 await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
             });

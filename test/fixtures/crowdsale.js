@@ -9,27 +9,35 @@ const W12Fund = artifacts.require('W12Fund');
 async function setTestStages (startDate, W12Crowdsale, owner) {
     const discountStages = [
         {
-            name: 'Phase 0',
-            endDate: startDate + utils.time.duration.minutes(60),
+            name: 'Stage 1',
+            dates: [
+                startDate + utils.time.duration.minutes(40),
+                startDate + utils.time.duration.minutes(60),
+            ],
             vestingTime: 0,
             discount: 0
         },
         {
-            name: 'Phase 5',
-            endDate: startDate + utils.time.duration.minutes(90),
-            vestingTime: startDate + utils.time.duration.minutes(210),
+            name: 'Stage 2',
+            dates: [
+                startDate + utils.time.duration.minutes(80),
+                startDate + utils.time.duration.minutes(100),
+            ],
             discount: 5
         },
         {
-            name: 'Phase 10',
-            endDate: startDate + utils.time.duration.minutes(120),
+            name: 'Stage 3',
+            dates: [
+                startDate + utils.time.duration.minutes(120),
+                startDate + utils.time.duration.minutes(140),
+            ],
             vestingTime: startDate + utils.time.duration.minutes(180),
             discount: 10
         }
     ];
 
     await W12Crowdsale.setStages(
-        discountStages.map(s => s.endDate),
+        discountStages.map(s => s.dates),
         discountStages.map(s => s.discount),
         discountStages.map(s => s.vestingTime),
         {from: owner}

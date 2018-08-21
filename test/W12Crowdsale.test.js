@@ -71,32 +71,41 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + utils.time.duration.minutes(60),
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ],
                         vestingTime: 0,
                         discount: 0
                     },
                     {
                         name: 'Phase 5',
-                        endDate: startDate + utils.time.duration.minutes(90),
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
                         vestingTime: startDate + utils.time.duration.minutes(210),
                         discount: 5
                     },
                     {
                         name: 'Phase 10',
-                        endDate: startDate + utils.time.duration.minutes(120),
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
                         vestingTime: startDate + utils.time.duration.minutes(180),
                         discount: 10
                     }
                 ];
 
                 await sut.setStages(
-                    discountStages.map(s => s.endDate),
+                    discountStages.map(s => s.dates),
                     discountStages.map(s => s.discount),
                     discountStages.map(s => s.vestingTime),
                     {from: tokenOwner}
                 );
 
-                endDate = discountStages[2].endDate;
+                endDate = discountStages[2].dates[1];
             });
 
             it('should set stages', async () => {
@@ -106,14 +115,42 @@ contract('W12Crowdsale', async (accounts) => {
                 actualNumberOfStages.should.bignumber.equal(discountStages.length);
                 actualEndDate.should.bignumber.equal(endDate);
 
-                let counter = discountStages.length;
-                discountStages.forEach(async expectedStage => {
-                    const actualStage = await sut.stages(--counter).should.be.fulfilled;
+                for (let i = 0; i < discountStages.length; i++) {
+                    const expectedStage = discountStages[i];
+                    const actualStage = await sut.stages(i).should.be.fulfilled;
 
-                    actualStage[0].should.bignumber.equal(expectedStage.endDate);
-                    actualStage[1].should.bignumber.equal(expectedStage.discount);
-                    actualStage[2].should.bignumber.equal(expectedStage.vestingTime);
-                });
+                    actualStage[0].should.bignumber.equal(expectedStage.dates[0]);
+                    actualStage[1].should.bignumber.equal(expectedStage.dates[1]);
+                    actualStage[2].should.bignumber.equal(expectedStage.discount);
+                    actualStage[3].should.bignumber.equal(expectedStage.vestingTime);
+                }
+            });
+
+            it('should return current stage', async () => {
+                const expectedStage = discountStages[1];
+
+                await utils.time.increaseTimeTo(expectedStage.dates[1] - 10);
+
+                const result = await sut.getCurrentStage().should.be.fulfilled;
+
+                result[3][0].should.bignumber.equal(expectedStage.dates[0]);
+                result[3][1].should.bignumber.equal(expectedStage.dates[1]);
+            });
+
+            it('should\'t return current stage', async () => {
+                const someStage1 = discountStages[1];
+                const someStage2 = discountStages[2];
+                const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
+
+                await utils.time.increaseTimeTo(someDate);
+
+                const result = await sut.getCurrentStage().should.be.fulfilled;
+
+                result[0].should.bignumber.equal(0);
+                result[1].should.bignumber.equal(0);
+                result[2].should.bignumber.equal(0);
+                result[3][0].should.bignumber.equal(0);
+                result[3][1].should.bignumber.equal(0);
             });
 
             it('should set stage bonuses', async () => {
@@ -130,7 +167,9 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should sell some tokens', async () => {
-                utils.time.increaseTimeTo(startDate + 10);
+                const stage = discountStages[0];
+
+                await utils.time.increaseTimeTo(stage.dates[0] + 10);
 
                 await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
@@ -140,13 +179,13 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should end at the end date', async () => {
-                utils.time.increaseTimeTo(endDate + 10);
+                await utils.time.increaseTimeTo(endDate + 10);
 
                 (await sut.isEnded()).should.be.equal(true);
             });
 
             it('should return unsold tokens after the end', async () => {
-                utils.time.increaseTimeTo(endDate + 10);
+                await utils.time.increaseTimeTo(endDate + 10);
 
                 const crowdsaleBalanceBefore = await token.balanceOf(sut.address);
                 const ownerBalanceBefore = await token.balanceOf(tokenOwner);
@@ -168,13 +207,17 @@ contract('W12Crowdsale', async (accounts) => {
             it('should sell tokens from each stage', async () => {
                 for (const stage of discountStages) {
                     const balanceBefore = await token.balanceOf(buyer);
-                    utils.time.increaseTimeTo(stage.endDate - 30);
+
+                    await utils.time.increaseTimeTo(stage.dates[1] - 30);
 
                     await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
 
                     const balanceAfter = await token.balanceOf(buyer);
 
-                    balanceAfter.minus(balanceBefore).toPrecision(6).should.bignumber.equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
+                    balanceAfter
+                        .minus(balanceBefore)
+                        .toPrecision(6).should.bignumber
+                            .equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
                 }
             });
 
@@ -185,6 +228,7 @@ contract('W12Crowdsale', async (accounts) => {
                     name: "Single milestone",
                     description: "Single milestone with 100% tranche",
                     endDate: startDate,
+                    tranchePercent: 10,
                     voteEndDate: startDate + 60,
                     withdrawalWindow: startDate + 120,
                     tranchePercent: 100
@@ -284,12 +328,12 @@ contract('W12Crowdsale', async (accounts) => {
                 });
 
                 it('should return current milestone index', async () => {
-                    utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
+                    await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
                     (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(0);
 
                     let expectedIndex = 0;
                     for (const milestone of expectedMilestones) {
-                        utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
+                        await utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
 
                         const actualIndex = await sut.getCurrentMilestoneIndex().should.be.fulfilled;
 
@@ -298,7 +342,7 @@ contract('W12Crowdsale', async (accounts) => {
                         expectedIndex++;
                     }
 
-                    utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
+                    await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
                     (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(expectedMilestones.length - 1);
                 });
             });
@@ -309,7 +353,10 @@ contract('W12Crowdsale', async (accounts) => {
                 discountStages = [
                     {
                         name: 'Phase 0',
-                        endDate: startDate + utils.time.duration.minutes(60),
+                        dates: [
+                            startDate + utils.time.duration.minutes(60),
+                            startDate + utils.time.duration.minutes(80)
+                        ],
                         vestingTime: 0,
                         discount: 0,
                         volumeBonuses: [
@@ -330,7 +377,7 @@ contract('W12Crowdsale', async (accounts) => {
                 ];
 
                 await sut.setStages(
-                    discountStages.map(s => s.endDate),
+                    discountStages.map(s => s.dates),
                     discountStages.map(s => s.discount),
                     discountStages.map(s => s.vestingTime),
                     {from: tokenOwner}
@@ -348,7 +395,7 @@ contract('W12Crowdsale', async (accounts) => {
                 let totalBoughtBefore;
                 let balance;
 
-                utils.time.increaseTimeTo(stage.endDate - 30);
+                await utils.time.increaseTimeTo(stage.dates[1] - 30);
 
                 await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.minus(1), from: buyer }).should.be.fulfilled;
                 balance = await token.balanceOf(buyer);
