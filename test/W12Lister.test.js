@@ -188,7 +188,10 @@ contract('W12Lister', async (accounts) => {
                     const discountStages = [
                         {
                             name: 'Phase 0',
-                            endDate: lastDate + utils.time.duration.minutes(60),
+                            dates: [
+                                lastDate + utils.time.duration.minutes(11),
+                                lastDate + utils.time.duration.minutes(60),
+                            ],
                             vestingTime: 0,
                             discount: 0,
                             volumeBonuses: [
@@ -209,7 +212,7 @@ contract('W12Lister', async (accounts) => {
                     ];
 
                     await crowdsale.setStages(
-                        discountStages.map(s => s.endDate),
+                        discountStages.map(s => s.dates),
                         discountStages.map(s => s.discount),
                         discountStages.map(s => s.vestingTime),
                         fromTokenOwner
@@ -223,7 +226,7 @@ contract('W12Lister', async (accounts) => {
                 });
 
                 it('crowdsale should be activated at time to sell tokens', async () => {
-                    utils.time.increaseTimeTo(lastDate + utils.time.duration.minutes(10));
+                    await utils.time.increaseTimeTo(lastDate + utils.time.duration.minutes(20));
                     const fundBalanceBefore = web3.eth.getBalance(fundAddress);
 
                     await crowdsale.buyTokens({ from: accounts[5], value: web3.toWei(1, 'ether') }).should.be.fulfilled;

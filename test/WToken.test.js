@@ -514,7 +514,7 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
 
         await this.token.transfer(anotherAccount, 1, { from: recipient }).should.be.rejectedWith(utils.EVMRevert);
 
-        utils.time.increaseTimeTo(expectedVesting + 10);
+        await utils.time.increaseTimeTo(expectedVesting + 10);
 
         await this.token.transfer(anotherAccount, 1, { from: recipient }).should.be.fulfilled;
       });

@@ -14,6 +14,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using BytesLib for bytes;
 
     struct Stage {
+        uint32 startDate;
         uint32 endDate;
         uint8 discount;
         uint32 vesting;
@@ -91,7 +92,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function getEndDate() external view returns (uint32) {
         require(stages.length > 0);
 
-        return stages[0].endDate;
+        return stages[stages.length - 1].endDate;
     }
 
     function getCurrentMilestoneIndex() public view returns (uint index) {
@@ -125,26 +126,28 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         __setParameters(_startDate, _price, _serviceWallet);
     }
 
-    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
-        require(stage_endDates.length <= uint8(-1));
-        require(stage_endDates.length > 0);
-        require(stage_endDates.length == stage_discounts.length);
-        require(stage_endDates.length == stage_vestings.length);
+    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
+        require(dates.length <= uint8(-1));
+        require(dates.length > 0);
+        require(dates.length == stage_discounts.length);
+        require(dates.length == stage_vestings.length);
 
-        uint8 stagesCount = uint8(stage_endDates.length);
+        uint8 stagesCount = uint8(dates.length);
         stages.length = stagesCount;
 
         for(uint8 i = 0; i < stagesCount; i++) {
-            require(stage_discounts[i] >= 0 && stage_discounts[i] < 100);
-            require(startDate < stage_endDates[i]);
+            require(stage_discounts[i] >= 0 && stage_discounts[i] < 100, "Stage discount is not in allowed range [0, 100)");
+            require(startDate <= dates[i][0], "Stage start date must be gt crowdsale start date");
+            require(startDate < dates[i][1], "Stage end date must be gt crowdsale start date");
+            require(dates[i][0] < dates[i][1], "Stage start date must be gt end date");
             // Checking that stages entered in historical order
             if(i < stagesCount - 1)
-                require(stage_endDates[i] < stage_endDates[i+1], "Stages are not in historical order");
+                require(dates[i][1] < dates[i+1][0], "Stages are not in historical order");
 
-            // Reverting stage order for future use
-            stages[stagesCount - i - 1].endDate = stage_endDates[i];
-            stages[stagesCount - i - 1].discount = stage_discounts[i];
-            stages[stagesCount - i - 1].vesting = stage_vestings[i];
+            stages[i].startDate = dates[i][0];
+            stages[i].endDate = dates[i][1];
+            stages[i].discount = stage_discounts[i];
+            stages[i].vesting = stage_vestings[i];
         }
 
         emit StagesUpdated();
@@ -206,13 +209,15 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(!isEnded());
         require(stages.length > 0);
 
-        (uint8 discount, uint32 vesting, uint8 volumeBonus) = getCurrentStage();
+        (uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] memory dates) = getCurrentStage();
 
         // return funds if ICO was closed
         if(stages.length == 0) {
             msg.sender.transfer(msg.value);
             return;
         }
+
+        require(dates[0] <= now && dates[1] > now, "Stage was not started");
 
         uint stagePrice = discount > 0 ? price.mul(100 - discount).div(100) : price;
 
@@ -239,30 +244,30 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return fund;
     }
 
-    function getCurrentStage() internal returns(uint8 discount, uint32 vesting, uint8 volumeBonus) {
-        if(stages.length == 0)
-            return (0, 0, 0);
+    function getCurrentStage() public view returns(uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] dates) {
+        for(uint i = 0; i < stages.length; i++) {
+            Stage storage stage = stages[i];
 
-        Stage storage lastStage = stages[stages.length - 1];
+            if (stage.startDate <= now && stage.endDate > now) {
+                volumeBonus = 0;
+                uint lastLowerBoundary = 0;
 
-        if(lastStage.endDate >= now) {
-            volumeBonus = 0;
-            uint lastLowerBoundary = 0;
-
-            if(lastStage.volumeBoundaries.length > 0)
-                for (uint i = 0; i < lastStage.volumeBoundaries.length - 1; i++)
-                    if(msg.value >= lastLowerBoundary && msg.value < lastStage.volumeBoundaries[i]) {
-                        volumeBonus = lastStage.volumeBonuses[i];
-                        break;
+                if (stage.volumeBoundaries.length > 0) {
+                    for (uint j = 0; j < stage.volumeBoundaries.length - 1; j++) {
+                        if (msg.value >= lastLowerBoundary && msg.value < stage.volumeBoundaries[j]) {
+                            volumeBonus = stage.volumeBonuses[j];
+                            break;
+                        } else {
+                            lastLowerBoundary = stage.volumeBoundaries[j];
+                        }
                     }
-                    else
-                        lastLowerBoundary = lastStage.volumeBoundaries[i];
+                }
 
-            return (lastStage.discount, lastStage.vesting, volumeBonus);
+                return (stage.discount, stage.vesting, volumeBonus, [stage.startDate, stage.endDate]);
+            }
         }
 
-        stages.length--;
-        return getCurrentStage();
+        return (0, 0, 0, [uint32(0), uint32(0)]);
     }
 
     function () payable external {
@@ -270,7 +275,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function isEnded() public view returns (bool) {
-        return stages.length == 0 || stages[0].endDate < now;
+        return stages.length == 0 || stages[stages.length - 1].endDate < now;
     }
 
     modifier beforeStart() {

@@ -6,7 +6,7 @@ import "../WToken.sol";
 interface IW12Crowdsale {
     function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external;
 
-    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external;
+    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external;
 
     function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external;
 
@@ -19,6 +19,8 @@ interface IW12Crowdsale {
     function getCurrentMilestoneIndex() public view returns (uint);
 
     function milestonesLength() external view returns (uint);
+
+    function getCurrentStage() public view returns (uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] dates);
 
     function isEnded() public view returns (bool);
 
