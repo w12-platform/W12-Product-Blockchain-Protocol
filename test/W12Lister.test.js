@@ -44,7 +44,7 @@ contract('W12Lister', async (accounts) => {
         it('should add token to listing', async () => {
             const whitelistedTokensCountBefore = await sut.approvedTokensLength().should.be.fulfilled;
 
-            const receipt = await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            const receipt = await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
 
             (await sut.approvedTokensLength()).should.bignumber.equal(whitelistedTokensCountBefore + 1);
 
@@ -56,24 +56,24 @@ contract('W12Lister', async (accounts) => {
         });
 
         it('should check that input addresses are not zeros', async () => {
-            await sut.whitelistToken(accounts[1], utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(utils.ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
-            await sut.whitelistToken(utils.ZERO_ADDRESS, utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(accounts[1], utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.rejected;
+            await sut.whitelistToken(utils.ZERO_ADDRESS, utils.ZERO_ADDRESS, "TestTokenForSale", "TTFS", 18 * 100, 50, 50 * 100).should.be.rejected;
         });
 
         it('should reject add the same token for the same owner multiple times', async () => {
-            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
-            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.rejected;
+            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.rejected;
         });
 
         it('should allow to add the same token for different owners', async () => {
-            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
-            await sut.whitelistToken(accounts[2], token.address, "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
+            await sut.whitelistToken(accounts[2], token.address, "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
         });
 
         it('should allow to add different tokens for the same owner', async () => {
-            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
-            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50, 50).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
+            await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 50 * 100, 50 * 100).should.be.fulfilled;
         });
 
         describe('when token is listed', async () => {
@@ -82,7 +82,7 @@ contract('W12Lister', async (accounts) => {
             let placementReceipt;
 
             beforeEach(async () => {
-                await sut.whitelistToken(tokenOwner, token.address, "TestTokenz", "TT", 18, 30, 30);
+                await sut.whitelistToken(tokenOwner, token.address, "TestTokenz", "TT", 18, 30 * 100, 30 * 100);
                 await token.mint(tokenOwner, oneToken.mul(10000), 0);
                 await token.approve(sut.address, oneToken.mul(10000), {from: tokenOwner});
 
@@ -111,12 +111,12 @@ contract('W12Lister', async (accounts) => {
         const fromTokenOwner = { from: accounts[1] };
 
         it('should reject whitelisting a token', async () => {
-            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1, 1, {from: accounts[2]}).should.be.rejected;
+            await sut.whitelistToken(utils.generateRandomAddress(), utils.generateRandomAddress(), "", "", 1, 1 * 100, 1 * 100, {from: accounts[2]}).should.be.rejected;
         });
 
         describe('when owner set the crowdsale', async () => {
             beforeEach(async () => {
-                await sut.whitelistToken(fromTokenOwner.from, token.address, "TestTokenz", "TT", 18, 30, 30, fromSystemAccount);
+                await sut.whitelistToken(fromTokenOwner.from, token.address, "TestTokenz", "TT", 18, 30 * 100, 30 * 100, fromSystemAccount);
                 await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);
                 await token.approve(sut.address, oneToken.mul(10000), fromTokenOwner);
 

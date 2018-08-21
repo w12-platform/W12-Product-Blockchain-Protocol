@@ -6,10 +6,11 @@ import "./interfaces/IW12CrowdsaleFactory.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
-
+import "./libs/Percent.sol";
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
+    using Percent for uint;
 
     mapping (address => uint16) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
@@ -28,8 +29,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         string symbol;
         uint8 decimals;
         mapping(address => bool) approvedOwners;
-        uint8 feePercent;
-        uint8 ethFeePercent;
+        uint feePercent;
+        uint ethFeePercent;
         IW12Crowdsale crowdsaleAddress;
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
@@ -49,13 +50,13 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens.length++; // zero-index element should never be used
     }
 
-    function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint8 feePercent, uint8 ethFeePercent)
+    function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint feePercent, uint ethFeePercent)
         external onlyOwner {
 
         require(tokenOwner != address(0));
         require(tokenAddress != address(0));
-        require(feePercent < 100);
-        require(ethFeePercent < 100);
+        require(feePercent.isPercent() && feePercent.fromPercent() < 100);
+        require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
         require(!approvedTokens[approvedTokensIndex[tokenAddress]].approvedOwners[tokenOwner]);
 
         uint16 index = uint16(approvedTokens.length);
@@ -86,7 +87,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         ERC20 token = ERC20(tokenAddress);
         uint balanceBefore = token.balanceOf(swap);
         uint fee = listedToken.feePercent > 0
-            ? amount.mul(listedToken.feePercent).div(100)
+            ? amount.percent(listedToken.feePercent)
             : 0;
 
         uint amountWithoutFee = amount.sub(fee);

@@ -6,11 +6,13 @@ import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../solidity-bytes-utils/contracts/BytesLib.sol";
 import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
+import "./libs/Percent.sol";
 import "./W12Fund.sol";
 
 
 contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
+    using Percent for uint;
     using BytesLib for bytes;
 
     struct Stage {
@@ -35,7 +37,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     uint tokenDecimals;
     uint32 public startDate;
     uint public price;
-    uint8 public serviceFee;
+    uint public serviceFee;
     address public serviceWallet;
     IW12Fund public fund;
 
@@ -49,9 +51,9 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     event debug(uint value);
 
-    constructor (address _token, uint _tokenDecimals, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, IW12Fund _fund) public {
+    constructor (address _token, uint _tokenDecimals, uint32 _startDate, uint _price, address _serviceWallet, uint _serviceFee, IW12Fund _fund) public {
         require(_token != address(0));
-        require(_serviceFee >= 0 && _serviceFee < 100);
+        require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);
         require(_fund != address(0));
 
         token = WToken(_token);
@@ -229,7 +231,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
 
         if(serviceFee > 0)
-            serviceWallet.transfer(msg.value.mul(serviceFee).div(100));
+            serviceWallet.transfer(msg.value.percent(serviceFee));
 
         fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
 

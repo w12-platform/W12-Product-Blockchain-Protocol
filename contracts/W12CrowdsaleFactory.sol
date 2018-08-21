@@ -16,7 +16,7 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         fundFactory = _fundFactory;
     }
 
-    function createCrowdsale(address wTokenAddress, uint32 startDate, uint price, address serviceWallet, uint8 serviceFee, address swap, address owner)
+    function createCrowdsale(address wTokenAddress, uint32 startDate, uint price, address serviceWallet, uint serviceFee, address swap, address owner)
         external returns (IW12Crowdsale result) {
         IW12Fund fund = fundFactory.createFund(swap);
 

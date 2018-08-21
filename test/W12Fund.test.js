@@ -117,7 +117,7 @@ contract('W12Fund', async (accounts) => {
                     serviceWalletAddress: utils.generateRandomAddress(),
                     swapAddress: utils.generateRandomAddress(),
                     price: tokenPrice,
-                    serviceFee: 10,
+                    serviceFee: 10 * 100,
                     fundAddress: utils.generateRandomAddress()
                 },
                 crowdsaleOwner,

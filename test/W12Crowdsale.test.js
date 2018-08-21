@@ -23,7 +23,7 @@ contract('W12Crowdsale', async (accounts) => {
         fund = await W12Fund.new({from: tokenOwner}).should.be.fulfilled;
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        sut = await W12Crowdsale.new(token.address, 18, startDate, 100, serviceWallet, 10, fund.address, {from: tokenOwner}).should.be.fulfilled;
+        sut = await W12Crowdsale.new(token.address, 18, startDate, 100, serviceWallet, 10 * 100, fund.address, {from: tokenOwner}).should.be.fulfilled;
         await token.addTrustedAccount(sut.address, {from: tokenOwner}).should.be.fulfilled;
         await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner}).should.be.fulfilled;
         await fund.setCrowdsale(sut.address, {from: tokenOwner}).should.be.fulfilled;
@@ -36,12 +36,12 @@ contract('W12Crowdsale', async (accounts) => {
             (await sut.startDate()).should.bignumber.equal(startDate);
             (await sut.token()).should.be.equal(token.address);
             (await sut.price()).should.bignumber.equal(100);
-            (await sut.serviceFee()).should.bignumber.equal(10);
+            (await sut.serviceFee()).should.bignumber.equal(10 * 100);
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
         });
 
         it('should reject crowdsale with start date in the past', async () => {
-            await W12Crowdsale.new(token.address, 18, startDate - 1000, 100, serviceWallet, 10, fund.address, {from: tokenOwner}).should.be.rejected;
+            await W12Crowdsale.new(token.address, 18, startDate - 1000, 100, serviceWallet, 10 * 100, fund.address, {from: tokenOwner}).should.be.rejected;
         });
     });
 
