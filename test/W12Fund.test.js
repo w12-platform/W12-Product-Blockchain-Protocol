@@ -150,8 +150,8 @@ contract('W12Fund', async (accounts) => {
         });
 
         describe('test `getRefundAmount` method', async () => {
-            for (const milestoneIndex of [0,1,2]) {
-                it(`should give full refund after milestone #${milestoneIndex} in case with one investor`, async () => {
+            for (const milestoneIndex of [0,1,2])
+                it(`should calculate full refund amount after milestone #${milestoneIndex} in case with one investor`, async () => {
                     const withdrawalEndDate = milestoneFixture.milestones[milestoneIndex].withdrawalWindow;
                     const purchaseTokens = new BigNumber(20);
                     const purchaseTokensRecord = oneToken.mul(20);
@@ -179,7 +179,6 @@ contract('W12Fund', async (accounts) => {
 
                     refundAmount.should.bignumber.eq(expectedRefundAmount);
                 });
-            }
 
             it('partial refund in case with two investors', async () => {
                 const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
@@ -222,53 +221,6 @@ contract('W12Fund', async (accounts) => {
                 refundAmount2.should.bignumber.eq(expectedRefundAmount);
             });
 
-            // it('partial refund in case with two investors and some refunded amount', async () => {
-            //     const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
-            //     const records = [
-            //         {
-            //             buyer: buyer1,
-            //             tokens: new BigNumber(20),
-            //         },
-            //         {
-            //             buyer: buyer2,
-            //             tokens: new BigNumber(30),
-            //         }
-            //     ];
-
-            //     const tokenDecimals = tokenFixture.args.decimals;
-            //     const someAccount = accounts[5];
-
-            //     await utils.time.increaseTimeTo(withdrawalEndDate - 60);
-
-            //     const recordsResult = await FundFixture.setPurchaseRecords(
-            //         sut,
-            //         records,
-            //         tokenPrice,
-            //         tokenDecimals,
-            //         crowdsaleOwner
-            //     ).should.be.fulfilled;
-
-            //     const refundedAmount = recordsResult.totalCost.mul(0.2);
-            //     const newFundedAmount = recordsResult.totalCost.minus(refundedAmount);
-
-            //     await sut._setTotalRefunded(refundedAmount, {from: someAccount}).should.be.fulfilled;
-            //     await sut._receiveFunds(refundedAmount, {from: someAccount}).should.be.fulfilled;
-
-            //     const tokensToReturn = recordsResult.args[1].boughtTokens.div(2); // 15 * 10 ** 18
-            //     const expectedRefundAmount = utils.calculateRefundAmount(
-            //         newFundedAmount,
-            //         recordsResult.totalCost,
-            //         recordsResult.args[1].cost,
-            //         recordsResult.args[1].boughtTokens,
-            //         tokensToReturn,
-            //         tokenDecimals
-            //     );
-
-            //     const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
-
-            //     refundAmount.should.bignumber.eq(expectedRefundAmount);
-            // });
-
             it('should not refund on non investor address', async () => {
                 const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
                 const records = [
@@ -299,96 +251,64 @@ contract('W12Fund', async (accounts) => {
 
                 refundAmount.should.bignumber.eq(BigNumber.Zero);
             });
-
-            // it('should not refund in case with empty fund balance', async () => {
-            //     const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
-            //     const records = [
-            //         {
-            //             buyer: buyer1,
-            //             tokens: new BigNumber(20),
-            //         },
-            //         {
-            //             buyer: buyer2,
-            //             tokens: new BigNumber(30),
-            //         }
-            //     ];
-
-            //     const tokenDecimals = tokenFixture.args.decimals;
-            //     const someAccount = accounts[5];
-
-            //     await utils.time.increaseTimeTo(withdrawalEndDate - 60);
-
-            //     const recordsResult = await FundFixture.setPurchaseRecords(
-            //         sut,
-            //         records,
-            //         tokenPrice,
-            //         tokenDecimals,
-            //         crowdsaleOwner
-            //     ).should.be.fulfilled;
-
-            //     await sut._receiveFunds(recordsResult.totalCost, {from: someAccount});
-
-            //     const tokensToReturn = recordsResult.args[1].boughtTokens.mul(0.4);
-            //     const expectedRefundAmount = utils.calculateRefundAmount(
-            //         0,
-            //         recordsResult.totalCost,
-            //         recordsResult.totalBought,
-            //         recordsResult.args[1].boughtTokens,
-            //         tokensToReturn,
-            //         tokenDecimals
-            //     );
-            //     const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
-
-            //     refundAmount.should.bignumber.eq(expectedRefundAmount);
-            // });
         });
 
         describe('test `refund` method', async () => {
-            it('should refund', async () => {
-                utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
+            for (const milestoneIndex of [0,1,2]) {
+                it(`should refund buyer after milestone #${milestoneIndex} ended`, async () => {
+                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 60);
 
-                const funds = new BigNumber(web3.toWei(0.1, 'ether'));
-                const tokens = oneToken.mul(20);
-                const tokensToReturn = oneToken.mul(20);
-                const tokenDecimals = tokenFixture.args.decimals;
+                    const funds = new BigNumber(web3.toWei(0.1, 'ether'));
+                    const tokens = oneToken.mul(20);
+                    const tokensToReturn = oneToken.mul(20);
+                    const tokenDecimals = tokenFixture.args.decimals;
 
-                await sut.recordPurchase(buyer1, tokens, {
-                    from: crowdsaleOwner,
-                    value: funds
-                }).should.be.fulfilled;
+                    await sut.recordPurchase(buyer1, tokens, {
+                        from: crowdsaleOwner,
+                        value: funds
+                    }).should.be.fulfilled;
 
-                const expectedRefundAmount = utils.calculateRefundAmount(
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    tokens,
-                    tokensToReturn,
-                    tokenDecimals
-                );
+                    const expectedRefundAmount = utils.calculateRefundAmount(
+                        web3.toWei(0.1, 'ether'),
+                        web3.toWei(0.1, 'ether'),
+                        web3.toWei(0.1, 'ether'),
+                        tokens,
+                        tokensToReturn,
+                        tokenDecimals
+                    );
 
-                const buyer1BalanceBefore = web3.eth.getBalance(buyer1);
+                    const buyer1BalanceBefore = web3.eth.getBalance(buyer1);
 
-                (await sut.totalRefunded()).should.bignumber.eq(0);
+                    (await sut.totalRefunded()).should.bignumber.eq(0);
 
-                const refundOperation = await sut.refund(tokensToReturn, {from: buyer1}).should.be.fulfilled;
+                    const refundReceipt = await sut.refund(tokensToReturn, {from: buyer1}).should.be.fulfilled;
 
-                (await sut.totalRefunded()).should.bignumber.eq(expectedRefundAmount);
+                    (await sut.totalRefunded()).should.bignumber.eq(expectedRefundAmount);
 
-                const logs = refundOperation.logs;
-                const operationCost = await utils.getTransactionCost(refundOperation);
-                const investmentsInfoAfter = await sut.getInvestmentsInfo(buyer1).should.be.fulfilled;
+                    const logs = refundReceipt.logs;
+                    const operationCost = await utils.getTransactionCost(refundReceipt);
+                    const investmentsInfoAfter = await sut.getInvestmentsInfo(buyer1).should.be.fulfilled;
 
-                web3.eth.getBalance(sut.address).should.bignumber.eq(funds.minus(expectedRefundAmount));
-                web3.eth.getBalance(buyer1).should.bignumber.eq(buyer1BalanceBefore.plus(expectedRefundAmount).minus(operationCost));
+                    web3.eth.getBalance(sut.address).should.bignumber.eq(funds.minus(expectedRefundAmount));
+                    web3.eth.getBalance(buyer1).should.bignumber.eq(buyer1BalanceBefore.plus(expectedRefundAmount).minus(operationCost));
 
-                investmentsInfoAfter[0].should.bignumber.equal(0);
+                    investmentsInfoAfter[0].should.bignumber.equal(0);
 
-                logs.length.should.be.equal(1);
-                logs[0].event.should.be.equal('FundsRefunded');
-                logs[0].args.buyer.should.be.equal(buyer1);
-                logs[0].args.weiAmount.should.bignumber.eq(expectedRefundAmount);
-                logs[0].args.tokenAmount.should.bignumber.eq(tokens);
-            });
+                    logs.length.should.be.equal(1);
+                    logs[0].event.should.be.equal('FundsRefunded');
+                    logs[0].args.buyer.should.be.equal(buyer1);
+                    logs[0].args.weiAmount.should.bignumber.eq(expectedRefundAmount);
+                    logs[0].args.tokenAmount.should.bignumber.eq(tokens);
+                });
+
+                it(`should allow refund between milestone ${milestoneIndex} end date and the end of withdrawal window`, async () => {
+                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].endDate + 5);
+                    (await sut.refundAllowed()).should.be.true;
+
+                    utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 5);
+                    (await sut.refundAllowed()).should.be.true;
+                });
+            }
 
             it('should reject refund if provide zero tokens', async () => {
                 utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);

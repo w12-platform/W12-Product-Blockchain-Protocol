@@ -186,7 +186,8 @@ contract('W12Crowdsale', async (accounts) => {
                     description: "Single milestone with 100% tranche",
                     endDate: startDate,
                     voteEndDate: startDate + 60,
-                    withdrawalWindow: startDate + 120
+                    withdrawalWindow: startDate + 120,
+                    tranchePercent: 100
                 }].map(item => {
                     return utils.encodeMilestoneParameters(
                         item.name,
@@ -198,9 +199,6 @@ contract('W12Crowdsale', async (accounts) => {
                     );
                 });
 
-                console.log(encodedMilestones);
-
-
                 await sut.setMilestones(
                     encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
                     encodedMilestones.map(m => m.tranchePercent),
@@ -209,9 +207,9 @@ contract('W12Crowdsale', async (accounts) => {
                     {from: tokenOwner}
                 ).should.be.fulfilled;
 
-                // const actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
+                const actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
 
-                // actualMilestonesCount.should.bignumber.equal(1);
+                actualMilestonesCount.should.bignumber.equal(1);
             });
 
             describe('when working with milestones', async () => {

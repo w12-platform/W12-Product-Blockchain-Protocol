@@ -162,6 +162,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
 
     function refund(uint wtokensToRefund) external nonReentrant {
         address buyer = msg.sender;
+
         require(refundAllowed());
         require(wtokensToRefund > 0);
         require(buyers[buyer].totalBought >= wtokensToRefund);
@@ -196,6 +197,11 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
 
         // Refund allowed from ending of previous milestone to closing of withdrawal window
+        if(endDate <= now && now < withdrawalWindow)
+            return true;
+
+        (endDate, , , withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex);
+
         return endDate <= now && now < withdrawalWindow;
     }
 

@@ -14,9 +14,11 @@ interface IW12Crowdsale {
 
     function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes);
 
+    function getMilestone(uint index) public view returns (uint32, uint8, uint32, uint32, bytes, bytes);
+
     function getCurrentMilestoneIndex() public view returns (uint);
 
-    function getMilestone(uint index) public view returns (uint32, uint8, uint32, uint32, bytes, bytes);
+    function milestonesLength() external view returns (uint);
 
     function isEnded() public view returns (bool);
 

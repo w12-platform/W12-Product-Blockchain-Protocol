@@ -88,6 +88,29 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return stages[stageNumber].volumeBonuses;
     }
 
+    function getEndDate() external view returns (uint32) {
+        require(stages.length > 0);
+
+        return stages[0].endDate;
+    }
+
+    function getCurrentMilestoneIndex() public view returns (uint index) {
+        uint milestonesCount = milestones.length;
+
+        if(milestonesCount == 0)
+            revert();
+
+        while(index < milestonesCount - 1 && now > milestoneDates[index * 3])
+            index++;
+    }
+
+    // returns last milestone if completely ended or active milestone at now
+    function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
+        uint index = getCurrentMilestoneIndex();
+
+        return getMilestone(index);
+    }
+
     function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
         require(_startDate >= now);
         require(_price > 0);
@@ -98,11 +121,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         serviceWallet = _serviceWallet;
     }
 
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner {
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner beforeStart {
         __setParameters(_startDate, _price, _serviceWallet);
     }
 
-    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner {
+    function setStages(uint32[] stage_endDates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
         require(stage_endDates.length <= uint8(-1));
         require(stage_endDates.length > 0);
         require(stage_endDates.length == stage_discounts.length);
@@ -127,7 +150,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         emit StagesUpdated();
     }
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external onlyOwner {
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external onlyOwner beforeStart {
         require(volumeBoundaries.length == volumeBonuses.length);
         require(stage < stages.length);
 
@@ -138,8 +161,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         stages[stage].volumeBonuses = volumeBonuses;
     }
 
-    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner {
-        require(milestones.length == 0);
+    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeStart {
         require(dates.length <= uint8(-1));
         require(dates.length >= 3);
         require(dates.length % 3 == 0);
@@ -175,32 +197,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         }
 
         milestoneDates = dates;
-        // require(totalPercents == 100);
-    }
-
-    function getEndDate() external view returns (uint32) {
-        require(stages.length > 0);
-
-        return stages[0].endDate;
-    }
-
-    function getCurrentMilestoneIndex() public view returns (uint index) {
-        uint milestonesCount = milestones.length;
-
-        if(milestonesCount == 0)
-            revert();
-
-        for(index = 0; index < milestonesCount && now > milestoneDates[index * 3]; index++) {}
-
-        if(index == milestonesCount)
-            return index - 1;
-    }
-
-    // returns last milestone if completely ended or active milestone at now
-    function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
-        uint index = getCurrentMilestoneIndex();
-
-        return getMilestone(index);
+        require(totalPercents == 100);
     }
 
     function buyTokens() payable nonReentrant public {
@@ -274,6 +271,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function isEnded() public view returns (bool) {
         return stages.length == 0 || stages[0].endDate < now;
+    }
+
+    modifier beforeStart() {
+        require(startDate > now);
+
+        _;
     }
 
     function claimRemainingTokens() external onlyOwner {
