@@ -6,19 +6,23 @@ import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./WToken.sol";
 import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
+import "./libs/Percent.sol";
 
 
 contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     using SafeMath for uint;
+    using Percent for uint;
 
     IW12Crowdsale public crowdsale;
     address public swap;
+    address public serviceWallet;
     WToken public wToken;
     uint public tokenDecimals; // TODO: refactor this
     mapping (address=>TokenPriceInfo) public buyers;
     mapping (uint32 => bool) public completedTranches; // TODO: refactor this
     uint public totalFunded;
     uint public totalRefunded;
+    uint public trancheFeePercent;
 
     struct TokenPriceInfo {
         uint totalBought;
@@ -29,6 +33,12 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     event FundsReceived(address indexed buyer, uint weiAmount, uint tokenAmount);
     event FundsRefunded(address indexed buyer, uint weiAmount, uint tokenAmount);
     event TrancheOperation(address indexed receiver, uint amount);
+
+    constructor(uint _trancheFeePercent) public {
+        require(_trancheFeePercent.isPercent() && _trancheFeePercent.fromPercent() < 100);
+
+        trancheFeePercent = _trancheFeePercent;
+    }
 
     function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
         require(_crowdsale != address(0));
@@ -42,6 +52,12 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         require(_swap != address(0));
 
         swap = _swap;
+    }
+
+    function setServiceWallet(address _serviceWallet) onlyOwner external {
+        require(_serviceWallet != address(0));
+
+        serviceWallet = _serviceWallet;
     }
 
     function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
@@ -154,6 +170,14 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         require(trancheAmount > 0);
 
         completedTranches[withdrawalWindow] = true;
+
+        if (trancheFeePercent > 0) {
+            uint fee = trancheAmount.percent(trancheFeePercent);
+
+            serviceWallet.transfer(fee);
+
+            trancheAmount = trancheAmount.sub(fee);
+        }
 
         msg.sender.transfer(trancheAmount);
 

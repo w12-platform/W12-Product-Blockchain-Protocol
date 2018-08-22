@@ -5,6 +5,7 @@ import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../solidity-bytes-utils/contracts/BytesLib.sol";
 import "./interfaces/IW12Crowdsale.sol";
+import "../openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./W12Fund.sol";
@@ -14,6 +15,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using BytesLib for bytes;
+    using SafeERC20 for ERC20;
 
     struct Stage {
         uint32 startDate;
@@ -34,11 +36,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     WToken public token;
+    ERC20 public originToken;
     uint tokenDecimals;
     uint32 public startDate;
     uint public price;
     uint public serviceFee;
+    uint public WTokenSaleFeePercent;
     address public serviceWallet;
+    address public swap;
     IW12Fund public fund;
 
     Stage[] public stages;
@@ -51,16 +56,32 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     event debug(uint value);
 
-    constructor (address _token, uint _tokenDecimals, uint32 _startDate, uint _price, address _serviceWallet, uint _serviceFee, IW12Fund _fund) public {
+    constructor (
+        address _originToken,
+        address _token,
+        uint _tokenDecimals,
+        uint32 _startDate,
+        uint _price,
+        address _serviceWallet,
+        address _swap,
+        uint _serviceFee,
+        uint _WTokenSaleFeePercent,
+        IW12Fund _fund
+    )
+        public
+    {
         require(_token != address(0));
         require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);
+        require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
 
         token = WToken(_token);
+        originToken = ERC20(_originToken);
         tokenDecimals = _tokenDecimals;
 
-        __setParameters(_startDate, _price, _serviceWallet);
+        __setParameters(_startDate, _price, _serviceWallet, _swap);
         serviceFee = _serviceFee;
+        WTokenSaleFeePercent = _WTokenSaleFeePercent;
         fund = _fund;
     }
 
@@ -114,18 +135,20 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return getMilestone(index);
     }
 
-    function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
+    function __setParameters(uint32 _startDate, uint _price, address _serviceWallet, address _swap) internal {
         require(_startDate >= now);
         require(_price > 0);
         require(_serviceWallet != address(0));
+        require(_swap != address(0));
 
         startDate = _startDate;
         price = _price;
         serviceWallet = _serviceWallet;
+        swap = _swap;
     }
 
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner beforeStart {
-        __setParameters(_startDate, _price, _serviceWallet);
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet, address _swap) external onlyOwner beforeStart {
+        __setParameters(_startDate, _price, _serviceWallet, _swap);
     }
 
     function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
@@ -227,6 +250,13 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             .mul(100 + volumeBonus)
             .div(stagePrice)
             .mul(10**(tokenDecimals - 2));
+
+        if (WTokenSaleFeePercent > 0) {
+            uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
+
+            originToken.saveTransferFrom(swap, serviceWallet, tokensFee);
+            require(token.transfer(swap, tokensFee));
+        }
 
         require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
 

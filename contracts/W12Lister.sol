@@ -32,6 +32,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         mapping(address => bool) approvedOwners;
         uint feePercent;
         uint ethFeePercent;
+        uint WTokenSaleFeePercent;
+        uint trancheFeePercent;
         IW12Crowdsale crowdsaleAddress;
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
@@ -51,13 +53,25 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens.length++; // zero-index element should never be used
     }
 
-    function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint feePercent, uint ethFeePercent)
+    function whitelistToken(
+        address tokenOwner,
+        address tokenAddress,
+        string name,
+        string symbol,
+        uint8 decimals,
+        uint feePercent,
+        uint ethFeePercent,
+        uint WTokenSaleFeePercent,
+        uint trancheFeePercent
+    )
         external onlyOwner {
 
         require(tokenOwner != address(0));
         require(tokenAddress != address(0));
         require(feePercent.isPercent() && feePercent.fromPercent() < 100);
         require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
+        require(WTokenSaleFeePercent.isPercent() && WTokenSaleFeePercent.fromPercent() < 100);
+        require(trancheFeePercent.isPercent() && trancheFeePercent.fromPercent() < 100);
         require(getApprovedToken(tokenAddress, tokenOwner).tokenAddress != tokenAddress);
         require(!getApprovedToken(tokenAddress, tokenOwner).approvedOwners[tokenOwner]);
 
@@ -73,6 +87,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens[index].decimals = decimals;
         approvedTokens[index].feePercent = feePercent;
         approvedTokens[index].ethFeePercent = ethFeePercent;
+        approvedTokens[index].WTokenSaleFeePercent = WTokenSaleFeePercent;
+        approvedTokens[index].trancheFeePercent = trancheFeePercent;
         approvedTokens[index].tokenAddress = tokenAddress;
 
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
@@ -101,7 +117,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         uint balanceAfter = token.balanceOf(swap);
 
-        assert(balanceAfter == balanceBefore.add(amountWithoutFee));
+        require(balanceAfter == balanceBefore.add(amountWithoutFee));
 
         if(ledger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
@@ -119,13 +135,18 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
 
-        IW12Crowdsale crowdsale = factory.createCrowdsale(address(wtoken),
-        startDate,
-        price,
-        serviceWallet,
-        getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
-        swap,
-        msg.sender);
+        IW12Crowdsale crowdsale = factory.createCrowdsale(
+            address(tokenAddress),
+            address(wtoken),
+            startDate,
+            price,
+            serviceWallet,
+            getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
+            getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
+            getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
+            swap,
+            msg.sender
+        );
 
         getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress = crowdsale;
         wtoken.addTrustedAccount(crowdsale);
