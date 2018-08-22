@@ -12,7 +12,7 @@ library Percent {
     }
 
     function isPercent(uint _a) internal pure returns (bool) {
-        return _a >= 100 && _a <= 10000;
+        return _a >= 0 && _a <= 10000;
     }
 
     function toPercent(uint _a) internal pure returns (uint) {
