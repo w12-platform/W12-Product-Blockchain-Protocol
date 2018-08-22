@@ -4,11 +4,13 @@ const utils = require('../shared/tests/utils.js');
 
 const WTokenTestHelperTest = artifacts.require('WTokenTestHelper');
 const WToken = artifacts.require('WToken');
+const oneToken = new BigNumber(10).pow(18);
 
 contract('WTokenTestHelper', async (accounts) => {
     it('should create token', async () => {
         const helper = await WTokenTestHelperTest.new();
-        const receipt = await helper.createToken('Name', 'NA', 18);
+        const issued = oneToken;
+        const receipt = await helper.createToken('Name', 'NA', 18, 1);
         const logs = receipt.logs;
 
         logs.length.should.be.eq(1);
@@ -23,26 +25,30 @@ contract('WTokenTestHelper', async (accounts) => {
         name.should.to.be.eq('Name');
         tokens.length.should.to.be.eq(1);
         tokens[0].should.to.be.eq(address);
+
+        const balance = await token.balanceOf(accounts[0]).should.to.be.fulfilled;
+
+        balance.should.bignumber.eq(issued);
     });
 
     it('should mint tokens', async () => {
         const helper = await WTokenTestHelperTest.new();
-        await helper.createToken('Name', 'NA', 18);
+        await helper.createToken('Name', 'NA', 18, 0);
         const tokens = await helper.tokensList();
         const address = tokens[0];
         const token = WToken.at(address);
 
-        await helper.mint(address, accounts[0], 100, 0).should.to.be.fulfilled;
+        await helper.mint(address, accounts[0], 10, 0).should.to.be.fulfilled;
 
         const balance = await token.balanceOf(accounts[0]).should.to.be.fulfilled;
 
-        balance.should.bignumber.eq(100);
+        balance.should.bignumber.eq(oneToken.mul(10));
     });
 
     it('should revert mint if token is not exists', async () => {
         const helper = await WTokenTestHelperTest.new();
         const address = utils.generateRandomAddress();
 
-        await helper.mint(address, accounts[0], 100, 0).should.be.rejectedWith(utils.EVMRevert);
+        await helper.mint(address, accounts[0], 1, 0).should.be.rejectedWith(utils.EVMRevert);
     });
 })

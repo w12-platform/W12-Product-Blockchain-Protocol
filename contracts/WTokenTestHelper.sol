@@ -9,12 +9,16 @@ contract WTokenTestHelper {
 
     event NewToken(address indexed tokenAddress);
 
-    function createToken(string _name, string _symbol, uint8 _decimals) public returns(WToken token) {
+    function createToken(string _name, string _symbol, uint8 _decimals, uint amountToIssue) public returns(WToken token) {
         token = new WToken(_name, _symbol, _decimals);
         token.transferOwnership(msg.sender);
 
         tokenIndexes[address(token)] = tokens.length;
         tokens.push(address(token));
+
+        if (amountToIssue > 0) {
+            token.mint(msg.sender, amountToIssue * 10 ** uint(_decimals), 0);
+        }
 
         emit NewToken(token);
     }
@@ -30,7 +34,9 @@ contract WTokenTestHelper {
     function mint(address tokenAddress, address to, uint amount, uint32 vestingTime) public returns (bool) {
         require(hasToken(tokenAddress));
 
-        return WToken(tokenAddress).mint(to, amount, vestingTime);
+        WToken token = WToken(tokenAddress);
+
+        return token.mint(to, amount * 10 ** uint(token.decimals()), vestingTime);
     }
 
     function balanceOf(address tokenAddress, address wallet) public view returns (uint) {
