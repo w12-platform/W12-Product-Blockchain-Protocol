@@ -30,7 +30,7 @@ contract('Percent', async (accounts) => {
 
         it('should return false', async () => {
             const expected = false;
-            const result = await Percent.isPercent(1).should.be.fulfilled;
+            const result = await Percent.isPercent(10001).should.be.fulfilled;
 
             result.should.be.eq(expected);
         });
