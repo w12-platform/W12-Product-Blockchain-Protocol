@@ -2,6 +2,7 @@
 PATHS=`ls contracts/`
 
 rm -rf flats/*
+mkdir -p flats
 
 for FILE in $PATHS;
 do
