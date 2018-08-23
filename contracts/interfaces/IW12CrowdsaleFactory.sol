@@ -5,11 +5,14 @@ import "./IW12Crowdsale.sol";
 
 interface IW12CrowdsaleFactory {
     function createCrowdsale(
+        address tokenAddress,
         address _wTokenAddress,
         uint32 _startDate,
         uint price,
         address serviceWallet,
         uint serviceFee,
+        uint WTokenSaleFeePercent,
+        uint trancheFeePercent ,
         address swap,
         address owner
     )
