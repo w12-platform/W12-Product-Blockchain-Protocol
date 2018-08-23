@@ -5,6 +5,10 @@
       "constant": false,
       "inputs": [
         {
+          "name": "tokenAddress",
+          "type": "address"
+        },
+        {
           "name": "_wTokenAddress",
           "type": "address"
         },
@@ -22,6 +26,14 @@
         },
         {
           "name": "serviceFee",
+          "type": "uint256"
+        },
+        {
+          "name": "WTokenSaleFeePercent",
+          "type": "uint256"
+        },
+        {
+          "name": "trancheFeePercent",
           "type": "uint256"
         },
         {
@@ -49,20 +61,20 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.24;\n\nimport \"./IW12Crowdsale.sol\";\n\n\ninterface IW12CrowdsaleFactory {\n    function createCrowdsale(address _wTokenAddress, uint32 _startDate, uint price, address serviceWallet, uint serviceFee, address swap, address owner) external returns (IW12Crowdsale);\n}\n",
+  "source": "pragma solidity ^0.4.24;\n\nimport \"./IW12Crowdsale.sol\";\n\n\ninterface IW12CrowdsaleFactory {\n    function createCrowdsale(\n        address tokenAddress,\n        address _wTokenAddress,\n        uint32 _startDate,\n        uint price,\n        address serviceWallet,\n        uint serviceFee,\n        uint WTokenSaleFeePercent,\n        uint trancheFeePercent ,\n        address swap,\n        address owner\n    )\n        external returns (IW12Crowdsale);\n}\n",
   "sourcePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12CrowdsaleFactory.sol",
   "ast": {
     "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12CrowdsaleFactory.sol",
     "exportedSymbols": {
       "IW12CrowdsaleFactory": [
-        1758
+        4712
       ]
     },
-    "id": 1759,
+    "id": 4713,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1737,
+        "id": 4685,
         "literals": [
           "solidity",
           "^",
@@ -70,16 +82,16 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:5"
+        "src": "0:24:15"
       },
       {
         "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12Crowdsale.sol",
         "file": "./IW12Crowdsale.sol",
-        "id": 1738,
+        "id": 4686,
         "nodeType": "ImportDirective",
-        "scope": 1759,
-        "sourceUnit": 1736,
-        "src": "26:29:5",
+        "scope": 4713,
+        "sourceUnit": 4684,
+        "src": "26:29:15",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -89,9 +101,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1758,
+        "id": 4712,
         "linearizedBaseContracts": [
-          1758
+          4712
         ],
         "name": "IW12CrowdsaleFactory",
         "nodeType": "ContractDefinition",
@@ -99,7 +111,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 1757,
+            "id": 4711,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -107,16 +119,16 @@
             "name": "createCrowdsale",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1753,
+              "id": 4707,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1740,
-                  "name": "_wTokenAddress",
+                  "id": 4688,
+                  "name": "tokenAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "120:22:5",
+                  "scope": 4711,
+                  "src": "129:20:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -124,10 +136,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1739,
+                    "id": 4687,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "120:7:5",
+                    "src": "129:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -138,11 +150,37 @@
                 },
                 {
                   "constant": false,
-                  "id": 1742,
+                  "id": 4690,
+                  "name": "_wTokenAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "159:22:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 4689,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "159:7:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4692,
                   "name": "_startDate",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "144:17:5",
+                  "scope": 4711,
+                  "src": "191:17:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -150,10 +188,10 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 1741,
+                    "id": 4691,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "144:6:5",
+                    "src": "191:6:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint32",
                       "typeString": "uint32"
@@ -164,11 +202,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1744,
+                  "id": 4694,
                   "name": "price",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "163:10:5",
+                  "scope": 4711,
+                  "src": "218:10:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -176,10 +214,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1743,
+                    "id": 4693,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "163:4:5",
+                    "src": "218:4:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -190,11 +228,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1746,
+                  "id": 4696,
                   "name": "serviceWallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "175:21:5",
+                  "scope": 4711,
+                  "src": "238:21:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -202,10 +240,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1745,
+                    "id": 4695,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "175:7:5",
+                    "src": "238:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -216,11 +254,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1748,
+                  "id": 4698,
                   "name": "serviceFee",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "198:15:5",
+                  "scope": 4711,
+                  "src": "269:15:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -228,10 +266,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1747,
+                    "id": 4697,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "198:4:5",
+                    "src": "269:4:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -242,11 +280,63 @@
                 },
                 {
                   "constant": false,
-                  "id": 1750,
+                  "id": 4700,
+                  "name": "WTokenSaleFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "294:25:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4699,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "294:4:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4702,
+                  "name": "trancheFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "329:22:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4701,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "329:4:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4704,
                   "name": "swap",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "215:12:5",
+                  "scope": 4711,
+                  "src": "362:12:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -254,10 +344,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1749,
+                    "id": 4703,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "215:7:5",
+                    "src": "362:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -268,11 +358,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1752,
+                  "id": 4706,
                   "name": "owner",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "229:13:5",
+                  "scope": 4711,
+                  "src": "384:13:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -280,10 +370,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1751,
+                    "id": 4705,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "229:7:5",
+                    "src": "384:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -293,35 +383,35 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "119:124:5"
+              "src": "119:284:15"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1756,
+              "id": 4710,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1755,
+                  "id": 4709,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "262:13:5",
+                  "scope": 4711,
+                  "src": "430:13:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IW12Crowdsale_$1735",
+                    "typeIdentifier": "t_contract$_IW12Crowdsale_$4683",
                     "typeString": "contract IW12Crowdsale"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 1754,
+                    "id": 4708,
                     "name": "IW12Crowdsale",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 1735,
-                    "src": "262:13:5",
+                    "referencedDeclaration": 4683,
+                    "src": "430:13:15",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IW12Crowdsale_$1735",
+                      "typeIdentifier": "t_contract$_IW12Crowdsale_$4683",
                       "typeString": "contract IW12Crowdsale"
                     }
                   },
@@ -329,33 +419,33 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "261:15:5"
+              "src": "429:15:15"
             },
-            "scope": 1758,
-            "src": "95:182:5",
+            "scope": 4712,
+            "src": "95:350:15",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 1759,
-        "src": "58:221:5"
+        "scope": 4713,
+        "src": "58:389:15"
       }
     ],
-    "src": "0:280:5"
+    "src": "0:448:15"
   },
   "legacyAST": {
     "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12CrowdsaleFactory.sol",
     "exportedSymbols": {
       "IW12CrowdsaleFactory": [
-        1758
+        4712
       ]
     },
-    "id": 1759,
+    "id": 4713,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1737,
+        "id": 4685,
         "literals": [
           "solidity",
           "^",
@@ -363,16 +453,16 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:5"
+        "src": "0:24:15"
       },
       {
         "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12Crowdsale.sol",
         "file": "./IW12Crowdsale.sol",
-        "id": 1738,
+        "id": 4686,
         "nodeType": "ImportDirective",
-        "scope": 1759,
-        "sourceUnit": 1736,
-        "src": "26:29:5",
+        "scope": 4713,
+        "sourceUnit": 4684,
+        "src": "26:29:15",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -382,9 +472,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1758,
+        "id": 4712,
         "linearizedBaseContracts": [
-          1758
+          4712
         ],
         "name": "IW12CrowdsaleFactory",
         "nodeType": "ContractDefinition",
@@ -392,7 +482,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 1757,
+            "id": 4711,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -400,16 +490,16 @@
             "name": "createCrowdsale",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1753,
+              "id": 4707,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1740,
-                  "name": "_wTokenAddress",
+                  "id": 4688,
+                  "name": "tokenAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "120:22:5",
+                  "scope": 4711,
+                  "src": "129:20:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -417,10 +507,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1739,
+                    "id": 4687,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "120:7:5",
+                    "src": "129:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -431,11 +521,37 @@
                 },
                 {
                   "constant": false,
-                  "id": 1742,
+                  "id": 4690,
+                  "name": "_wTokenAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "159:22:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 4689,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "159:7:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4692,
                   "name": "_startDate",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "144:17:5",
+                  "scope": 4711,
+                  "src": "191:17:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -443,10 +559,10 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 1741,
+                    "id": 4691,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "144:6:5",
+                    "src": "191:6:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint32",
                       "typeString": "uint32"
@@ -457,11 +573,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1744,
+                  "id": 4694,
                   "name": "price",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "163:10:5",
+                  "scope": 4711,
+                  "src": "218:10:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -469,10 +585,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1743,
+                    "id": 4693,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "163:4:5",
+                    "src": "218:4:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -483,11 +599,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1746,
+                  "id": 4696,
                   "name": "serviceWallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "175:21:5",
+                  "scope": 4711,
+                  "src": "238:21:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -495,10 +611,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1745,
+                    "id": 4695,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "175:7:5",
+                    "src": "238:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -509,11 +625,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1748,
+                  "id": 4698,
                   "name": "serviceFee",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "198:15:5",
+                  "scope": 4711,
+                  "src": "269:15:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -521,10 +637,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1747,
+                    "id": 4697,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "198:4:5",
+                    "src": "269:4:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -535,11 +651,63 @@
                 },
                 {
                   "constant": false,
-                  "id": 1750,
+                  "id": 4700,
+                  "name": "WTokenSaleFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "294:25:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4699,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "294:4:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4702,
+                  "name": "trancheFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4711,
+                  "src": "329:22:15",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4701,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "329:4:15",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4704,
                   "name": "swap",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "215:12:5",
+                  "scope": 4711,
+                  "src": "362:12:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -547,10 +715,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1749,
+                    "id": 4703,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "215:7:5",
+                    "src": "362:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -561,11 +729,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 1752,
+                  "id": 4706,
                   "name": "owner",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "229:13:5",
+                  "scope": 4711,
+                  "src": "384:13:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -573,10 +741,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1751,
+                    "id": 4705,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "229:7:5",
+                    "src": "384:7:15",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -586,35 +754,35 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "119:124:5"
+              "src": "119:284:15"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1756,
+              "id": 4710,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1755,
+                  "id": 4709,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1757,
-                  "src": "262:13:5",
+                  "scope": 4711,
+                  "src": "430:13:15",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IW12Crowdsale_$1735",
+                    "typeIdentifier": "t_contract$_IW12Crowdsale_$4683",
                     "typeString": "contract IW12Crowdsale"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 1754,
+                    "id": 4708,
                     "name": "IW12Crowdsale",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 1735,
-                    "src": "262:13:5",
+                    "referencedDeclaration": 4683,
+                    "src": "430:13:15",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IW12Crowdsale_$1735",
+                      "typeIdentifier": "t_contract$_IW12Crowdsale_$4683",
                       "typeString": "contract IW12Crowdsale"
                     }
                   },
@@ -622,20 +790,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "261:15:5"
+              "src": "429:15:15"
             },
-            "scope": 1758,
-            "src": "95:182:5",
+            "scope": 4712,
+            "src": "95:350:15",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 1759,
-        "src": "58:221:5"
+        "scope": 4713,
+        "src": "58:389:15"
       }
     ],
-    "src": "0:280:5"
+    "src": "0:448:15"
   },
   "compiler": {
     "name": "solc",
@@ -643,5 +811,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-22T12:17:31.881Z"
+  "updatedAt": "2018-08-23T14:09:08.151Z"
 }

@@ -7,6 +7,14 @@
         {
           "name": "swap",
           "type": "address"
+        },
+        {
+          "name": "serviceWallet",
+          "type": "address"
+        },
+        {
+          "name": "trancheFeePercent",
+          "type": "uint256"
         }
       ],
       "name": "createFund",
@@ -25,20 +33,20 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.24;\n\nimport \"./IW12Fund.sol\";\n\n\ninterface IW12FundFactory {\n    function createFund(address swap) external returns (IW12Fund);\n}\n",
+  "source": "pragma solidity ^0.4.24;\n\nimport \"./IW12Fund.sol\";\n\n\ninterface IW12FundFactory {\n    function createFund(address swap, address serviceWallet, uint trancheFeePercent) external returns (IW12Fund);\n}\n",
   "sourcePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12FundFactory.sol",
   "ast": {
     "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12FundFactory.sol",
     "exportedSymbols": {
       "IW12FundFactory": [
-        4091
+        4758
       ]
     },
-    "id": 4092,
+    "id": 4759,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 4082,
+        "id": 4745,
         "literals": [
           "solidity",
           "^",
@@ -46,16 +54,16 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:11"
+        "src": "0:24:17"
       },
       {
         "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12Fund.sol",
         "file": "./IW12Fund.sol",
-        "id": 4083,
+        "id": 4746,
         "nodeType": "ImportDirective",
-        "scope": 4092,
-        "sourceUnit": 4081,
-        "src": "26:24:11",
+        "scope": 4759,
+        "sourceUnit": 4744,
+        "src": "26:24:17",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -65,9 +73,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 4091,
+        "id": 4758,
         "linearizedBaseContracts": [
-          4091
+          4758
         ],
         "name": "IW12FundFactory",
         "nodeType": "ContractDefinition",
@@ -75,7 +83,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 4090,
+            "id": 4757,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -83,16 +91,16 @@
             "name": "createFund",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 4086,
+              "id": 4753,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 4085,
+                  "id": 4748,
                   "name": "swap",
                   "nodeType": "VariableDeclaration",
-                  "scope": 4090,
-                  "src": "105:12:11",
+                  "scope": 4757,
+                  "src": "105:12:17",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -100,10 +108,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 4084,
+                    "id": 4747,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "105:7:11",
+                    "src": "105:7:17",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -111,37 +119,89 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4750,
+                  "name": "serviceWallet",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4757,
+                  "src": "119:21:17",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 4749,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "119:7:17",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4752,
+                  "name": "trancheFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4757,
+                  "src": "142:22:17",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4751,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "142:4:17",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "104:14:11"
+              "src": "104:61:17"
             },
             "payable": false,
             "returnParameters": {
-              "id": 4089,
+              "id": 4756,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 4088,
+                  "id": 4755,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 4090,
-                  "src": "137:8:11",
+                  "scope": 4757,
+                  "src": "184:8:17",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IW12Fund_$4080",
+                    "typeIdentifier": "t_contract$_IW12Fund_$4743",
                     "typeString": "contract IW12Fund"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 4087,
+                    "id": 4754,
                     "name": "IW12Fund",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 4080,
-                    "src": "137:8:11",
+                    "referencedDeclaration": 4743,
+                    "src": "184:8:17",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IW12Fund_$4080",
+                      "typeIdentifier": "t_contract$_IW12Fund_$4743",
                       "typeString": "contract IW12Fund"
                     }
                   },
@@ -149,33 +209,33 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "136:10:11"
+              "src": "183:10:17"
             },
-            "scope": 4091,
-            "src": "85:62:11",
+            "scope": 4758,
+            "src": "85:109:17",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 4092,
-        "src": "53:96:11"
+        "scope": 4759,
+        "src": "53:143:17"
       }
     ],
-    "src": "0:150:11"
+    "src": "0:197:17"
   },
   "legacyAST": {
     "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12FundFactory.sol",
     "exportedSymbols": {
       "IW12FundFactory": [
-        4091
+        4758
       ]
     },
-    "id": 4092,
+    "id": 4759,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 4082,
+        "id": 4745,
         "literals": [
           "solidity",
           "^",
@@ -183,16 +243,16 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:11"
+        "src": "0:24:17"
       },
       {
         "absolutePath": "/c/Users/Mr.Hokid/projects/work/w12-product-contracts/contracts/interfaces/IW12Fund.sol",
         "file": "./IW12Fund.sol",
-        "id": 4083,
+        "id": 4746,
         "nodeType": "ImportDirective",
-        "scope": 4092,
-        "sourceUnit": 4081,
-        "src": "26:24:11",
+        "scope": 4759,
+        "sourceUnit": 4744,
+        "src": "26:24:17",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -202,9 +262,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 4091,
+        "id": 4758,
         "linearizedBaseContracts": [
-          4091
+          4758
         ],
         "name": "IW12FundFactory",
         "nodeType": "ContractDefinition",
@@ -212,7 +272,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 4090,
+            "id": 4757,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -220,16 +280,16 @@
             "name": "createFund",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 4086,
+              "id": 4753,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 4085,
+                  "id": 4748,
                   "name": "swap",
                   "nodeType": "VariableDeclaration",
-                  "scope": 4090,
-                  "src": "105:12:11",
+                  "scope": 4757,
+                  "src": "105:12:17",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -237,10 +297,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 4084,
+                    "id": 4747,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "105:7:11",
+                    "src": "105:7:17",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -248,37 +308,89 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4750,
+                  "name": "serviceWallet",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4757,
+                  "src": "119:21:17",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 4749,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "119:7:17",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4752,
+                  "name": "trancheFeePercent",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4757,
+                  "src": "142:22:17",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4751,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "142:4:17",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "104:14:11"
+              "src": "104:61:17"
             },
             "payable": false,
             "returnParameters": {
-              "id": 4089,
+              "id": 4756,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 4088,
+                  "id": 4755,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 4090,
-                  "src": "137:8:11",
+                  "scope": 4757,
+                  "src": "184:8:17",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IW12Fund_$4080",
+                    "typeIdentifier": "t_contract$_IW12Fund_$4743",
                     "typeString": "contract IW12Fund"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 4087,
+                    "id": 4754,
                     "name": "IW12Fund",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 4080,
-                    "src": "137:8:11",
+                    "referencedDeclaration": 4743,
+                    "src": "184:8:17",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IW12Fund_$4080",
+                      "typeIdentifier": "t_contract$_IW12Fund_$4743",
                       "typeString": "contract IW12Fund"
                     }
                   },
@@ -286,20 +398,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "136:10:11"
+              "src": "183:10:17"
             },
-            "scope": 4091,
-            "src": "85:62:11",
+            "scope": 4758,
+            "src": "85:109:17",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 4092,
-        "src": "53:96:11"
+        "scope": 4759,
+        "src": "53:143:17"
       }
     ],
-    "src": "0:150:11"
+    "src": "0:197:17"
   },
   "compiler": {
     "name": "solc",
@@ -307,5 +419,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-22T10:46:42.729Z"
+  "updatedAt": "2018-08-23T14:09:08.151Z"
 }
