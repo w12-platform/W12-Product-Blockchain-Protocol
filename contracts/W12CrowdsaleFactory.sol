@@ -50,6 +50,6 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         fund.setCrowdsale(result);
         fund.transferOwnership(owner);
 
-        emit CrowdsaleCreated(owner, wTokenAddress, startDate, address(0), fund);
+        emit CrowdsaleCreated(owner, wTokenAddress, startDate, address(result), fund);
     }
 }
