@@ -3,10 +3,12 @@ pragma solidity ^0.4.23;
 import "./WToken.sol";
 import "./W12TokenLedger.sol";
 import "./interfaces/IW12CrowdsaleFactory.sol";
+import "./interfaces/IW12AtomicSwap.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "./libs/Percent.sol";
+
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -16,7 +18,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     uint16 public approvedTokensLength;
-    address public swap;
+    IW12AtomicSwap public swap;
     W12TokenLedger public ledger;
     address public serviceWallet;
     IW12CrowdsaleFactory public factory;
@@ -40,7 +42,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         address tokenAddress;
     }
 
-    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, address _swap) public {
+    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, IW12AtomicSwap _swap) public {
         require(_serviceWallet != address(0));
         require(_factory != address(0));
         require(_ledger != address(0));
@@ -150,6 +152,15 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress = crowdsale;
         wtoken.addTrustedAccount(crowdsale);
+
+        if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
+            swap.approve(
+                tokenAddress,
+                address(crowdsale),
+                getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount
+                    .percent(getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent)
+            );
+        }
 
         addTokensToCrowdsale(tokenAddress, amountForSale);
 
