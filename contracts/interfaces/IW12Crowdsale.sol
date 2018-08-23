@@ -4,7 +4,7 @@ import "../WToken.sol";
 
 
 interface IW12Crowdsale {
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet, address _swap) external;
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external;
 
     function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external;
 

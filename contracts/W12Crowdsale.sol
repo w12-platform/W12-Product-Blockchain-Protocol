@@ -78,8 +78,9 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         originToken = ERC20(_originToken);
         tokenDecimals = _tokenDecimals;
 
-        __setParameters(_startDate, _price, _serviceWallet, _swap);
+        __setParameters(_startDate, _price, _serviceWallet);
         serviceFee = _serviceFee;
+        swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
         fund = _fund;
     }
@@ -134,7 +135,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return getMilestone(index);
     }
 
-    function __setParameters(uint32 _startDate, uint _price, address _serviceWallet, address _swap) internal {
+    function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
         require(_startDate >= now);
         require(_price > 0);
         require(_serviceWallet != address(0));
@@ -146,7 +147,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         swap = _swap;
     }
 
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet, address _swap) external onlyOwner beforeStart {
+    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner beforeStart {
         __setParameters(_startDate, _price, _serviceWallet, _swap);
     }
 
