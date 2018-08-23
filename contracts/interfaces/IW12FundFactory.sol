@@ -4,5 +4,5 @@ import "./IW12Fund.sol";
 
 
 interface IW12FundFactory {
-    function createFund(address swap) external returns (IW12Fund);
+    function createFund(address swap, address serviceWallet, uint trancheFeePercent) external returns (IW12Fund);
 }

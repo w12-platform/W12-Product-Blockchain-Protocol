@@ -19,6 +19,10 @@ contract W12AtomicSwap is Ownable, ReentrancyGuard {
         ledger = _ledger;
     }
 
+    function approve(ERC20 token, address spender, uint amount) external onlyOwner returns (bool) {
+        return token.approve(spender, amount);
+    }
+
     function exchange(ERC20 fromToken, uint amount) external nonReentrant {
         require(fromToken != address(0));
         // Checking if fromToken is WToken and have actual pair

@@ -6,6 +6,8 @@ import "./IW12Crowdsale.sol";
 interface IW12Fund {
     function setCrowdsale(IW12Crowdsale _crowdsale) external;
 
+    function setServiceWallet(address _serviceWallet) external;
+
     function setSwap(address _swap) external;
 
     function transferOwnership(address newOwner) public;

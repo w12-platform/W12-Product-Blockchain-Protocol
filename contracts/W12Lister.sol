@@ -3,10 +3,12 @@ pragma solidity ^0.4.23;
 import "./WToken.sol";
 import "./W12TokenLedger.sol";
 import "./interfaces/IW12CrowdsaleFactory.sol";
+import "./interfaces/IW12AtomicSwap.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "./libs/Percent.sol";
+
 
 contract W12Lister is Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -16,7 +18,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     uint16 public approvedTokensLength;
-    address public swap;
+    IW12AtomicSwap public swap;
     W12TokenLedger public ledger;
     address public serviceWallet;
     IW12CrowdsaleFactory public factory;
@@ -32,13 +34,15 @@ contract W12Lister is Ownable, ReentrancyGuard {
         mapping(address => bool) approvedOwners;
         uint feePercent;
         uint ethFeePercent;
+        uint WTokenSaleFeePercent;
+        uint trancheFeePercent;
         IW12Crowdsale crowdsaleAddress;
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
         address tokenAddress;
     }
 
-    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, address _swap) public {
+    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, IW12AtomicSwap _swap) public {
         require(_serviceWallet != address(0));
         require(_factory != address(0));
         require(_ledger != address(0));
@@ -51,13 +55,25 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens.length++; // zero-index element should never be used
     }
 
-    function whitelistToken(address tokenOwner, address tokenAddress, string name, string symbol, uint8 decimals, uint feePercent, uint ethFeePercent)
+    function whitelistToken(
+        address tokenOwner,
+        address tokenAddress,
+        string name,
+        string symbol,
+        uint8 decimals,
+        uint feePercent,
+        uint ethFeePercent,
+        uint WTokenSaleFeePercent,
+        uint trancheFeePercent
+    )
         external onlyOwner {
 
         require(tokenOwner != address(0));
         require(tokenAddress != address(0));
         require(feePercent.isPercent() && feePercent.fromPercent() < 100);
         require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
+        require(WTokenSaleFeePercent.isPercent() && WTokenSaleFeePercent.fromPercent() < 100);
+        require(trancheFeePercent.isPercent() && trancheFeePercent.fromPercent() < 100);
         require(getApprovedToken(tokenAddress, tokenOwner).tokenAddress != tokenAddress);
         require(!getApprovedToken(tokenAddress, tokenOwner).approvedOwners[tokenOwner]);
 
@@ -73,6 +89,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokens[index].decimals = decimals;
         approvedTokens[index].feePercent = feePercent;
         approvedTokens[index].ethFeePercent = ethFeePercent;
+        approvedTokens[index].WTokenSaleFeePercent = WTokenSaleFeePercent;
+        approvedTokens[index].trancheFeePercent = trancheFeePercent;
         approvedTokens[index].tokenAddress = tokenAddress;
 
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
@@ -101,7 +119,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         uint balanceAfter = token.balanceOf(swap);
 
-        assert(balanceAfter == balanceBefore.add(amountWithoutFee));
+        require(balanceAfter == balanceBefore.add(amountWithoutFee));
 
         if(ledger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
@@ -119,16 +137,30 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         WToken wtoken = ledger.getWTokenByToken(tokenAddress);
 
-        IW12Crowdsale crowdsale = factory.createCrowdsale(address(wtoken),
-        startDate,
-        price,
-        serviceWallet,
-        getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
-        swap,
-        msg.sender);
+        IW12Crowdsale crowdsale = factory.createCrowdsale(
+            address(tokenAddress),
+            address(wtoken),
+            startDate,
+            price,
+            serviceWallet,
+            getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
+            getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
+            getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
+            swap,
+            msg.sender
+        );
 
         getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress = crowdsale;
         wtoken.addTrustedAccount(crowdsale);
+
+        if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
+            swap.approve(
+                tokenAddress,
+                address(crowdsale),
+                getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount
+                    .percent(getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent)
+            );
+        }
 
         addTokensToCrowdsale(tokenAddress, amountForSale);
 

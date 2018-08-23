@@ -54,24 +54,30 @@ async function setTestStages (startDate, W12Crowdsale, owner) {
 
 async function createW12CrowdsaleViaFabric(
     {
+        originTokenAddress,
         startDate,
         serviceWalletAddress,
         swapAddress,
         price,
-        serviceFee
+        serviceFee,
+        saleFee,
+        trancheFee,
     },
     owner,
     token
 ) {
     const fundFactory = await W12FundFactory.new();
-    const factory = await W12CrowdsaleFactory.new(await fundFactory.createFund(swapAddress));
+    const factory = await W12CrowdsaleFactory.new(fundFactory.address);
     const txParams = {from: owner};
     const txOutput = await factory.createCrowdsale(
+        originTokenAddress,
         token.address,
         startDate,
         price,
         serviceWalletAddress,
         serviceFee,
+        saleFee,
+        trancheFee,
         swapAddress,
         owner,
         txParams
@@ -105,11 +111,13 @@ async function createW12CrowdsaleViaFabric(
 
 async function createW12Crowdsale (
     {
+        originTokenAddress,
         startDate,
         serviceWalletAddress,
         swapAddress,
         price,
         serviceFee,
+        saleFee,
         fundAddress
     },
     owner,
@@ -118,23 +126,28 @@ async function createW12Crowdsale (
     const txParams = {from: owner};
     // constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, W12Fund _fund)
     const result = await W12Crowdsale.new(
+        originTokenAddress,
         token.address,
         await token.decimals(),
         startDate,
         price,
         serviceWalletAddress,
+        swapAddress,
         serviceFee,
+        saleFee,
         fundAddress,
         txParams
     );
 
     return {
         args: {
+            originTokenAddress,
             startDate,
             serviceWalletAddress,
             swapAddress,
             price,
             serviceFee,
+            saleFee,
             fundAddress
         },
         owner,

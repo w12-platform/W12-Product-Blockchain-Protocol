@@ -12,15 +12,16 @@ const oneToken = new BigNumber(10).pow(18);
 
 contract('W12Fund', async (accounts) => {
     let sut, swap, crowdsale;
-    let crowdsaleFixture, milestoneFixture, tokenFixture, stagesFixture;
+    let crowdsaleFixture, milestoneFixture, tokenFixture, originTokenFixture, stagesFixture;
     const sutOwner = accounts[0];
     const tokenOwner = accounts[1];
     const buyer1 = accounts[3];
     const buyer2 = accounts[4];
+    const trancheFeePercent = new BigNumber(5 * 100);
 
     describe('initialization methods', async () => {
         beforeEach(async () => {
-            sut = await W12Fund.new(crowdsale = utils.generateRandomAddress(), swap = utils.generateRandomAddress(), { from: sutOwner });
+            sut = await W12Fund.new(trancheFeePercent, { from: sutOwner });
         });
 
         it('should set owner', async () => {
@@ -35,6 +36,7 @@ contract('W12Fund', async (accounts) => {
                 crowdsale = accounts[1],
                 swap = utils.generateRandomAddress(),
                 tokenFixture.token.address,
+                trancheFeePercent,
                 { from: sutOwner }
             );
         });
@@ -110,14 +112,17 @@ contract('W12Fund', async (accounts) => {
 
         beforeEach(async () => {
             tokenFixture = await TokenFixture.createToken(tokenOwner);
+            originTokenFixture = await TokenFixture.createToken(tokenOwner);
 
             crowdsaleFixture = await CrowdsaleFixture.createW12Crowdsale(
                 {
+                    originTokenAddress: originTokenFixture.token.address,
                     startDate: web3.eth.getBlock('latest').timestamp + 60,
                     serviceWalletAddress: utils.generateRandomAddress(),
                     swapAddress: utils.generateRandomAddress(),
                     price: tokenPrice,
                     serviceFee: 10 * 100,
+                    saleFee: 10 * 100,
                     fundAddress: utils.generateRandomAddress()
                 },
                 crowdsaleOwner,
@@ -140,6 +145,7 @@ contract('W12Fund', async (accounts) => {
                 crowdsaleFixture.W12Crowdsale.address,
                 crowdsaleFixture.args.swapAddress,
                 tokenFixture.token.address,
+                trancheFeePercent,
                 {from: sutOwner}
             );
 
@@ -465,63 +471,69 @@ contract('W12Fund', async (accounts) => {
                 result.should.bignumber.eq(expected);
             });
         });
-
-        describe('test `tranche` method', async () => {
-            it('should revert if sender is not owner', async () => {
-                const firstMilestone = milestoneFixture.milestones[0];
-                const withdrawalWindow = firstMilestone.withdrawalWindow;
-                const totalFundedAmount = new BigNumber(100); // 100 wei
-                const account = accounts[5];
-
-                await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                await sut.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
-
-                await sut.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
-            });
-
-            it('should revert if tranche amount is zero', async () => {
-                const account = await sut.owner();
-
-                await sut.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
-            });
-
-            it('should call tranche successful', async () => {
-                const firstMilestone = milestoneFixture.milestones[0];
-                const withdrawalWindow = firstMilestone.withdrawalWindow;
-                const percent = firstMilestone.tranchePercent;
-                const totalFundedAmount = new BigNumber(100); // 100 wei
-                const account = await sut.owner();
-
-                await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                await sut.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
-
-                const expected = utils.round(totalFundedAmount.mul(percent).div(100));
-                const expectedFundBalance = totalFundedAmount.minus(expected);
-                const accountBalanceBefore = await web3.eth.getBalance(account);
-
-                const tx = await sut.tranche({from: account}).should.be.fulfilled;
-                const cost = await utils.getTransactionCost(tx);
-                const log = tx.logs[0];
-                const expectedAccountBalance = accountBalanceBefore.plus(expected).minus(cost);
-                const fundBalance = await web3.eth.getBalance(sut.address);
-                const accountBalance = await web3.eth.getBalance(account);
-
-                fundBalance.should.bignumber.eq(expectedFundBalance);
-                accountBalance.should.bignumber.eq(expectedAccountBalance);
-
-                (await sut.completedTranches(withdrawalWindow)).should.be.equal(true);
-                (await sut.getTrancheAmount()).should.bignumber.eq(0);
-
-                log.should.to.be;
-                log.event.should.be.equal('TrancheOperation');
-                log.args.receiver.should.be.equal(account);
-                log.args.amount.should.bignumber.eq(expected);
-            });
-        });
         */
+        // describe('test `tranche` method', async () => {
+        //     it('should revert if sender is not owner', async () => {
+        //         const firstMilestone = milestoneFixture.milestones[0];
+        //         const withdrawalWindow = firstMilestone.withdrawalWindow;
+        //         const totalFundedAmount = new BigNumber(100); // 100 wei
+        //         const account = accounts[5];
+        //
+        //         await utils.time.increaseTimeTo(withdrawalWindow - 60);
+        //
+        //         await sut.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+        //         await sut._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+        //
+        //         await sut.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
+        //     });
+        //
+        //     it('should revert if tranche amount is zero', async () => {
+        //         const account = await sut.owner();
+        //
+        //         await sut.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
+        //     });
+        //
+        //     it('should call tranche successful', async () => {
+        //         const firstMilestone = milestoneFixture.milestones[0];
+        //         const withdrawalWindow = firstMilestone.withdrawalWindow;
+        //         const percent = firstMilestone.tranchePercent;
+        //         const totalFundedAmount = new BigNumber(100); // 100 wei
+        //         const account = await sut.owner();
+        //
+        //         await utils.time.increaseTimeTo(withdrawalWindow - 60);
+        //
+        //         await sut.sendTransaction({value: totalFundedAmount, from: account}).should.be.fulfilled;
+        //         await sut._setTotalFunded(totalFundedAmount, {from: account}).should.be.fulfilled;
+        //
+        //         const expected = utils
+        //             .round(totalFundedAmount.mul(percent).div(100));
+        //         const fee = utils
+        //             .round(expected.mul(trancheFeePercent).div(100 * 100));
+        //         const expectedServiceWalletBalance = (await web3.eth.getBalance(crowdsaleFixture.args.serviceWalletAddress))
+        //             .plus(fee);
+        //         const expectedFundBalance = totalFundedAmount.minus(expected);
+        //         const accountBalanceBefore = await web3.eth.getBalance(account);
+        //
+        //         const tx = await sut.tranche({from: account}).should.be.fulfilled;
+        //         const cost = await utils.getTransactionCost(tx);
+        //         const log = tx.logs[0];
+        //         const expectedAccountBalance = accountBalanceBefore.plus(expected.minus(fee)).minus(cost);
+        //         const fundBalance = await web3.eth.getBalance(sut.address);
+        //         const accountBalance = await web3.eth.getBalance(account);
+        //         const serviceWalletBalance = await web3.eth.getBalance(crowdsaleFixture.args.serviceWalletAddress);
+        //
+        //         fundBalance.should.bignumber.eq(expectedFundBalance);
+        //         accountBalance.should.bignumber.eq(expectedAccountBalance);
+        //         serviceWalletBalance.should.bignumber.eq(expectedServiceWalletBalance);
+        //
+        //         (await sut.completedTranches(withdrawalWindow)).should.be.equal(true);
+        //         (await sut.getTrancheAmount()).should.bignumber.eq(0);
+        //
+        //         log.should.to.be;
+        //         log.event.should.be.equal('TrancheOperation');
+        //         log.args.receiver.should.be.equal(account);
+        //         log.args.amount.should.bignumber.eq(expected);
+        //     });
+        // });
     });
 });

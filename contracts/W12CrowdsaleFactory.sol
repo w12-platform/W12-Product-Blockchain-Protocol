@@ -16,16 +16,40 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         fundFactory = _fundFactory;
     }
 
-    function createCrowdsale(address wTokenAddress, uint32 startDate, uint price, address serviceWallet, uint serviceFee, address swap, address owner)
-        external returns (IW12Crowdsale result) {
-        IW12Fund fund = fundFactory.createFund(swap);
+    function createCrowdsale(
+        address tokenAddress,
+        address wTokenAddress,
+        uint32 startDate,
+        uint price,
+        address serviceWallet,
+        uint serviceFee,
+        uint WTokenSaleFeePercent,
+        uint trancheFeePercent,
+        address swap,
+        address owner
+    )
+        external returns (IW12Crowdsale result)
+    {
+        IW12Fund fund = fundFactory.createFund(swap, serviceWallet, trancheFeePercent);
 
-        result = new W12Crowdsale(wTokenAddress, DetailedERC20(wTokenAddress).decimals(), startDate, price, serviceWallet, serviceFee, fund);
+        result = new W12Crowdsale(
+            tokenAddress,
+            wTokenAddress,
+            DetailedERC20(wTokenAddress).decimals(),
+            startDate,
+            price,
+            serviceWallet,
+            swap,
+            serviceFee,
+            WTokenSaleFeePercent,
+            fund
+        );
+
         result.transferOwnership(owner);
 
         fund.setCrowdsale(result);
         fund.transferOwnership(owner);
 
-        emit CrowdsaleCreated(owner, wTokenAddress, startDate, address(0), fund);
+        emit CrowdsaleCreated(owner, wTokenAddress, startDate, address(result), fund);
     }
 }

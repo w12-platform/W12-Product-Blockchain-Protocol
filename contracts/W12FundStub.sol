@@ -5,11 +5,12 @@ import "./WToken.sol";
 
 
 contract W12FundStub is W12Fund {
-    constructor (address crowdsaleAddress, address swapAddress, address wTokenAddress) public {
+    constructor (address crowdsaleAddress, address swapAddress, address wTokenAddress, uint _trancheFeePercent) W12Fund(_trancheFeePercent) public {
         crowdsale = IW12Crowdsale(crowdsaleAddress);
         swap = swapAddress;
         wToken = WToken(wTokenAddress);
         tokenDecimals = wToken.decimals();
+        trancheFeePercent = _trancheFeePercent;
     }
 
     function _setTotalFunded(uint amount) external {
@@ -19,6 +20,8 @@ contract W12FundStub is W12Fund {
     function _setTotalRefunded(uint amount) external {
         totalRefunded = amount;
     }
+
+    function() payable external {}
 
     // allow any sender
     modifier onlyFrom(address sender) {
