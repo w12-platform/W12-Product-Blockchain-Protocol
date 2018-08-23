@@ -5,7 +5,7 @@ import "./WToken.sol";
 
 
 contract W12FundStub is W12Fund {
-    constructor (address crowdsaleAddress, address swapAddress, address wTokenAddress, uint _trancheFeePercent) public {
+    constructor (address crowdsaleAddress, address swapAddress, address wTokenAddress, uint _trancheFeePercent) W12Fund(_trancheFeePercent) public {
         crowdsale = IW12Crowdsale(crowdsaleAddress);
         swap = swapAddress;
         wToken = WToken(wTokenAddress);

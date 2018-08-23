@@ -8,7 +8,6 @@ import "./interfaces/IW12Crowdsale.sol";
 import "../openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
-import "./W12Fund.sol";
 
 
 contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
@@ -73,6 +72,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);
         require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
+        require(_swap != address(0));
 
         token = WToken(_token);
         originToken = ERC20(_originToken);
@@ -139,16 +139,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(_startDate >= now);
         require(_price > 0);
         require(_serviceWallet != address(0));
-        require(_swap != address(0));
 
         startDate = _startDate;
         price = _price;
         serviceWallet = _serviceWallet;
-        swap = _swap;
     }
 
     function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner beforeStart {
-        __setParameters(_startDate, _price, _serviceWallet, _swap);
+        __setParameters(_startDate, _price, _serviceWallet);
     }
 
     function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
