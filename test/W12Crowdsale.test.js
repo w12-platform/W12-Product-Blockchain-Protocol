@@ -9,23 +9,40 @@ const oneToken = new BigNumber(10).pow(18);
 
 contract('W12Crowdsale', async (accounts) => {
     let sut;
+    let originToken;
     let token;
     const tokenOwner = accounts[9];
     let startDate;
     let endDate;
     let price;
-    const serviceWallet = utils.generateRandomAddress();
-    const swap = utils.generateRandomAddress();
+    const serviceWallet = accounts[6];
+    const swap = accounts[7];
     let fund;
 
     beforeEach(async () => {
+        originToken = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner}).should.be.fulfilled;
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner}).should.be.fulfilled;
-        fund = await W12Fund.new({from: tokenOwner}).should.be.fulfilled;
+        fund = await W12Fund.new(5 * 100, {from: tokenOwner}).should.be.fulfilled;
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        sut = await W12Crowdsale.new(token.address, 18, startDate, 100, serviceWallet, 10 * 100, fund.address, {from: tokenOwner}).should.be.fulfilled;
+        sut = await W12Crowdsale.new(
+            originToken.address,
+            token.address,
+            18,
+            startDate,
+            100,
+            serviceWallet,
+            swap,
+            10 * 100,
+            10 * 100,
+            fund.address,
+            {from: tokenOwner}
+        ).should.be.fulfilled;
+
         await token.addTrustedAccount(sut.address, {from: tokenOwner}).should.be.fulfilled;
         await token.mint(sut.address, oneToken.mul(oneToken), 0, {from: tokenOwner}).should.be.fulfilled;
+        await originToken.mint(swap, oneToken.mul(oneToken), 0, {from: tokenOwner}).should.be.fulfilled;
+        await originToken.approve(sut.address, oneToken.mul(oneToken).mul(0.1), {from: swap}).should.be.fulfilled;
         await fund.setCrowdsale(sut.address, {from: tokenOwner}).should.be.fulfilled;
 
         price = await sut.price();
@@ -35,13 +52,28 @@ contract('W12Crowdsale', async (accounts) => {
         it('should create crowdsale', async () => {
             (await sut.startDate()).should.bignumber.equal(startDate);
             (await sut.token()).should.be.equal(token.address);
+            (await sut.originToken()).should.be.equal(originToken.address);
             (await sut.price()).should.bignumber.equal(100);
             (await sut.serviceFee()).should.bignumber.equal(10 * 100);
+            (await sut.WTokenSaleFeePercent()).should.bignumber.equal(10 * 100);
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
+            (await sut.swap()).should.be.equal(swap);
         });
 
         it('should reject crowdsale with start date in the past', async () => {
-            await W12Crowdsale.new(token.address, 18, startDate - 1000, 100, serviceWallet, 10 * 100, fund.address, {from: tokenOwner}).should.be.rejected;
+            await W12Crowdsale.new(
+                originToken.address,
+                token.address,
+                18,
+                startDate - 1000,
+                100,
+                serviceWallet,
+                swap,
+                10 * 100,
+                10 * 100,
+                fund.address,
+                {from: tokenOwner}
+            ).should.be.rejected;
         });
     });
 
@@ -168,14 +200,43 @@ contract('W12Crowdsale', async (accounts) => {
 
             it('should sell some tokens', async () => {
                 const stage = discountStages[0];
+                const crowdsaleWBalanceBefore = await token.balanceOf(sut.address);
+                const swapWBalanceBefore = await token.balanceOf(swap);
+                const swapSBalanceBefore = await originToken.balanceOf(swap);
+                const serviceWalletSBalanceBefore = await originToken.balanceOf(serviceWallet);
+                const serviceWalletBalanceBefore = await web3.eth.getBalance(serviceWallet);
 
                 await utils.time.increaseTimeTo(stage.dates[0] + 10);
 
                 await sut.buyTokens({ value: 10000, from: buyer }).should.be.fulfilled;
 
-                (await token.balanceOf(buyer)).should.bignumber.equal(oneToken.mul(100));
-                web3.eth.getBalance(serviceWallet).should.bignumber.equal(1000);
-                web3.eth.getBalance(fund.address).should.bignumber.equal(9000);
+                (await token.balanceOf(buyer))
+                    .should.bignumber.equal(oneToken.mul(100));
+
+                // sale commission
+                (await originToken.balanceOf(swap))
+                    .should.bignumber.equal(swapSBalanceBefore.minus(oneToken.mul(10)));
+
+                (await originToken.balanceOf(serviceWallet))
+                    .should.bignumber.equal(serviceWalletSBalanceBefore.plus(oneToken.mul(10)));
+
+                (await token.balanceOf(sut.address))
+                    .should.bignumber.equal(
+                        crowdsaleWBalanceBefore
+                            // commission
+                            .minus(oneToken.mul(10))
+                            // purchase amount
+                            .minus(oneToken.mul(100))
+                    );
+
+                (await token.balanceOf(swap))
+                    .should.bignumber.equal(swapWBalanceBefore.plus(oneToken.mul(10)));
+
+                (await web3.eth.getBalance(serviceWallet))
+                    .should.bignumber.equal(serviceWalletBalanceBefore.plus(1000));
+
+                (await web3.eth.getBalance(fund.address))
+                    .should.bignumber.equal(9000);
             });
 
             it('should end at the end date', async () => {
