@@ -5,7 +5,7 @@ import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../solidity-bytes-utils/contracts/BytesLib.sol";
 import "./interfaces/IW12Crowdsale.sol";
-import "../openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import "../openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./W12Fund.sol";
@@ -15,7 +15,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using BytesLib for bytes;
-    using SafeERC20 for ERC20;
 
     struct Stage {
         uint32 startDate;
@@ -254,7 +253,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         if (WTokenSaleFeePercent > 0) {
             uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
 
-            originToken.saveTransferFrom(swap, serviceWallet, tokensFee);
+            require(originToken.transferFrom(swap, serviceWallet, tokensFee));
             require(token.transfer(swap, tokensFee));
         }
 

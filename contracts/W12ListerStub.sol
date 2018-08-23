@@ -11,5 +11,5 @@ contract W12ListerStub is W12Lister {
         _;
     }
 
-    constructor(IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, address _swap) W12Lister(msg.sender, _factory, _ledger, _swap) public { }
+    constructor(IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, IW12AtomicSwap _swap) W12Lister(msg.sender, _factory, _ledger, _swap) public { }
 }
