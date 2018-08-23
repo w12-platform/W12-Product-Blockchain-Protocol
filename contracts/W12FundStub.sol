@@ -21,6 +21,8 @@ contract W12FundStub is W12Fund {
         totalRefunded = amount;
     }
 
+    function() payable external {}
+
     // allow any sender
     modifier onlyFrom(address sender) {
         _;
