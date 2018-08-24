@@ -214,7 +214,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             require(dates[i + 2] > dates[i + 1]);
 
             if (i > 0) {
-                require(dates[(i - 1) + 2] < dates[i], "Milestone dates is not in ascending order");
+                require(dates[i - 1] < dates[i], "Milestone dates is not in ascending order");
             }
 
             bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
