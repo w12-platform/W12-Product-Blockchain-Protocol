@@ -152,7 +152,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(dates.length == stage_vestings.length);
 
         if (milestones.length > 0) {
-            require(milestones[0].endDate > dates[dates.length - 1][1], 'Last stage endDate must be lt first milestone endDate');
+            require(milestones[0].endDate > dates[dates.length - 1][1], "Last stage endDate must be lt first milestone endDate");
         }
 
         uint8 stagesCount = uint8(dates.length);
