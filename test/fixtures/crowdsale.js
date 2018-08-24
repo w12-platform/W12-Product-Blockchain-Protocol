@@ -164,7 +164,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
         {
             name: "Milestone 2 name",
             description: "Milestone 2 description",
-            endDate: startDate + utils.time.duration.days(20),
+            endDate: startDate + utils.time.duration.days(21),
             tranchePercent: 35,
             voteEndDate: startDate + utils.time.duration.days(27),
             withdrawalWindow: startDate + utils.time.duration.days(30)
@@ -172,7 +172,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
         {
             name: "Milestone 3 name",
             description: "Milestone 3 description",
-            endDate: startDate + utils.time.duration.days(30),
+            endDate: startDate + utils.time.duration.days(31),
             tranchePercent: 35,
             voteEndDate: startDate + utils.time.duration.days(37),
             withdrawalWindow: startDate + utils.time.duration.days(40)

@@ -59,6 +59,521 @@ contract('W12Crowdsale', async (accounts) => {
         });
     });
 
+    describe('stages and milestones', async () => {
+
+        it('should set stages', async () => {
+            const discountStages = [
+                {
+                    name: 'Phase 0',
+                    dates: [
+                        startDate + utils.time.duration.minutes(40),
+                        startDate + utils.time.duration.minutes(60),
+                    ],
+                    vestingTime: 0,
+                    discount: 0
+                }
+            ];
+            const endDate = discountStages[discountStages.length - 1].dates[1];
+
+            await sut.setStages(
+                discountStages.map(s => s.dates),
+                discountStages.map(s => s.discount),
+                discountStages.map(s => s.vestingTime),
+                {from: tokenOwner}
+            ).should.be.fulfilled;
+
+            const actualNumberOfStages = await sut.stagesLength().should.be.fulfilled;
+            const actualEndDate = await sut.getEndDate().should.be.fulfilled;
+
+            actualNumberOfStages.should.bignumber.equal(discountStages.length);
+            actualEndDate.should.bignumber.equal(endDate);
+
+            for (let i = 0; i < discountStages.length; i++) {
+                const expectedStage = discountStages[i];
+                const actualStage = await sut.stages(i).should.be.fulfilled;
+
+                actualStage[0].should.bignumber.equal(expectedStage.dates[0]);
+                actualStage[1].should.bignumber.equal(expectedStage.dates[1]);
+                actualStage[2].should.bignumber.equal(expectedStage.discount);
+                actualStage[3].should.bignumber.equal(expectedStage.vestingTime);
+            }
+        });
+
+        it('should revert if stages is not in ascending order', async () => {
+            const discountStages = [
+                {
+                    name: 'Phase 5',
+                    dates: [
+                        startDate + utils.time.duration.minutes(70),
+                        startDate + utils.time.duration.minutes(90),
+                    ],
+                    vestingTime: startDate + utils.time.duration.minutes(210),
+                    discount: 5
+                },
+                {
+                    name: 'Phase 0',
+                    dates: [
+                        startDate + utils.time.duration.minutes(40),
+                        startDate + utils.time.duration.minutes(60),
+                    ],
+                    vestingTime: 0,
+                    discount: 0
+                }
+            ];
+
+            await sut.setStages(
+                discountStages.map(s => s.dates),
+                discountStages.map(s => s.discount),
+                discountStages.map(s => s.vestingTime),
+                {from: tokenOwner}
+            ).should.be.rejectedWith(utils.EVMRevert);
+        });
+
+        it('should accept single milestone', async () => {
+            const expectedMilestones = [{
+                name: "Single milestone",
+                description: "Single milestone with 100% tranche",
+                endDate: startDate + 30,
+                voteEndDate: startDate + 60,
+                withdrawalWindow: startDate + 120,
+                tranchePercent: 100
+            }];
+
+            const encodedMilestones = expectedMilestones.map(item => {
+                return utils.encodeMilestoneParameters(
+                    item.name,
+                    item.description,
+                    item.tranchePercent,
+                    item.endDate,
+                    item.voteEndDate,
+                    item.withdrawalWindow
+                );
+            });
+
+            await sut.setMilestones(
+                encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                encodedMilestones.map(m => m.tranchePercent),
+                encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                {from: tokenOwner}
+            ).should.be.fulfilled;
+
+            let actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
+
+            actualMilestonesCount.should.bignumber.equal(expectedMilestones.length);
+
+            while (--actualMilestonesCount >= 0) {
+                const milestone = await sut.milestones(actualMilestonesCount);
+
+                milestone[0].should.bignumber.equal(expectedMilestones[actualMilestonesCount].endDate);
+                milestone[1].should.bignumber.equal(expectedMilestones[actualMilestonesCount].tranchePercent);
+                milestone[2].should.bignumber.equal(expectedMilestones[actualMilestonesCount].voteEndDate);
+                milestone[3].should.bignumber.equal(expectedMilestones[actualMilestonesCount].withdrawalWindow);
+                milestone[4].should.be.equal(encodedMilestones[actualMilestonesCount].nameHex);
+                milestone[5].should.be.equal(encodedMilestones[actualMilestonesCount].descriptionHex);
+            }
+        });
+
+        it('should set milestones', async () => {
+            const expectedMilestones = [
+                {
+                    name: "Milestone 1",
+                    description: "Milestone 1",
+                    endDate: startDate + 30,
+                    voteEndDate: startDate + 60,
+                    withdrawalWindow: startDate + 120,
+                    tranchePercent: 50
+                },
+                {
+                    name: "Milestone 2",
+                    description: "Milestone 2",
+                    endDate: startDate + 125,
+                    voteEndDate: startDate + 126,
+                    withdrawalWindow: startDate + 127,
+                    tranchePercent: 50
+                }
+            ];
+
+            const encodedMilestones = expectedMilestones.map(item => {
+                return utils.encodeMilestoneParameters(
+                    item.name,
+                    item.description,
+                    item.tranchePercent,
+                    item.endDate,
+                    item.voteEndDate,
+                    item.withdrawalWindow
+                );
+            });
+
+            await sut.setMilestones(
+                encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                encodedMilestones.map(m => m.tranchePercent),
+                encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                {from: tokenOwner}
+            ).should.be.fulfilled;
+
+            let actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
+
+            actualMilestonesCount.should.bignumber.equal(expectedMilestones.length);
+
+            while (--actualMilestonesCount >= 0) {
+                const milestone = await sut.milestones(actualMilestonesCount);
+
+                milestone[0].should.bignumber.equal(expectedMilestones[actualMilestonesCount].endDate);
+                milestone[1].should.bignumber.equal(expectedMilestones[actualMilestonesCount].tranchePercent);
+                milestone[2].should.bignumber.equal(expectedMilestones[actualMilestonesCount].voteEndDate);
+                milestone[3].should.bignumber.equal(expectedMilestones[actualMilestonesCount].withdrawalWindow);
+                milestone[4].should.be.equal(encodedMilestones[actualMilestonesCount].nameHex);
+                milestone[5].should.be.equal(encodedMilestones[actualMilestonesCount].descriptionHex);
+            }
+        });
+
+        it('should revert if milestones is not in ascending order', async () => {
+            const encodedMilestones = [
+                {
+                    name: "Milestone 2",
+                    description: "Milestone 2",
+                    endDate: startDate + 125,
+                    tranchePercent: 10,
+                    voteEndDate: startDate + 126,
+                    withdrawalWindow: startDate + 127,
+                    tranchePercent: 50
+                },
+                {
+                    name: "Milestone 1",
+                    description: "Milestone 1",
+                    endDate: startDate,
+                    voteEndDate: startDate + 60,
+                    withdrawalWindow: startDate + 120,
+                    tranchePercent: 50
+                }
+            ].map(item => {
+                return utils.encodeMilestoneParameters(
+                    item.name,
+                    item.description,
+                    item.tranchePercent,
+                    item.endDate,
+                    item.voteEndDate,
+                    item.withdrawalWindow
+                );
+            });
+
+            await sut.setMilestones(
+                encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                encodedMilestones.map(m => m.tranchePercent),
+                encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                {from: tokenOwner}
+            ).should.be.rejectedWith(utils.EVMRevert);
+        });
+
+        it('should revert set stages if last stage end date after first milestone end date', async () => {
+            const milestones = [{
+                name: "Single milestone",
+                description: "Single milestone with 100% tranche",
+                endDate: startDate + 120,
+                tranchePercent: 10,
+                voteEndDate: startDate + 121,
+                withdrawalWindow: startDate + 122,
+                tranchePercent: 100
+            }];
+
+            const discountStages = [
+                {
+                    name: 'Phase 0',
+                    dates: [
+                        startDate + 120,
+                        startDate + 121,
+                    ],
+                    vestingTime: 0,
+                    discount: 0
+                }
+            ];
+
+            const encodedMilestones = milestones.map(item => {
+                return utils.encodeMilestoneParameters(
+                    item.name,
+                    item.description,
+                    item.tranchePercent,
+                    item.endDate,
+                    item.voteEndDate,
+                    item.withdrawalWindow
+                );
+            });
+
+            await sut.setMilestones(
+                encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                encodedMilestones.map(m => m.tranchePercent),
+                encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                {from: tokenOwner}
+            ).should.be.fulfilled;
+
+            await sut.setStages(
+                discountStages.map(s => s.dates),
+                discountStages.map(s => s.discount),
+                discountStages.map(s => s.vestingTime),
+                {from: tokenOwner}
+            ).should.be.rejectedWith(utils.EVMRevert);
+        });
+
+        it('should revert set milestones if first milestone end date before last stage end date', async () => {
+            const milestones = [{
+                name: "Single milestone",
+                description: "Single milestone with 100% tranche",
+                endDate: startDate + 120,
+                tranchePercent: 10,
+                voteEndDate: startDate + 121,
+                withdrawalWindow: startDate + 122,
+                tranchePercent: 100
+            }];
+
+            const discountStages = [
+                {
+                    name: 'Phase 0',
+                    dates: [
+                        startDate + 120,
+                        startDate + 121,
+                    ],
+                    vestingTime: 0,
+                    discount: 0
+                }
+            ];
+
+            const encodedMilestones = milestones.map(item => {
+                return utils.encodeMilestoneParameters(
+                    item.name,
+                    item.description,
+                    item.tranchePercent,
+                    item.endDate,
+                    item.voteEndDate,
+                    item.withdrawalWindow
+                );
+            });
+
+            await sut.setStages(
+                discountStages.map(s => s.dates),
+                discountStages.map(s => s.discount),
+                discountStages.map(s => s.vestingTime),
+                {from: tokenOwner}
+            ).should.be.fulfilled;
+
+            await sut.setMilestones(
+                encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                encodedMilestones.map(m => m.tranchePercent),
+                encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                {from: tokenOwner}
+            ).should.be.rejectedWith(utils.EVMRevert);
+        });
+
+        describe('stages', async () => {
+            let discountStages;
+
+            beforeEach(async () => {
+                discountStages = [
+                    {
+                        name: 'Phase 0',
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ],
+                        vestingTime: 0,
+                        discount: 0
+                    },
+                    {
+                        name: 'Phase 5',
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(210),
+                        discount: 5
+                    },
+                    {
+                        name: 'Phase 10',
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(180),
+                        discount: 10
+                    }
+                ];
+
+                await sut.setStages(
+                    discountStages.map(s => s.dates),
+                    discountStages.map(s => s.discount),
+                    discountStages.map(s => s.vestingTime),
+                    {from: tokenOwner}
+                );
+            });
+
+            it('should return current stage', async () => {
+                const expectedStage = discountStages[1];
+
+                await utils.time.increaseTimeTo(expectedStage.dates[1] - 10);
+
+                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
+
+                result[0].should.bignumber.equal(1);
+                result[1].should.be.equal(true);
+            });
+
+            it('should\'t return current stage', async () => {
+                const someStage1 = discountStages[1];
+                const someStage2 = discountStages[2];
+                const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
+
+                await utils.time.increaseTimeTo(someDate);
+
+                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
+
+                result[0].should.bignumber.equal(0);
+                result[1].should.be.equal(false);
+            });
+
+            it('should set stage bonuses', async () => {
+                await sut.setStageVolumeBonuses(0,
+                    [oneToken, oneToken.mul(2), oneToken.mul(10)],
+                    [1, 2, 10],
+                    {from: tokenOwner}).should.be.fulfilled;
+
+                const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
+                const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
+
+                actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
+                actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
+            });
+
+            it('should not set stage bonuses if volume boundaries is not in ascending order', async () => {
+                await sut.setStageVolumeBonuses(0,
+                    [oneToken.mul(10), oneToken.mul(2), oneToken],
+                    [1, 2, 10],
+                    {from: tokenOwner}
+                ).should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should end at the end date', async () => {
+                const endDate = discountStages[discountStages.length - 1].dates[1];
+                await utils.time.increaseTimeTo(endDate + 10);
+
+                (await sut.isEnded()).should.be.equal(true);
+            });
+        });
+
+        describe('milestones', async () => {
+            let discountStages;
+            let expectedMilestones;
+            let encodedMilestones;
+
+            beforeEach(async () => {
+                expectedMilestones = [
+                    {
+                        name: "Milestone 1 name",
+                        description: "Milestone 2 description",
+                        endDate: startDate + utils.time.duration.days(10),
+                        tranchePercent: 30,
+                        voteEndDate: startDate + utils.time.duration.days(17),
+                        withdrawalWindow: startDate + utils.time.duration.days(20)
+                    },
+                    {
+                        name: "Milestone 2 name",
+                        description: "Milestone 2 description",
+                        endDate: startDate + utils.time.duration.days(20) + 1,
+                        tranchePercent: 35,
+                        voteEndDate: startDate + utils.time.duration.days(27),
+                        withdrawalWindow: startDate + utils.time.duration.days(30)
+                    },
+                    {
+                        name: "Milestone 3 name",
+                        description: "Milestone 3 description",
+                        endDate: startDate + utils.time.duration.days(30) + 1,
+                        tranchePercent: 35,
+                        voteEndDate: startDate + utils.time.duration.days(37),
+                        withdrawalWindow: startDate + utils.time.duration.days(40)
+                    }
+                ];
+
+                discountStages = [
+                    {
+                        name: 'Phase 0',
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ],
+                        vestingTime: 0,
+                        discount: 0
+                    },
+                    {
+                        name: 'Phase 5',
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(210),
+                        discount: 5
+                    },
+                    {
+                        name: 'Phase 10',
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(180),
+                        discount: 10
+                    }
+                ];
+
+                await sut.setStages(
+                    discountStages.map(s => s.dates),
+                    discountStages.map(s => s.discount),
+                    discountStages.map(s => s.vestingTime),
+                    {from: tokenOwner}
+                );
+
+                encodedMilestones = expectedMilestones.map(item => {
+                    return utils.encodeMilestoneParameters(
+                        item.name,
+                        item.description,
+                        item.tranchePercent,
+                        item.endDate,
+                        item.voteEndDate,
+                        item.withdrawalWindow
+                    );
+                });
+
+                await sut.setMilestones(
+                    encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
+                    encodedMilestones.map(m => m.tranchePercent),
+                    encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
+                    encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
+                    {from: tokenOwner}
+                ).should.be.fulfilled;
+            });
+
+            it('should return current milestone index', async () => {
+                await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
+                (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(0);
+
+                let expectedIndex = 0;
+                for (const milestone of expectedMilestones) {
+                    await utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
+
+                    const actualIndex = await sut.getCurrentMilestoneIndex().should.be.fulfilled;
+
+                    actualIndex.should.bignumber.equal(expectedIndex);
+
+                    expectedIndex++;
+                }
+
+                await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
+                (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(expectedMilestones.length - 1);
+            });
+        });
+    });
+
     describe('token purchase', async () => {
         let discountStages;
         const buyer = accounts[8];
@@ -122,69 +637,6 @@ contract('W12Crowdsale', async (accounts) => {
                 endDate = discountStages[2].dates[1];
             });
 
-            it('should set stages', async () => {
-                const actualNumberOfStages = await sut.stagesLength().should.be.fulfilled;
-                const actualEndDate = await sut.getEndDate().should.be.fulfilled;
-
-                actualNumberOfStages.should.bignumber.equal(discountStages.length);
-                actualEndDate.should.bignumber.equal(endDate);
-
-                for (let i = 0; i < discountStages.length; i++) {
-                    const expectedStage = discountStages[i];
-                    const actualStage = await sut.stages(i).should.be.fulfilled;
-
-                    actualStage[0].should.bignumber.equal(expectedStage.dates[0]);
-                    actualStage[1].should.bignumber.equal(expectedStage.dates[1]);
-                    actualStage[2].should.bignumber.equal(expectedStage.discount);
-                    actualStage[3].should.bignumber.equal(expectedStage.vestingTime);
-                }
-            });
-
-            it('should return current stage', async () => {
-                const expectedStage = discountStages[1];
-
-                await utils.time.increaseTimeTo(expectedStage.dates[1] - 10);
-
-                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
-
-                result[0].should.bignumber.equal(1);
-                result[1].should.be.equal(true);
-            });
-
-            it('should\'t return current stage', async () => {
-                const someStage1 = discountStages[1];
-                const someStage2 = discountStages[2];
-                const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
-
-                await utils.time.increaseTimeTo(someDate);
-
-                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
-
-                result[0].should.bignumber.equal(0);
-                result[1].should.be.equal(false);
-            });
-
-            it('should set stage bonuses', async () => {
-                await sut.setStageVolumeBonuses(0,
-                    [oneToken, oneToken.mul(2), oneToken.mul(10)],
-                    [1, 2, 10],
-                    {from: tokenOwner}).should.be.fulfilled;
-
-                const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
-                const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
-
-                actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
-                actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
-            });
-
-            it('should not set stage bonuses if volume boundaries is not in ascending order', async () => {
-                await sut.setStageVolumeBonuses(0,
-                    [oneToken.mul(10), oneToken.mul(2), oneToken],
-                    [1, 2, 10],
-                    {from: tokenOwner}
-                ).should.be.rejectedWith(utils.EVMRevert);
-            });
-
             it('should sell some tokens', async () => {
                 const stage = discountStages[0];
                 const crowdsaleWBalanceBefore = await token.balanceOf(sut.address);
@@ -231,20 +683,10 @@ contract('W12Crowdsale', async (accounts) => {
                 const someStage2 = discountStages[2];
                 const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
 
-                console.log((await web3.eth.getBalance(buyer)));
-
                 await utils.time.increaseTimeTo(someDate);
 
-                await sut.buyTokens({value: 10000, from: buyer})
+                await sut.buyTokens({value: 1000000, from: buyer})
                     .should.be.rejectedWith(utils.EVMRevert);
-
-                console.log((await web3.eth.getBalance(buyer)));
-            });
-
-            it('should end at the end date', async () => {
-                await utils.time.increaseTimeTo(endDate + 10);
-
-                (await sut.isEnded()).should.be.equal(true);
             });
 
             it('should return unsold tokens after the end', async () => {
@@ -282,132 +724,6 @@ contract('W12Crowdsale', async (accounts) => {
                         .toPrecision(6).should.bignumber
                             .equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
                 }
-            });
-
-            it('should accept single milestone', async () => {
-                startDate = web3.eth.getBlock('latest').timestamp + 60;
-
-                const encodedMilestones = [{
-                    name: "Single milestone",
-                    description: "Single milestone with 100% tranche",
-                    endDate: startDate,
-                    tranchePercent: 10,
-                    voteEndDate: startDate + 60,
-                    withdrawalWindow: startDate + 120,
-                    tranchePercent: 100
-                }].map(item => {
-                    return utils.encodeMilestoneParameters(
-                        item.name,
-                        item.description,
-                        item.tranchePercent,
-                        item.endDate,
-                        item.voteEndDate,
-                        item.withdrawalWindow
-                    );
-                });
-
-                await sut.setMilestones(
-                    encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
-                    encodedMilestones.map(m => m.tranchePercent),
-                    encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
-                    encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
-                    {from: tokenOwner}
-                ).should.be.fulfilled;
-
-                const actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
-
-                actualMilestonesCount.should.bignumber.equal(1);
-            });
-
-            describe('when working with milestones', async () => {
-                let expectedMilestones;
-                let encodedMilestones;
-
-                beforeEach(async () => {
-                    startDate = web3.eth.getBlock('latest').timestamp + 60;
-
-                    expectedMilestones = [
-                        {
-                            name: "Milestone 1 name",
-                            description: "Milestone 2 description",
-                            endDate: startDate + utils.time.duration.days(10),
-                            tranchePercent: 30,
-                            voteEndDate: startDate + utils.time.duration.days(17),
-                            withdrawalWindow: startDate + utils.time.duration.days(20)
-                        },
-                        {
-                            name: "Milestone 2 name",
-                            description: "Milestone 2 description",
-                            endDate: startDate + utils.time.duration.days(20),
-                            tranchePercent: 35,
-                            voteEndDate: startDate + utils.time.duration.days(27),
-                            withdrawalWindow: startDate + utils.time.duration.days(30)
-                        },
-                        {
-                            name: "Milestone 3 name",
-                            description: "Milestone 3 description",
-                            endDate: startDate + utils.time.duration.days(30),
-                            tranchePercent: 35,
-                            voteEndDate: startDate + utils.time.duration.days(37),
-                            withdrawalWindow: startDate + utils.time.duration.days(40)
-                        }
-                    ];
-
-                    encodedMilestones = expectedMilestones.map(item => {
-                        return utils.encodeMilestoneParameters(
-                            item.name,
-                            item.description,
-                            item.tranchePercent,
-                            item.endDate,
-                            item.voteEndDate,
-                            item.withdrawalWindow
-                        );
-                    });
-
-                    await sut.setMilestones(
-                        encodedMilestones.reduce((result, item) => result.concat(item.dates), []),
-                        encodedMilestones.map(m => m.tranchePercent),
-                        encodedMilestones.reduce((result, item) => result.concat(item.offsets), []),
-                        encodedMilestones.reduce((result, item) => (result + item.namesAndDescriptions.slice(2)), '0x'),
-                        {from: tokenOwner}
-                    );
-                });
-
-                it('should set milestones', async () => {
-                    let actualMilestonesCount = await sut.milestonesLength().should.be.fulfilled;
-
-                    actualMilestonesCount.should.bignumber.equal(expectedMilestones.length);
-
-                    while (--actualMilestonesCount >= 0) {
-                        const milestone = await sut.milestones(actualMilestonesCount);
-
-                        milestone[0].should.bignumber.equal(expectedMilestones[actualMilestonesCount].endDate);
-                        milestone[1].should.bignumber.equal(expectedMilestones[actualMilestonesCount].tranchePercent);
-                        milestone[2].should.bignumber.equal(expectedMilestones[actualMilestonesCount].voteEndDate);
-                        milestone[3].should.bignumber.equal(expectedMilestones[actualMilestonesCount].withdrawalWindow);
-                        milestone[4].should.be.equal(encodedMilestones[actualMilestonesCount].nameHex);
-                        milestone[5].should.be.equal(encodedMilestones[actualMilestonesCount].descriptionHex);
-                    }
-                });
-
-                it('should return current milestone index', async () => {
-                    await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
-                    (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(0);
-
-                    let expectedIndex = 0;
-                    for (const milestone of expectedMilestones) {
-                        await utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
-
-                        const actualIndex = await sut.getCurrentMilestoneIndex().should.be.fulfilled;
-
-                        actualIndex.should.bignumber.equal(expectedIndex);
-
-                        expectedIndex++;
-                    }
-
-                    await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
-                    (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(expectedMilestones.length - 1);
-                });
             });
         });
 
