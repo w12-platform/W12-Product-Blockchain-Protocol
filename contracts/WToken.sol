@@ -19,6 +19,7 @@ contract WToken is DetailedERC20, Ownable {
     mapping (address => bool) trustedAccounts;
 
     event VestingTransfer(address from, address to, uint256 value, uint256 agingTime);
+    event Burn(address indexed burner, uint256 value);
 
     /**
     * @dev total number of tokens in existence
@@ -180,6 +181,40 @@ contract WToken is DetailedERC20, Ownable {
             vestingTimes[_to].push(_vestingTime);
 
         vestingBalanceOf[_to][_vestingTime] += _amount;
+    }
+
+    /**
+      * @dev Burns a specific amount of tokens.
+      * @param _value The amount of token to be burned.
+      */
+    function burn(uint256 _value) public {
+        _burn(msg.sender, _value);
+    }
+
+    /**
+     * @dev Burns a specific amount of tokens from the target address and decrements allowance
+     * @param _from address The address which you want to send tokens from
+     * @param _value uint256 The amount of token to be burned
+     */
+    function burnFrom(address _from, uint256 _value) public {
+        require(_value <= allowed[_from][msg.sender]);
+        // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
+        // this function needs to emit an event with the updated approval.
+        allowed[_from][msg.sender] -= _value;
+        _burn(_from, _value);
+    }
+
+    function _burn(address _who, uint256 _value) internal {
+        _checkMyVesting(_who);
+
+        require(_value <= accountBalance(_who));
+        // no need to require value <= totalSupply, since that would imply the
+        // sender's balance is greater than the totalSupply, which *should* be an assertion failure
+
+        balances[_who] -= _value;
+        _totalSupply -= _value;
+        emit Burn(_who, _value);
+        emit Transfer(_who, address(0), _value);
     }
 
     function () external {

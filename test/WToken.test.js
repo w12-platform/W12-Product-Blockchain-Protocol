@@ -4,7 +4,7 @@ const utils = require('../shared/tests/utils.js');
 
 const WToken = artifacts.require('WToken');
 
-contract('WToken', function ([_, owner, recipient, anotherAccount]) {
+contract('WToken', function ([_, owner, recipient, anotherAccount, burner]) {
 
   beforeEach(async function () {
     this.token = await WToken.new("WToken", "WToken", 18, {gas: 7000000});
@@ -519,5 +519,123 @@ contract('WToken', function ([_, owner, recipient, anotherAccount]) {
         await this.token.transfer(anotherAccount, 1, { from: recipient }).should.be.fulfilled;
       });
     });
+  });
+
+  describe('burn', function () {
+      const initialBalance = 100;
+
+      describe('when the given amount is not greater than balance of the sender', function () {
+          const amount = 100;
+
+          beforeEach(async function () {
+              ({logs: this.logs} = await this.token.burn(amount, {from: owner}));
+          });
+
+          it('burns the requested amount', async function () {
+              const balance = await this.token.balanceOf(owner);
+              balance.should.be.bignumber.equal(initialBalance - amount);
+          });
+
+          it('emits a burn event', async function () {
+              const event = utils.expectEvent.inLogs(this.logs, 'Burn');
+              event.args.burner.should.eq(owner);
+              event.args.value.should.be.bignumber.equal(amount);
+          });
+
+          it('emits a transfer event', async function () {
+              const event = utils.expectEvent.inLogs(this.logs, 'Transfer');
+              event.args.from.should.eq(owner);
+              event.args.to.should.eq(utils.ZERO_ADDRESS);
+              event.args.value.should.be.bignumber.equal(amount);
+          });
+      });
+
+      describe('when the given amount is greater than the balance of the sender', function () {
+          const amount = initialBalance + 1;
+
+          it('reverts', async function () {
+              await this.token.burn(amount, {from: owner})
+                  .should.be.rejectedWith(utils.EVMRevert);
+          });
+      });
+
+      describe('vesting', function () {
+          const initialAmount = 200;
+          const vestingAmount = 100;
+          const vesting = web3.eth.getBlock('latest').timestamp + utils.time.duration.days(1);
+
+          beforeEach(async function () {
+              await this.token.mint(owner, 100, vesting);
+          });
+
+          it('should burn', async function () {
+              await this.token.burn(initialAmount - vestingAmount, {from: owner})
+                  .should.be.fulfilled;
+
+              const balance = await this.token.accountBalance(owner);
+              balance.should.be.bignumber.equal(0);
+          });
+
+          it('should revert', async function () {
+              await this.token.burn(initialAmount, {from: owner})
+                  .should.be.rejectedWith(utils.EVMRevert);
+          });
+      });
+  });
+
+  describe('burnFrom', function () {
+      const initialBalance = 100;
+
+      describe('on success', function () {
+          const amount = 50;
+
+          beforeEach(async function () {
+              await this.token.approve(burner, 100, {from: owner});
+              const {logs} = await this.token.burnFrom(owner, amount, {from: burner});
+              this.logs = logs;
+          });
+
+          it('burns the requested amount', async function () {
+              const balance = await this.token.balanceOf(owner);
+              balance.should.be.bignumber.equal(initialBalance - amount);
+          });
+
+          it('decrements allowance', async function () {
+              const allowance = await this.token.allowance(owner, burner);
+              allowance.should.be.bignumber.equal(50);
+          });
+
+          it('emits a burn event', async function () {
+              const event = utils.expectEvent.inLogs(this.logs, 'Burn');
+              event.args.burner.should.eq(owner);
+              event.args.value.should.be.bignumber.equal(amount);
+          });
+
+          it('emits a transfer event', async function () {
+              const event = utils.expectEvent.inLogs(this.logs, 'Transfer');
+              event.args.from.should.eq(owner);
+              event.args.to.should.eq(utils.ZERO_ADDRESS);
+              event.args.value.should.be.bignumber.equal(amount);
+          });
+      });
+
+      describe('when the given amount is greater than the balance of the sender', function () {
+          const amount = initialBalance + 1;
+          it('reverts', async function () {
+              await this.token.approve(burner, amount, {from: owner});
+              await this.token.burnFrom(owner, amount, {from: burner})
+                  .should.be.rejectedWith(utils.EVMRevert);
+          });
+      });
+
+      describe('when the given amount is greater than the allowance', function () {
+          const amount = 50;
+
+          it('reverts', async function () {
+              await this.token.approve(burner, amount - 1, {from: owner});
+              await this.token.burnFrom(owner, amount, {from: burner})
+                  .should.be.rejectedWith(utils.EVMRevert);
+          });
+      });
   });
 });
