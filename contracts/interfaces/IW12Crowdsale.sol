@@ -20,9 +20,13 @@ interface IW12Crowdsale {
 
     function milestonesLength() external view returns (uint);
 
-    function getCurrentStage() public view returns (uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] dates);
+    function getCurrentStageIndex() public view returns (uint index, bool found);
+
+    function getSaleVolumeBonus(uint value) public view returns (uint bonus);
 
     function isEnded() public view returns (bool);
+
+    function isSaleActive() public view returns (bool);
 
     function () payable external;
 

@@ -8,7 +8,7 @@ import "./W12Crowdsale.sol";
 contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;
 
-    event CrowdsaleCreated(address indexed owner, address indexed token, uint32 startDate, address crowdsaleAddress, address fundAddress);
+    event CrowdsaleCreated(address indexed owner, address indexed token, address crowdsaleAddress, address fundAddress);
 
     constructor(IW12FundFactory _fundFactory) public {
         require(_fundFactory != address(0), "Factory address required");
@@ -48,6 +48,6 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         fund.setCrowdsale(result);
         fund.transferOwnership(owner);
 
-        emit CrowdsaleCreated(owner, wTokenAddress, startDate, address(result), fund);
+        emit CrowdsaleCreated(owner, wTokenAddress, address(result), fund);
     }
 }

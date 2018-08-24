@@ -234,6 +234,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         (uint index, ) = getCurrentStageIndex();
 
         uint discount = stages[index].discount;
+        uint32 vesting = stages[index].vesting;
         uint volumeBonus = getSaleVolumeBonus(msg.value);
         uint stagePrice = discount > 0
             ? price.mul(100 - discount).div(100)
@@ -272,16 +273,19 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
         (uint index, bool found) = getCurrentStageIndex();
 
-        if (!found || value == 0) return 0;
+        if (!found) return 0;
 
         Stage storage stage = stages[i];
 
+        uint lastBoundary = 0;
+
         for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
-            if (value >= stage.volumeBoundaries[i]) {
+            if (value >= lastBoundary && value < stage.volumeBoundaries[i]) {
                 bonus = stage.volumeBonuses[i];
-            } else {
                 break;
             }
+
+            lastBoundary = stage.volumeBoundaries[i];
         }
     }
 
@@ -294,7 +298,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             }
         }
 
-        return (i, false);
+        return (0, false);
     }
 
     function claimRemainingTokens() external onlyOwner {
