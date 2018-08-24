@@ -151,6 +151,10 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(dates.length == stage_discounts.length);
         require(dates.length == stage_vestings.length);
 
+        if (milestones.length > 0) {
+            require(milestones[0].endDate > dates[dates.length - 1][1], 'Last stage endDate must be lt first milestone endDate');
+        }
+
         uint8 stagesCount = uint8(dates.length);
         stages.length = stagesCount;
 
@@ -197,13 +201,21 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(tranchePercents.length.mul(3) == dates.length);
         require(namesAndDescriptions.length >= tranchePercents.length * 2);
 
+        if (stages.length > 0) {
+            require(stages[stages.length - 1].endDate < dates[0], "First milestone endDate must be gt last stage endDate");
+        }
+
         uint offset = 0;
         uint8 totalPercents = 0;
 
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
             require(dates[i] > now);
-            require(dates[i + 1] >= dates[i]);
-            require(dates[i + 2] >= dates[i + 1]);
+            require(dates[i + 1] > dates[i]);
+            require(dates[i + 2] > dates[i + 1]);
+
+            if (i > 0) {
+                require(dates[(i - 1) + 2] < dates[i], "Milestone dates is not in ascending order");
+            }
 
             bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
             bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
