@@ -14,23 +14,23 @@ interface IW12Crowdsale {
 
     function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes);
 
-    function getMilestone(uint index) public view returns (uint32, uint8, uint32, uint32, bytes, bytes);
+    function getMilestone(uint index) external view returns (uint32, uint8, uint32, uint32, bytes, bytes);
 
-    function getCurrentMilestoneIndex() public view returns (uint);
+    function getCurrentMilestoneIndex() external view returns (uint);
 
     function milestonesLength() external view returns (uint);
 
-    function getCurrentStageIndex() public view returns (uint index, bool found);
+    function getCurrentStageIndex() external view returns (uint index, bool found);
 
-    function getSaleVolumeBonus(uint value) public view returns (uint bonus);
+    function getSaleVolumeBonus(uint value) external view returns (uint bonus);
 
-    function isEnded() public view returns (bool);
+    function isEnded() external view returns (bool);
 
-    function isSaleActive() public view returns (bool);
+    function isSaleActive() external view returns (bool);
 
     function () payable external;
 
     function buyTokens() payable external;
 
-    function transferOwnership(address newOwner) public;
+    function transferOwnership(address newOwner) external;
 }

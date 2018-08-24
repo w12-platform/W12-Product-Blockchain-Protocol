@@ -10,7 +10,7 @@ interface IW12Fund {
 
     function setSwap(address _swap) external;
 
-    function transferOwnership(address newOwner) public;
+    function transferOwnership(address newOwner) external;
 
     function recordPurchase(address buyer, uint tokenAmount) external payable;
 }
