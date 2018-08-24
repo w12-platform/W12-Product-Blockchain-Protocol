@@ -36,7 +36,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     WToken public token;
     ERC20 public originToken;
     uint tokenDecimals;
-    uint32 public startDate;
     uint public price;
     uint public serviceFee;
     uint public WTokenSaleFeePercent;
@@ -58,7 +57,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         address _originToken,
         address _token,
         uint _tokenDecimals,
-        uint32 _startDate,
         uint _price,
         address _serviceWallet,
         address _swap,
@@ -78,7 +76,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         originToken = ERC20(_originToken);
         tokenDecimals = _tokenDecimals;
 
-        __setParameters(_startDate, _price, _serviceWallet);
+        __setParameters(_price, _serviceWallet);
         serviceFee = _serviceFee;
         swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
@@ -135,21 +133,19 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return getMilestone(index);
     }
 
-    function __setParameters(uint32 _startDate, uint _price, address _serviceWallet) internal {
-        require(_startDate >= now);
+    function __setParameters(uint _price, address _serviceWallet) internal {
         require(_price > 0);
         require(_serviceWallet != address(0));
 
-        startDate = _startDate;
         price = _price;
         serviceWallet = _serviceWallet;
     }
 
-    function setParameters(uint32 _startDate, uint _price, address _serviceWallet) external onlyOwner beforeStart {
-        __setParameters(_startDate, _price, _serviceWallet);
+    function setParameters(uint _price, address _serviceWallet) external onlyOwner beforeSaleStart {
+        __setParameters(_price, _serviceWallet);
     }
 
-    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeStart {
+    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
         require(dates.length <= uint8(-1));
         require(dates.length > 0);
         require(dates.length == stage_discounts.length);
@@ -160,12 +156,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         for(uint8 i = 0; i < stagesCount; i++) {
             require(stage_discounts[i] >= 0 && stage_discounts[i] < 100, "Stage discount is not in allowed range [0, 100)");
-            require(startDate <= dates[i][0], "Stage start date must be gt crowdsale start date");
-            require(startDate < dates[i][1], "Stage end date must be gt crowdsale start date");
+            require(dates[i][0] > now);
             require(dates[i][0] < dates[i][1], "Stage start date must be gt end date");
-            // Checking that stages entered in historical order
-            if(i < stagesCount - 1)
-                require(dates[i][1] < dates[i+1][0], "Stages are not in historical order");
+
+            if (i > 0) {
+                require(dates[i - 1][1] <= dates[i][0], "Stages are not in historical order");
+            }
 
             stages[i].startDate = dates[i][0];
             stages[i].endDate = dates[i][1];
@@ -176,9 +172,15 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         emit StagesUpdated();
     }
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external onlyOwner beforeStart {
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external onlyOwner beforeSaleStart {
         require(volumeBoundaries.length == volumeBonuses.length);
         require(stage < stages.length);
+
+        for(uint i = 0; i < volumeBoundaries.length; i++) {
+            if (i > 0) {
+                require(volumeBoundaries[i - 1] < volumeBoundaries[i], "Volume boundaries must be in ascending order");
+            }
+        }
 
         delete stages[stage].volumeBoundaries;
         delete stages[stage].volumeBonuses;
@@ -187,7 +189,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         stages[stage].volumeBonuses = volumeBonuses;
     }
 
-    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeStart {
+    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeSaleStart {
         require(dates.length <= uint8(-1));
         require(dates.length >= 3);
         require(dates.length % 3 == 0);
@@ -226,28 +228,22 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(totalPercents == 100);
     }
 
-    function buyTokens() payable nonReentrant public {
+    function buyTokens() payable public nonReentrant onlyWhenSaleActive {
         require(msg.value > 0);
-        require(startDate <= now);
-        require(!isEnded());
-        require(stages.length > 0);
 
-        (uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] memory dates) = getCurrentStage();
+        (uint index, ) = getCurrentStageIndex();
 
-        // return funds if ICO was closed
-        if(stages.length == 0) {
-            msg.sender.transfer(msg.value);
-            return;
-        }
-
-        require(dates[0] <= now && dates[1] > now, "Stage was not started");
-
-        uint stagePrice = discount > 0 ? price.mul(100 - discount).div(100) : price;
+        uint discount = stages[index].discount;
+        uint32 vesting = stages[index].vesting;
+        uint volumeBonus = getSaleVolumeBonus(msg.value);
+        uint stagePrice = discount > 0
+            ? price.mul(100 - discount).div(100)
+            : price;
 
         uint tokenAmount = msg.value
             .mul(100 + volumeBonus)
             .div(stagePrice)
-            .mul(10**(tokenDecimals - 2));
+            .mul(10 ** (tokenDecimals - 2));
 
         if (WTokenSaleFeePercent > 0) {
             uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
@@ -274,49 +270,70 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return fund;
     }
 
-    function getCurrentStage() public view returns(uint8 discount, uint32 vesting, uint8 volumeBonus, uint32[2] dates) {
+    function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return 0;
+
+        Stage storage stage = stages[i];
+
+        uint lastBoundary = 0;
+
+        for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
+            if (value >= lastBoundary && value < stage.volumeBoundaries[i]) {
+                bonus = stage.volumeBonuses[i];
+                break;
+            }
+
+            lastBoundary = stage.volumeBoundaries[i];
+        }
+    }
+
+    function getCurrentStageIndex() public view returns (uint index, bool found) {
         for(uint i = 0; i < stages.length; i++) {
             Stage storage stage = stages[i];
 
             if (stage.startDate <= now && stage.endDate > now) {
-                volumeBonus = 0;
-                uint lastLowerBoundary = 0;
-
-                if (stage.volumeBoundaries.length > 0) {
-                    for (uint j = 0; j < stage.volumeBoundaries.length - 1; j++) {
-                        if (msg.value >= lastLowerBoundary && msg.value < stage.volumeBoundaries[j]) {
-                            volumeBonus = stage.volumeBonuses[j];
-                            break;
-                        } else {
-                            lastLowerBoundary = stage.volumeBoundaries[j];
-                        }
-                    }
-                }
-
-                return (stage.discount, stage.vesting, volumeBonus, [stage.startDate, stage.endDate]);
+                return (i, true);
             }
         }
 
-        return (0, 0, 0, [uint32(0), uint32(0)]);
-    }
-
-    function () payable external {
-        buyTokens();
-    }
-
-    function isEnded() public view returns (bool) {
-        return stages.length == 0 || stages[stages.length - 1].endDate < now;
-    }
-
-    modifier beforeStart() {
-        require(startDate > now);
-
-        _;
+        return (0, false);
     }
 
     function claimRemainingTokens() external onlyOwner {
         require(isEnded());
 
         require(token.transfer(owner, token.balanceOf(address(this))));
+    }
+
+    function isEnded() public view returns (bool) {
+        return stages.length == 0 || stages[stages.length - 1].endDate < now;
+    }
+
+    function isSaleActive() public view returns (bool) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return false;
+
+        return stages[index].startDate <= now && stages[index].endDate > now;
+    }
+
+    function() payable external {
+        buyTokens();
+    }
+
+    modifier beforeSaleStart() {
+        if (stages.length > 0) {
+            require(stages[0].startDate > now);
+        }
+
+        _;
+    }
+
+    modifier onlyWhenSaleActive() {
+        require(isSaleActive(), "Sale is not started yet");
+
+        _;
     }
 }

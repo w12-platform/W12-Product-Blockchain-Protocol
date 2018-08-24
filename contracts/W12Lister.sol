@@ -25,7 +25,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, address indexed tokenOwner, uint tokenAmount, address placedTokenAddress);
-    event CrowdsaleInitialized(uint startDate, address indexed tokenAddress, address indexed tokenOwner, uint amountForSale);
+    event CrowdsaleInitialized(address indexed tokenAddress, address indexed tokenOwner, uint amountForSale);
 
     struct ListedToken {
         string name;
@@ -130,7 +130,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
         emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, ledger.getWTokenByToken(tokenAddress));
     }
 
-    function initCrowdsale(uint32 startDate, address tokenAddress, uint amountForSale, uint price) external nonReentrant {
+    function initCrowdsale(address tokenAddress, uint amountForSale, uint price) external nonReentrant {
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress == address(0));
@@ -140,7 +140,6 @@ contract W12Lister is Ownable, ReentrancyGuard {
         IW12Crowdsale crowdsale = factory.createCrowdsale(
             address(tokenAddress),
             address(wtoken),
-            startDate,
             price,
             serviceWallet,
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
@@ -164,7 +163,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         addTokensToCrowdsale(tokenAddress, amountForSale);
 
-        emit CrowdsaleInitialized(startDate, tokenAddress, msg.sender, amountForSale);
+        emit CrowdsaleInitialized(tokenAddress, msg.sender, amountForSale);
     }
 
     function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {

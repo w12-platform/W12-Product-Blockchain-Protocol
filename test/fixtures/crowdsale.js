@@ -55,7 +55,6 @@ async function setTestStages (startDate, W12Crowdsale, owner) {
 async function createW12CrowdsaleViaFabric(
     {
         originTokenAddress,
-        startDate,
         serviceWalletAddress,
         swapAddress,
         price,
@@ -72,7 +71,6 @@ async function createW12CrowdsaleViaFabric(
     const txOutput = await factory.createCrowdsale(
         originTokenAddress,
         token.address,
-        startDate,
         price,
         serviceWalletAddress,
         serviceFee,
@@ -94,7 +92,6 @@ async function createW12CrowdsaleViaFabric(
     return {
         args: {
             wTokenAddress: token.address,
-            startDate,
             price,
             serviceWalletAddress,
             serviceFee,
@@ -112,7 +109,6 @@ async function createW12CrowdsaleViaFabric(
 async function createW12Crowdsale (
     {
         originTokenAddress,
-        startDate,
         serviceWalletAddress,
         swapAddress,
         price,
@@ -129,7 +125,6 @@ async function createW12Crowdsale (
         originTokenAddress,
         token.address,
         await token.decimals(),
-        startDate,
         price,
         serviceWalletAddress,
         swapAddress,
@@ -142,7 +137,6 @@ async function createW12Crowdsale (
     return {
         args: {
             originTokenAddress,
-            startDate,
             serviceWalletAddress,
             swapAddress,
             price,

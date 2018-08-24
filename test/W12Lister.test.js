@@ -181,7 +181,6 @@ contract('W12Lister', async (accounts) => {
             describe('token owner', async () => {
                 it('should be able to initialize crowdsale', async () => {
                     await sut.initCrowdsale(
-                            lastDate + utils.time.duration.minutes(10),
                             token.address,
                             oneToken.mul(7),
                             oneToken,
@@ -200,16 +199,6 @@ contract('W12Lister', async (accounts) => {
                         .should.bignumber.eq(expectedCrowdsaleSwapAllowance);
                 });
 
-                it('shouldn\'t be able to initialize crowdsale with a start date in a past', async () => {
-                    await sut.initCrowdsale(
-                            lastDate - utils.time.duration.minutes(10),
-                            token.address,
-                            oneToken.mul(7),
-                            oneToken,
-                            fromTokenOwner
-                        ).should.be.rejectedWith(utils.EVMRevert);
-                });
-
                 describe('shouldn\'t be able to initialize crowdsale with amount of tokens greater than placed', async () => {
                     const invalidAmounts = [
                         oneToken.mul(7.1),
@@ -220,7 +209,6 @@ contract('W12Lister', async (accounts) => {
                     for (const amount of invalidAmounts) {
                         it(`when amount is equal to ${amount.toNumber()}`, async () => {
                             await sut.initCrowdsale(
-                                lastDate + utils.time.duration.minutes(10),
                                 token.address,
                                 amount,
                                 oneToken,
@@ -237,7 +225,6 @@ contract('W12Lister', async (accounts) => {
 
                 beforeEach(async () => {
                     await sut.initCrowdsale(
-                        lastDate + utils.time.duration.minutes(10),
                         token.address,
                         oneToken.mul(6.9),
                         oneToken,
@@ -287,16 +274,6 @@ contract('W12Lister', async (accounts) => {
                     ).should.be.fulfilled;
                 });
 
-                it('crowdsale should be activated at time to sell tokens', async () => {
-                    await utils.time.increaseTimeTo(lastDate + utils.time.duration.minutes(20));
-                    const fundBalanceBefore = web3.eth.getBalance(fundAddress);
-
-                    await crowdsale.buyTokens({ from: accounts[5], value: web3.toWei(1, 'ether') }).should.be.fulfilled;
-                    const fundBalanceAfter = web3.eth.getBalance(fundAddress);
-
-                    (fundBalanceAfter.gt(fundBalanceBefore)).should.be.true;
-                });
-
                 it('should be able to add tokens to existed crowdsale', async () => {
                     const crowdsaleAddressBefore = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from).should.be.fulfilled;
 
@@ -313,23 +290,13 @@ contract('W12Lister', async (accounts) => {
                     crowdsaleAddressBefore.should.be.equal(crowdsaleAddressAfter);
                 });
 
-                describe('shouldn\'t be able to re-initialize crowdsale with amount of tokens greater than placed', async () => {
-                    const invalidAmounts = [
-                        oneToken.mul(0.11),
-                        oneToken.mul(1)
-                    ];
-
-                    for (const amount of invalidAmounts) {
-                        it(`when amount is equal to ${amount.toNumber()}`, async () => {
-                            await sut.initCrowdsale(
-                                lastDate + utils.time.duration.minutes(10),
-                                token.address,
-                                amount,
-                                oneToken,
-                                fromTokenOwner
-                            ).should.be.rejectedWith(utils.EVMRevert);
-                        })
-                    }
+                it('shouldn\'t be able to re-initialize crowdsale', async () => {
+                    await sut.initCrowdsale(
+                        token.address,
+                        oneToken.mul(1),
+                        oneToken,
+                        fromTokenOwner
+                    ).should.be.rejectedWith(utils.EVMRevert);
                 });
             });
         });
