@@ -19,7 +19,6 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
     function createCrowdsale(
         address tokenAddress,
         address wTokenAddress,
-        uint32 startDate,
         uint price,
         address serviceWallet,
         uint serviceFee,
@@ -36,7 +35,6 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
             tokenAddress,
             wTokenAddress,
             DetailedERC20(wTokenAddress).decimals(),
-            startDate,
             price,
             serviceWallet,
             swap,

@@ -7,7 +7,6 @@ interface IW12CrowdsaleFactory {
     function createCrowdsale(
         address tokenAddress,
         address _wTokenAddress,
-        uint32 _startDate,
         uint price,
         address serviceWallet,
         uint serviceFee,
