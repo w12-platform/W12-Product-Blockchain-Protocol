@@ -1,5 +1,6 @@
 import * as time from '../../openzeppelin-solidity/test/helpers/increaseTime';
 import EVMRevert from '../../openzeppelin-solidity/test/helpers/EVMRevert';
+import * as expectEvent from '../../openzeppelin-solidity/test/helpers/expectEvent';
 
 function generateRandomAddress () {
     return `0x${crypto.randomBytes(20).toString('hex')}`;
@@ -99,6 +100,7 @@ async function getTransactionCost(txOutput) {
 
 module.exports = {
     time,
+    expectEvent,
     round,
     EVMRevert,
     ZERO_ADDRESS,
