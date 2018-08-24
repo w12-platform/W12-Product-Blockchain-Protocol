@@ -47,7 +47,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     Milestone[] public milestones;
     uint32[] public milestoneDates;
 
-    event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought);
+    event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
     event MilestonesSet();
 
@@ -248,14 +248,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint discount = stages[index].discount;
         uint32 vesting = stages[index].vesting;
         uint volumeBonus = getSaleVolumeBonus(msg.value);
-        uint stagePrice = discount > 0
-            ? price.mul(100 - discount).div(100)
-            : price;
 
-        uint tokenAmount = msg.value
-            .mul(100 + volumeBonus)
-            .div(stagePrice)
-            .mul(10 ** (tokenDecimals - 2));
+        (uint tokenAmount, uint weiCost, uint change, ) = _purchaseOrder(msg.value, discount, volumeBonus);
 
         if (WTokenSaleFeePercent > 0) {
             uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
@@ -266,12 +260,41 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
 
+        if (change > 0) {
+            msg.sender.transfer(change);
+        }
+
         if(serviceFee > 0)
-            serviceWallet.transfer(msg.value.percent(serviceFee));
+            serviceWallet.transfer(weiCost.percent(serviceFee));
 
         fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
 
-        emit TokenPurchase(msg.sender, msg.value, tokenAmount);
+        emit TokenPurchase(msg.sender, weiCost, tokenAmount, change);
+    }
+
+    function _purchaseOrder(uint _wei, uint discount, uint volumeBonus)
+        internal view returns (uint tokens, uint weiCost, uint change, uint actualPrice)
+    {
+        weiCost = _wei;
+
+        actualPrice = discount > 0
+            ? price.mul(100 - discount).div(100)
+            : price;
+
+        tokens = _wei
+            .mul(100 + volumeBonus)
+            .div(actualPrice)
+            .mul(10 ** (tokenDecimals - 2));
+
+        uint balance = token.balanceOf(address(this));
+
+        if (balance < tokens) {
+            weiCost = _wei
+                .mul(balance)
+                .div(tokens);
+            change = _wei - weiCost;
+            tokens = balance;
+        }
     }
 
     function getWToken() external view returns(WToken) {
