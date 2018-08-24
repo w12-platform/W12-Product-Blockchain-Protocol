@@ -4,6 +4,7 @@ const utils = require('../shared/tests/utils.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
+const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const WToken = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
 
@@ -25,7 +26,7 @@ contract('W12Crowdsale', async (accounts) => {
         fund = await W12Fund.new(5 * 100, {from: tokenOwner}).should.be.fulfilled;
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
-        sut = await W12Crowdsale.new(
+        sut = await W12CrowdsaleStub.new(
             originToken.address,
             token.address,
             18,
@@ -676,6 +677,35 @@ contract('W12Crowdsale', async (accounts) => {
 
                 (await web3.eth.getBalance(fund.address))
                     .should.bignumber.equal(9000);
+            });
+
+            it('should return change', async () => {
+                const stage = discountStages[0];
+                const buyValueWei = new BigNumber(100 * 200);
+                const expectedChange = buyValueWei.div(2);
+                const expectedWBalance = oneToken.mul(100);
+                const buyerBalanceBefore = await web3.eth.getBalance(buyer);
+
+                await utils.time.increaseTimeTo(stage.dates[0] + 10);
+
+                await sut._outTokens(accounts[0], oneToken.mul(oneToken.minus(100)), {from: tokenOwner})
+                    .should.be.fulfilled;
+
+                await sut._setState(0, {from: tokenOwner})
+                    .should.be.fulfilled;
+
+                const receipt = await sut.buyTokens({value: buyValueWei, from: buyer}).should.be.fulfilled;
+                const cost = await utils.getTransactionCost(receipt);
+                const expectedBalance = buyerBalanceBefore
+                    .minus(cost)
+                    .minus(buyValueWei)
+                    .plus(expectedChange);
+
+                (await token.balanceOf(buyer))
+                    .should.bignumber.equal(expectedWBalance);
+
+                (await web3.eth.getBalance(buyer))
+                    .should.bignumber.equal(expectedBalance);
             });
 
             it('should not sell some tokens if sale is not active', async () => {
