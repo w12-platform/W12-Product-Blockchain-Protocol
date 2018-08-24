@@ -29,7 +29,6 @@ contract('W12Crowdsale', async (accounts) => {
             originToken.address,
             token.address,
             18,
-            startDate,
             100,
             serviceWallet,
             swap,
@@ -50,7 +49,6 @@ contract('W12Crowdsale', async (accounts) => {
 
     describe('constructor', async () => {
         it('should create crowdsale', async () => {
-            (await sut.startDate()).should.bignumber.equal(startDate);
             (await sut.token()).should.be.equal(token.address);
             (await sut.originToken()).should.be.equal(originToken.address);
             (await sut.price()).should.bignumber.equal(100);
@@ -58,22 +56,6 @@ contract('W12Crowdsale', async (accounts) => {
             (await sut.WTokenSaleFeePercent()).should.bignumber.equal(10 * 100);
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
             (await sut.swap()).should.be.equal(swap);
-        });
-
-        it('should reject crowdsale with start date in the past', async () => {
-            await W12Crowdsale.new(
-                originToken.address,
-                token.address,
-                18,
-                startDate - 1000,
-                100,
-                serviceWallet,
-                swap,
-                10 * 100,
-                10 * 100,
-                fund.address,
-                {from: tokenOwner}
-            ).should.be.rejected;
         });
     });
 
@@ -163,10 +145,10 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await utils.time.increaseTimeTo(expectedStage.dates[1] - 10);
 
-                const result = await sut.getCurrentStage().should.be.fulfilled;
+                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
 
-                result[3][0].should.bignumber.equal(expectedStage.dates[0]);
-                result[3][1].should.bignumber.equal(expectedStage.dates[1]);
+                result[0].should.bignumber.equal(1);
+                result[1].should.be.equal(true);
             });
 
             it('should\'t return current stage', async () => {
@@ -176,13 +158,10 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await utils.time.increaseTimeTo(someDate);
 
-                const result = await sut.getCurrentStage().should.be.fulfilled;
+                const result = await sut.getCurrentStageIndex().should.be.fulfilled;
 
                 result[0].should.bignumber.equal(0);
-                result[1].should.bignumber.equal(0);
-                result[2].should.bignumber.equal(0);
-                result[3][0].should.bignumber.equal(0);
-                result[3][1].should.bignumber.equal(0);
+                result[1].should.be.equal(false);
             });
 
             it('should set stage bonuses', async () => {
@@ -196,6 +175,14 @@ contract('W12Crowdsale', async (accounts) => {
 
                 actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
                 actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
+            });
+
+            it('should not set stage bonuses if volume boundaries is not in ascending order', async () => {
+                await sut.setStageVolumeBonuses(0,
+                    [oneToken.mul(10), oneToken.mul(2), oneToken],
+                    [1, 2, 10],
+                    {from: tokenOwner}
+                ).should.be.rejectedWith(utils.EVMRevert);
             });
 
             it('should sell some tokens', async () => {
@@ -237,6 +224,21 @@ contract('W12Crowdsale', async (accounts) => {
 
                 (await web3.eth.getBalance(fund.address))
                     .should.bignumber.equal(9000);
+            });
+
+            it('should not sell some tokens if sale is not active', async () => {
+                const someStage1 = discountStages[1];
+                const someStage2 = discountStages[2];
+                const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
+
+                console.log((await web3.eth.getBalance(buyer)));
+
+                await utils.time.increaseTimeTo(someDate);
+
+                await sut.buyTokens({value: 10000, from: buyer})
+                    .should.be.rejectedWith(utils.EVMRevert);
+
+                console.log((await web3.eth.getBalance(buyer)));
             });
 
             it('should end at the end date', async () => {
@@ -458,19 +460,53 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await utils.time.increaseTimeTo(stage.dates[1] - 30);
 
-                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.minus(1), from: buyer }).should.be.fulfilled;
+                await sut.buyTokens({
+                    value: stage.volumeBonuses[0].boundary.minus(1),
+                    from: buyer
+                })
+                    .should.be.fulfilled;
+
                 balance = await token.balanceOf(buyer);
-                balance.should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.minus(1), price, BigNumber.Zero, BigNumber.Zero));
+                balance.should.bignumber
+                    .equal(
+                        calculateTokens(
+                            stage.volumeBonuses[0].boundary.minus(1)
+                            , price
+                            , BigNumber.Zero, stage.volumeBonuses[0].bonus
+                        )
+                    );
                 totalBoughtBefore = balance;
 
-                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary, from: buyer }).should.be.fulfilled;
+                await sut.buyTokens({
+                    value: stage.volumeBonuses[0].boundary,
+                    from: buyer
+                }).should.be.fulfilled;
+
                 balance = await token.balanceOf(buyer);
-                balance.minus(totalBoughtBefore).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary, price, BigNumber.Zero, stage.volumeBonuses[1].bonus));
+                balance.minus(totalBoughtBefore).should.bignumber
+                    .equal(
+                        calculateTokens(
+                            stage.volumeBonuses[0].boundary
+                            , price
+                            , BigNumber.Zero, stage.volumeBonuses[1].bonus
+                        )
+                    );
                 totalBoughtBefore = balance;
 
-                await sut.buyTokens({ value: stage.volumeBonuses[0].boundary.plus(1), from: buyer }).should.be.fulfilled;
+                await sut.buyTokens({
+                    value: stage.volumeBonuses[1].boundary,
+                    from: buyer
+                }).should.be.fulfilled;
+
                 balance = await token.balanceOf(buyer);
-                balance.minus(totalBoughtBefore).toPrecision(8).should.bignumber.equal(calculateTokens(stage.volumeBonuses[0].boundary.plus(1), price, BigNumber.Zero, stage.volumeBonuses[1].bonus).toPrecision(8));
+                balance.minus(totalBoughtBefore).toPrecision(8).should.bignumber
+                    .equal(
+                        calculateTokens(
+                            stage.volumeBonuses[1].boundary
+                            , price
+                            , BigNumber.Zero, stage.volumeBonuses[2].bonus
+                        ).toPrecision(8)
+                    );
             });
         });
     });

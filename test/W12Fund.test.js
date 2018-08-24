@@ -117,7 +117,6 @@ contract('W12Fund', async (accounts) => {
             crowdsaleFixture = await CrowdsaleFixture.createW12Crowdsale(
                 {
                     originTokenAddress: originTokenFixture.token.address,
-                    startDate: web3.eth.getBlock('latest').timestamp + 60,
                     serviceWalletAddress: utils.generateRandomAddress(),
                     swapAddress: utils.generateRandomAddress(),
                     price: tokenPrice,
