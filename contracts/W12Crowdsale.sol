@@ -141,8 +141,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         serviceWallet = _serviceWallet;
     }
 
-    function setParameters(uint _price, address _serviceWallet) external onlyOwner beforeSaleStart {
-        __setParameters(_price, _serviceWallet);
+    function setParameters(uint _price) external onlyOwner beforeSaleStart {
+        __setParameters(_price, serviceWallet);
     }
 
     function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
