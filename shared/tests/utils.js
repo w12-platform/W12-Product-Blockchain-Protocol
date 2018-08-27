@@ -7,6 +7,7 @@ function generateRandomAddress () {
 };
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const ONE_TOKEN_18 = new BigNumber(10).pow(18);
 
 /**
      calculation parameters:
@@ -98,14 +99,38 @@ async function getTransactionCost(txOutput) {
     return gasPrice.mul(gasUsed);
 }
 
+function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus, decimals = 18) {
+    let result;
+
+    result = round(
+        weiBasePrice
+            .mul(new BigNumber(100).minus(stageDiscount))
+            .div(100)
+    )
+    result = round(
+        weiAmountPaid
+            .mul(volumeBonus.plus(100))
+            .div(result)
+    );
+    result = round(
+        result
+            .mul(new BigNumber(10).pow(decimals))
+            .div(100)
+    );
+
+    return result;
+}
+
 module.exports = {
     time,
     expectEvent,
     round,
     EVMRevert,
     ZERO_ADDRESS,
+    ONE_TOKEN_18,
     generateRandomAddress,
     calculateRefundAmount,
     encodeMilestoneParameters,
-    getTransactionCost
+    getTransactionCost,
+    calculatePurchase
 }

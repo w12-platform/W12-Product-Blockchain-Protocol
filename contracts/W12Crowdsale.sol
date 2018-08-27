@@ -312,15 +312,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         Stage storage stage = stages[i];
 
-        uint lastBoundary = 0;
-
         for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
-            if (value >= lastBoundary && value < stage.volumeBoundaries[i]) {
+            if (value >= stage.volumeBoundaries[i]) {
                 bonus = stage.volumeBonuses[i];
+            } else {
                 break;
             }
-
-            lastBoundary = stage.volumeBoundaries[i];
         }
     }
 

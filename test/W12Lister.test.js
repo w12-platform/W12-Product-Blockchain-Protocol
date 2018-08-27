@@ -219,9 +219,8 @@ contract('W12Lister', async (accounts) => {
                 });
             });
 
-            describe('when crowdsale is set to run', async () => {
-                let crowdsale;
-                let fundAddress;
+            describe('when crowdsale is inited', async () => {
+                let crowdsaleAddress;
 
                 beforeEach(async () => {
                     await sut.initCrowdsale(
@@ -231,53 +230,11 @@ contract('W12Lister', async (accounts) => {
                         fromTokenOwner
                     ).should.be.fulfilled;
 
-                    crowdsale = W12Crowdsale.at(await sut.getTokenCrowdsale(token.address, fromTokenOwner.from));
-                    fundAddress = await crowdsale.fund();
-
-                    const discountStages = [
-                        {
-                            name: 'Phase 0',
-                            dates: [
-                                lastDate + utils.time.duration.minutes(11),
-                                lastDate + utils.time.duration.minutes(60),
-                            ],
-                            vestingTime: 0,
-                            discount: 0,
-                            volumeBonuses: [
-                                {
-                                    boundary: new BigNumber(10000000),
-                                    bonus: BigNumber.Zero
-                                },
-                                {
-                                    boundary: new BigNumber(100000000),
-                                    bonus: new BigNumber(1)
-                                },
-                                {
-                                    boundary: new BigNumber(1000000000),
-                                    bonus: new BigNumber(10)
-                                }
-                            ]
-                        }
-                    ];
-
-                    await crowdsale.setStages(
-                        discountStages.map(s => s.dates),
-                        discountStages.map(s => s.discount),
-                        discountStages.map(s => s.vestingTime),
-                        fromTokenOwner
-                    ).should.be.fulfilled;
-
-                    await crowdsale.setStageVolumeBonuses(0,
-                        discountStages[0].volumeBonuses.map(vb => vb.boundary),
-                        discountStages[0].volumeBonuses.map(vb => vb.bonus),
-                        fromTokenOwner
-                    ).should.be.fulfilled;
+                    crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
                 });
 
                 it('should be able to add tokens to existed crowdsale', async () => {
-                    const crowdsaleAddressBefore = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from).should.be.fulfilled;
-
-                    crowdsaleAddressBefore.should.not.be.equal(utils.ZERO_ADDRESS);
+                    const crowdsaleAddressBefore = crowdsaleAddress;
 
                     await sut.addTokensToCrowdsale(
                             token.address,
@@ -285,7 +242,7 @@ contract('W12Lister', async (accounts) => {
                             fromTokenOwner
                         ).should.be.fulfilled;
 
-                    const crowdsaleAddressAfter = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from).should.be.fulfilled;
+                    const crowdsaleAddressAfter = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
 
                     crowdsaleAddressBefore.should.be.equal(crowdsaleAddressAfter);
                 });
