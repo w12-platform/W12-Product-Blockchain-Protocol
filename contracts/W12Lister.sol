@@ -185,8 +185,6 @@ contract W12Lister is Ownable, ReentrancyGuard {
     }
 
     function getTokenCrowdsale(address tokenAddress, address ownerAddress) view external returns (address) {
-        require(getApprovedToken(tokenAddress, ownerAddress).crowdsaleAddress != address(0));
-
         return getApprovedToken(tokenAddress, ownerAddress).crowdsaleAddress;
     }
 
