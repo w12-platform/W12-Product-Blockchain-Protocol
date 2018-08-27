@@ -1,4 +1,4 @@
-# Migrations to test network
+# Migrate to test network
 
 1. Rename `example.config.js` to `config.js`
 2. Set own infura token
