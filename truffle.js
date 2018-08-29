@@ -22,7 +22,7 @@ module.exports = {
         },
     },
     mocha: {
-        // grep: 'burn'
+        // grep: ''
     },
     optimizer: {
         enabled: true
