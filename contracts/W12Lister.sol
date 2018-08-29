@@ -26,6 +26,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, address indexed tokenOwner, uint tokenAmount, address placedTokenAddress);
     event CrowdsaleInitialized(address indexed tokenAddress, address indexed tokenOwner, uint amountForSale);
+    event CrowdsaleTokenMinted(address indexed tokenAddress, address indexed tokenOwner, uint amount);
 
     struct ListedToken {
         string name;
@@ -182,6 +183,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
             .wTokensIssuedAmount.add(amountForSale);
 
         token.mint(crowdsale, amountForSale, 0);
+
+        emit CrowdsaleTokenMinted(tokenAddress, msg.sender, amountForSale);
     }
 
     function getTokenCrowdsale(address tokenAddress, address ownerAddress) view external returns (address) {
