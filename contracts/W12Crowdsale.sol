@@ -50,6 +50,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
     event MilestonesSet();
+    event UnsoldTokenReturned(address indexed owner, uint amount);
 
     event debug(uint value);
 
@@ -338,7 +339,11 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function claimRemainingTokens() external onlyOwner {
         require(isEnded());
 
-        require(token.transfer(owner, token.balanceOf(address(this))));
+        uint amount = token.balanceOf(address(this));
+
+        require(token.transfer(owner, amount));
+
+        emit UnsoldTokenReturned(owner, amount);
     }
 
     function isEnded() public view returns (bool) {
