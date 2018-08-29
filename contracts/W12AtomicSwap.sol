@@ -13,6 +13,8 @@ contract W12AtomicSwap is Ownable, ReentrancyGuard {
 
     W12TokenLedger public ledger;
 
+    event Exchange(address indexed from, address indexed to, uint amount, address indexed sender);
+
     constructor (W12TokenLedger _ledger) public {
         require(_ledger != address(0));
 
@@ -32,5 +34,7 @@ contract W12AtomicSwap is Ownable, ReentrancyGuard {
 
         fromToken.safeTransferFrom(msg.sender, address(this), amount);
         toToken.safeTransfer(msg.sender, amount);
+
+        emit Exchange(address(fromToken), address(toToken), amount, msg.sender);
     }
 }
