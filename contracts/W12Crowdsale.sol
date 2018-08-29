@@ -277,6 +277,10 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     {
         weiCost = _wei;
 
+        uint balance = token.balanceOf(address(this));
+
+        require(balance >= 10 ** tokenDecimals);
+
         actualPrice = discount > 0
             ? price.mul(100 - discount).div(100)
             : price;
@@ -285,8 +289,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             .mul(100 + volumeBonus)
             .div(actualPrice)
             .mul(10 ** (tokenDecimals - 2));
-
-        uint balance = token.balanceOf(address(this));
 
         if (balance < tokens) {
             weiCost = _wei
@@ -312,15 +314,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         Stage storage stage = stages[i];
 
-        uint lastBoundary = 0;
-
         for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
-            if (value >= lastBoundary && value < stage.volumeBoundaries[i]) {
+            if (value >= stage.volumeBoundaries[i]) {
                 bonus = stage.volumeBonuses[i];
+            } else {
                 break;
             }
-
-            lastBoundary = stage.volumeBoundaries[i];
         }
     }
 

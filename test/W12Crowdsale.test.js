@@ -579,22 +579,6 @@ contract('W12Crowdsale', async (accounts) => {
         let discountStages;
         const buyer = accounts[8];
 
-        /**
-         *
-         * @param {BigNumber} weiAmountPaid
-         * @param {BigNumber} weiBasePrice
-         * @param {BigNumber} stageDiscount
-         * @param {BigNumber} volumeBonus
-         */
-        function calculateTokens(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus) {
-            return weiAmountPaid.div(weiBasePrice
-                .mul(new BigNumber(100).minus(stageDiscount))
-                .div(100)
-            ).mul(volumeBonus.plus(100))
-            .mul(oneToken)
-            .div(100);
-        }
-
         describe('with discounts stages', async () => {
 
             beforeEach(async () => {
@@ -749,111 +733,76 @@ contract('W12Crowdsale', async (accounts) => {
 
                     const balanceAfter = await token.balanceOf(buyer);
 
-                    balanceAfter
-                        .minus(balanceBefore)
-                        .toPrecision(6).should.bignumber
-                            .equal(calculateTokens(oneToken, price, stage.discount, BigNumber.Zero).toPrecision(6));
+                    balanceAfter.minus(balanceBefore)
+                        .should.bignumber.equal(utils.calculatePurchase(oneToken, price, stage.discount, BigNumber.Zero));
                 }
             });
         });
 
-        describe('with volume bonuses', async () => {
+        describe('volume bonuses', async () => {
+            const expected = [
+                // boundary, bonus, testWei
+                [new BigNumber(0), new BigNumber(0), new BigNumber(10000)], // no bonus
+
+                [new BigNumber(10000000), new BigNumber(5), new BigNumber(10000000)],
+                [new BigNumber(100000000), new BigNumber(10), new BigNumber(100000001)]
+            ];
+            let stage;
+
             beforeEach(async () => {
-                discountStages = [
-                    {
-                        name: 'Phase 0',
-                        dates: [
-                            startDate + utils.time.duration.minutes(60),
-                            startDate + utils.time.duration.minutes(80)
-                        ],
-                        vestingTime: 0,
-                        discount: 0,
-                        volumeBonuses: [
-                            {
-                                boundary: new BigNumber(10000000),
-                                bonus: BigNumber.Zero
-                            },
-                            {
-                                boundary: new BigNumber(100000000),
-                                bonus: new BigNumber(1)
-                            },
-                            {
-                                boundary: new BigNumber(1000000000),
-                                bonus: new BigNumber(10)
-                            }
-                        ]
-                    }
-                ];
+                stage = {
+                    name: 'Phase 0',
+                    dates: [
+                        startDate + utils.time.duration.minutes(80),
+                        startDate + utils.time.duration.minutes(90)
+                    ],
+                    vestingTime: 0,
+                    discount: 0,
+                    volumeBonuses: expected.slice(1).map(item => ({
+                        boundary: item[0],
+                        bonus: item[1],
+                    }))
+                };
+                const stages = [stage];
 
                 await sut.setStages(
-                    discountStages.map(s => s.dates),
-                    discountStages.map(s => s.discount),
-                    discountStages.map(s => s.vestingTime),
+                    stages.map(s => s.dates),
+                    stages.map(s => s.discount),
+                    stages.map(s => s.vestingTime),
                     {from: tokenOwner}
                 ).should.be.fulfilled;
 
                 await sut.setStageVolumeBonuses(0,
-                    discountStages[0].volumeBonuses.map(vb => vb.boundary),
-                    discountStages[0].volumeBonuses.map(vb => vb.bonus),
+                    stages[0].volumeBonuses.map(vb => vb.boundary),
+                    stages[0].volumeBonuses.map(vb => vb.bonus),
                     {from: tokenOwner}
                 ).should.be.fulfilled;
+
+                await utils.time.increaseTimeTo(stage.dates[0]);
             });
 
-            it('should sell tokens with volume bonuses', async () => {
-                const stage = discountStages[0];
-                let totalBoughtBefore;
-                let balance;
+            for (const itemIdx in expected) {
+                const item = expected[+itemIdx];
+                const volume = item[0];
+                const percent = item[1];
+                const wei = item[2];
 
-                await utils.time.increaseTimeTo(stage.dates[1] - 30);
+                const nextVolume = +itemIdx != (expected.length - 1) ? expected[+itemIdx + 1][0] : 'Infinity';
 
-                await sut.buyTokens({
-                    value: stage.volumeBonuses[0].boundary.minus(1),
-                    from: buyer
-                })
-                    .should.be.fulfilled;
-
-                balance = await token.balanceOf(buyer);
-                balance.should.bignumber
-                    .equal(
-                        calculateTokens(
-                            stage.volumeBonuses[0].boundary.minus(1)
-                            , price
-                            , BigNumber.Zero, stage.volumeBonuses[0].bonus
-                        )
+                it(`should sell tokens for volume in [${volume.toString()}, ${nextVolume.toString()}) with bonus ${percent.toString()}%`, async () => {
+                    const tokens = utils.calculatePurchase(
+                        wei
+                        , price
+                        , BigNumber.Zero, percent
                     );
-                totalBoughtBefore = balance;
 
-                await sut.buyTokens({
-                    value: stage.volumeBonuses[0].boundary,
-                    from: buyer
-                }).should.be.fulfilled;
+                    await sut.buyTokens({ value: wei, from: buyer })
+                        .should.be.fulfilled;
 
-                balance = await token.balanceOf(buyer);
-                balance.minus(totalBoughtBefore).should.bignumber
-                    .equal(
-                        calculateTokens(
-                            stage.volumeBonuses[0].boundary
-                            , price
-                            , BigNumber.Zero, stage.volumeBonuses[1].bonus
-                        )
-                    );
-                totalBoughtBefore = balance;
-
-                await sut.buyTokens({
-                    value: stage.volumeBonuses[1].boundary,
-                    from: buyer
-                }).should.be.fulfilled;
-
-                balance = await token.balanceOf(buyer);
-                balance.minus(totalBoughtBefore).toPrecision(8).should.bignumber
-                    .equal(
-                        calculateTokens(
-                            stage.volumeBonuses[1].boundary
-                            , price
-                            , BigNumber.Zero, stage.volumeBonuses[2].bonus
-                        ).toPrecision(8)
-                    );
-            });
+                    (await token.balanceOf(buyer))
+                        .should.bignumber.equal(tokens);
+                });
+            }
         });
     });
 });
