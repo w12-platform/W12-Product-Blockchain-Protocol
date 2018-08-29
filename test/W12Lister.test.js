@@ -164,39 +164,64 @@ contract('W12Lister', async (accounts) => {
                 , {from: accounts[2]}).should.be.rejected;
         });
 
-        describe('when owner set the crowdsale', async () => {
+        describe('running crowdsale', async () => {
+            const placedAmount = oneToken.mul(10);
+            const buyCommissionInTokens = new BigNumber(5);
+            const placeCommissionInTokens = new BigNumber(30);
+
             beforeEach(async () => {
                 await sut.whitelistToken(
                     fromTokenOwner.from, token.address
                     , "TestTokenz", "TT", 18
-                    , 30 * 100, 30 * 100, 5 * 100, 10 * 100
+                    , placeCommissionInTokens.mul(100), 30 * 100, buyCommissionInTokens.mul(100), 10 * 100
                     , fromSystemAccount);
 
                 await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);
                 await token.approve(sut.address, oneToken.mul(10000), fromTokenOwner);
 
-                await sut.placeToken(token.address, oneToken.mul(10), fromTokenOwner).should.be.fulfilled;
+                await sut.placeToken(token.address, placedAmount, fromTokenOwner).should.be.fulfilled;
             });
 
-            describe('token owner', async () => {
-                it('should be able to initialize crowdsale', async () => {
-                    await sut.initCrowdsale(
-                            token.address,
-                            oneToken.mul(7),
-                            oneToken,
-                            fromTokenOwner
-                        ).should.be.fulfilled;
+            describe('initialization', async () => {
+                const saleAmount = oneToken.mul(7);
+                const price = oneToken;
+                let txReceipt;
+                let logs;
 
-                    const crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from).should.be.fulfilled;
-                    const expectedCrowdsaleSwapAllowance = oneToken
-                        .mul(10)
-                        .mul(0.7)
-                        .mul(0.05);
+                beforeEach(async () => {
+                    txReceipt = await sut.initCrowdsale(
+                        token.address,
+                        saleAmount,
+                        price,
+                        fromTokenOwner
+                    ).should.be.fulfilled;
+
+                    logs = txReceipt.logs;
+                });
+
+                it('should be initialized', async () => {
+                    const crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from)
+                        .should.be.fulfilled;
 
                     crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                });
+
+                it('should be approved to spend token from swap address for commission', async () => {
+                    const crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
+
+                    const expectedCrowdsaleSwapAllowance = saleAmount
+                        .mul(buyCommissionInTokens.div(100));
 
                     (await token.allowance(swap.address, crowdsaleAddress))
                         .should.bignumber.eq(expectedCrowdsaleSwapAllowance);
+                });
+
+                it('should emmit `CrowdsaleTokenMinted`', async () => {
+                    const event = utils.expectEvent.inLogs(logs, 'CrowdsaleTokenMinted');
+
+                    event.args.tokenAddress.should.eq(token.address);
+                    event.args.tokenOwner.should.eq(fromTokenOwner.from);
+                    event.args.amount.should.be.bignumber.equal(saleAmount);
                 });
 
                 describe('shouldn\'t be able to initialize crowdsale with amount of tokens greater than placed', async () => {
