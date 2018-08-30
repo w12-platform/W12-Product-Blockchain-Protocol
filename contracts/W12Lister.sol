@@ -17,6 +17,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
     // get token index in approvedTokens list by token address and token owner address
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
+    // get token address and return owners
+    mapping ( address => address[] ) approvedOwnersList;
     uint16 public approvedTokensLength;
     IW12AtomicSwap public swap;
     W12TokenLedger public ledger;
@@ -83,6 +85,8 @@ contract W12Lister is Ownable, ReentrancyGuard {
         approvedTokensIndex[tokenAddress][tokenOwner] = index;
 
         approvedTokensLength = uint16(approvedTokens.length++);
+
+        approvedOwnersList[tokenAddress].push(tokenOwner);
 
         approvedTokens[index].approvedOwners[tokenOwner] = true;
         approvedTokens[index].name = name;
@@ -189,6 +193,10 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
     function getTokenCrowdsale(address tokenAddress, address ownerAddress) view external returns (address) {
         return getApprovedToken(tokenAddress, ownerAddress).crowdsaleAddress;
+    }
+
+    function getTokenOwners(address token) public view returns (address[]) {
+        return approvedOwnersList[token];
     }
 
     function getSwap() view external returns (address) {
