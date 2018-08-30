@@ -353,9 +353,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     function isSaleActive() public view returns (bool) {
         (uint index, bool found) = getCurrentStageIndex();
 
-        if (!found) return false;
-
-        return stages[index].startDate <= now && stages[index].endDate > now;
+        return found;
     }
 
     function() payable external {
