@@ -17,7 +17,7 @@ contract W12Lister is Ownable, ReentrancyGuard {
     // get token index in approvedTokens list by token address and token owner address
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
-    // get token address and return owners
+    // return owners by token address
     mapping ( address => address[] ) approvedOwnersList;
     uint16 public approvedTokensLength;
     IW12AtomicSwap public swap;
