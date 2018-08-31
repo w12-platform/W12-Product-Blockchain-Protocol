@@ -554,23 +554,40 @@ contract('W12Crowdsale', async (accounts) => {
                 ).should.be.fulfilled;
             });
 
-            it('should return current milestone index', async () => {
-                await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate - utils.time.duration.minutes(1));
-                (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(0);
+            it('should`t return current milestone index', async () => {
+                await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate);
 
+                const result = await sut.getCurrentMilestoneIndex()
+                    .should.be.fulfilled;
+
+                result[0].should.bignumber.equal(0);
+                result[1].should.be.equal(false);
+            });
+
+            it('should return current milestone index in case when current date between first and last milestone', async () => {
                 let expectedIndex = 0;
+
                 for (const milestone of expectedMilestones) {
                     await utils.time.increaseTimeTo(milestone.endDate - utils.time.duration.minutes(10));
 
-                    const actualIndex = await sut.getCurrentMilestoneIndex().should.be.fulfilled;
+                    const result = await sut.getCurrentMilestoneIndex()
+                        .should.be.fulfilled;
 
-                    actualIndex.should.bignumber.equal(expectedIndex);
+                    result[0].should.bignumber.equal(expectedIndex);
+                    result[1].should.be.equal(true);
 
                     expectedIndex++;
                 }
+            });
 
+            it('should return last milestone index in case when current date gt last milestone', async () => {
                 await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
-                (await sut.getCurrentMilestoneIndex().should.be.fulfilled).should.bignumber.equal(expectedMilestones.length - 1);
+
+                const result = await sut.getCurrentMilestoneIndex()
+                    .should.be.fulfilled
+
+                result[0].should.bignumber.equal(expectedMilestones.length - 1);
+                result[1].should.be.equal(true);
             });
         });
     });
