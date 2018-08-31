@@ -123,7 +123,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         if(milestonesCount == 0)
             revert();
 
-        while(index < milestonesCount - 1 && now > milestoneDates[index * 3])
+
+        while(index < milestonesCount - 1 && now > milestoneDates[(index + 1) * 3 - 1])
             index++;
     }
 
