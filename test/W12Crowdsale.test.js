@@ -482,7 +482,7 @@ contract('W12Crowdsale', async (accounts) => {
                     {
                         name: "Milestone 2 name",
                         description: "Milestone 2 description",
-                        endDate: startDate + utils.time.duration.days(20) + 1,
+                        endDate: startDate + utils.time.duration.days(21),
                         tranchePercent: 35,
                         voteEndDate: startDate + utils.time.duration.days(27),
                         withdrawalWindow: startDate + utils.time.duration.days(30)
@@ -490,7 +490,7 @@ contract('W12Crowdsale', async (accounts) => {
                     {
                         name: "Milestone 3 name",
                         description: "Milestone 3 description",
-                        endDate: startDate + utils.time.duration.days(30) + 1,
+                        endDate: startDate + utils.time.duration.days(31),
                         tranchePercent: 35,
                         voteEndDate: startDate + utils.time.duration.days(37),
                         withdrawalWindow: startDate + utils.time.duration.days(40)
