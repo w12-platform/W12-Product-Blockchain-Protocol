@@ -49,7 +49,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
-    event MilestonesSet();
+    event StageUpdated(uint index);
+    event MilestonesUpdated();
     event UnsoldTokenReturned(address indexed owner, uint amount);
 
     event debug(uint value);
@@ -198,6 +199,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         stages[stage].volumeBoundaries = volumeBoundaries;
         stages[stage].volumeBonuses = volumeBonuses;
+
+        emit StageUpdated(stage);
     }
 
     function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeSaleStart {
@@ -245,6 +248,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         milestoneDates = dates;
         require(totalPercents == 100);
+
+        emit MilestonesUpdated();
     }
 
     function buyTokens() payable public nonReentrant onlyWhenSaleActive {
