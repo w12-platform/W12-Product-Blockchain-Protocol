@@ -19,7 +19,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     WToken public wToken;
     uint public tokenDecimals; // TODO: refactor this
     mapping (address=>TokenPriceInfo) public buyers;
-    mapping (uint32 => bool) public completedTranches; // TODO: refactor this
+    mapping (uint => bool) public completedTranches; // TODO: refactor this
     uint public totalFunded;
     uint public totalRefunded;
     uint8 public totalTranchePercentReleased;
@@ -134,14 +134,19 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         );
     }
 
-    function getTrancheParameters() public view returns (uint8, uint8 totalTranchePercentBefore, uint32) {
+    function getTrancheParameters() public view returns (uint8, uint8 totalTranchePercentBefore, uint) {
         (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
+        (,,, uint32 lastWithdrawalWindow,,) = crowdsale.getMilestone(lastIndex);
 
         if (!found || !trancheTransferAllowed()) return;
 
-        (, uint8 tranchePercent, ,uint32 withdrawalWindow , , ) = crowdsale.getMilestone(index);
+        // get percent from prev milestone
+        index = index == 0 || now >= lastWithdrawalWindow ? index : index - 1;
 
-        bool completed = completedTranches[withdrawalWindow];
+        ( , uint8 tranchePercent, , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
+
+        bool completed = completedTranches[index];
 
         if (completed) return;
 
@@ -159,7 +164,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
             tranchePercent,
             // it will helps to calculate tranche
             totalTranchePercentBefore,
-            withdrawalWindow
+            index
         );
     }
 
@@ -167,11 +172,11 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         require(trancheTransferAllowed());
 
         uint trancheAmount = getTrancheAmount();
-        (uint8 tranchePercent, ,uint32 withdrawalWindow) = getTrancheParameters();
+        (uint8 tranchePercent, ,uint milestoneIndex) = getTrancheParameters();
 
         require(trancheAmount > 0);
 
-        completedTranches[withdrawalWindow] = true;
+        completedTranches[milestoneIndex] = true;
 
         if (trancheFeePercent > 0) {
             uint fee = trancheAmount.percent(trancheFeePercent);
@@ -228,16 +233,15 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
 
     function trancheTransferAllowed() public view returns (bool) {
         (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
 
         if(!found) return;
         if(index == 0) return true;
 
-        (uint32 endDate, , , , , ) = crowdsale.getMilestone(index - 1);
-        (, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
+        (uint32 endDate, , , , , ) = crowdsale.getMilestone(index);
+        (, , ,uint32 lastWithdrawalWindow, , ) = crowdsale.getMilestone(lastIndex);
 
-
-        // tranche allowed from ending of previous milestone to closing of withdrawal window
-        return endDate <= now && now < withdrawalWindow;
+        return endDate > now || lastWithdrawalWindow <= now;
     }
 
     modifier onlyFrom(address sender) {

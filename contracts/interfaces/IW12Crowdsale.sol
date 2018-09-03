@@ -18,6 +18,8 @@ interface IW12Crowdsale {
 
     function getCurrentMilestoneIndex() external view returns (uint, bool);
 
+    function getLastMilestoneIndex() external view returns (uint index, bool found);
+
     function milestonesLength() external view returns (uint);
 
     function getCurrentStageIndex() external view returns (uint index, bool found);

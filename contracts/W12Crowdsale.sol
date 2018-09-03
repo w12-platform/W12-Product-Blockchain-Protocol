@@ -137,8 +137,18 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         found = true;
 
-        while(index < milestonesCount - 1 && now > milestoneDates[(index + 1) * 3 - 1])
+        // from withdrawalWindow begins next milestone
+        while(index < milestonesCount - 1 && now >= milestoneDates[(index + 1) * 3 - 1])
             index++;
+    }
+
+    function getLastMilestoneIndex() public view returns (uint index, bool found) {
+        uint milestonesCount = milestones.length;
+
+        if (milestonesCount == 0 || !isEnded()) return;
+
+        found = true;
+        index = milestonesCount - 1;
     }
 
     function __setParameters(uint _price, address _serviceWallet) internal {
