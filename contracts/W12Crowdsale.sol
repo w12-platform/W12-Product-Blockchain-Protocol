@@ -170,11 +170,12 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(dates.length == stage_vestings.length);
 
         if (milestones.length > 0) {
-            require(milestones[0].endDate > dates[dates.length - 1][1], "Last stage endDate must be lt first milestone endDate");
+            require(milestones[0].endDate > dates[dates.length - 1][1], "Last stage endDate must be less than first milestone endDate");
         }
 
         uint8 stagesCount = uint8(dates.length);
-        stages.length = stagesCount;
+
+        delete stages;
 
         for(uint8 i = 0; i < stagesCount; i++) {
             require(stage_discounts[i] >= 0 && stage_discounts[i] < 100, "Stage discount is not in allowed range [0, 100)");
@@ -185,10 +186,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
                 require(dates[i - 1][1] <= dates[i][0], "Stages are not in historical order");
             }
 
-            stages[i].startDate = dates[i][0];
-            stages[i].endDate = dates[i][1];
-            stages[i].discount = stage_discounts[i];
-            stages[i].vesting = stage_vestings[i];
+            stages.push(Stage({
+                startDate: dates[i][0],
+                endDate: dates[i][1],
+                discount: stage_discounts[i],
+                vesting: stage_vestings[i],
+                volumeBoundaries: new uint[](0),
+                volumeBonuses: new uint8[](0)
+            }));
         }
 
         emit StagesUpdated();
@@ -222,11 +227,14 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(namesAndDescriptions.length >= tranchePercents.length * 2);
 
         if (stages.length > 0) {
-            require(stages[stages.length - 1].endDate < dates[0], "First milestone endDate must be gt last stage endDate");
+            require(stages[stages.length - 1].endDate < dates[0], "First milestone endDate must be greater than last stage endDate");
         }
 
         uint offset = 0;
         uint8 totalPercents = 0;
+
+        delete milestones;
+        delete milestoneDates;
 
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
             require(dates[i] > now);
