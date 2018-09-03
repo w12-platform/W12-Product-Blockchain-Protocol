@@ -49,7 +49,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
-    event MilestonesSet();
+    event StageUpdated(uint index);
+    event MilestonesUpdated();
     event UnsoldTokenReturned(address indexed owner, uint amount);
 
     event debug(uint value);
@@ -103,6 +104,17 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         );
     }
 
+    function getStage(uint index) public view returns (uint32, uint32, uint8, uint32, uint[], uint8[]) {
+        return (
+            stages[index].startDate,
+            stages[index].endDate,
+            stages[index].discount,
+            stages[index].vesting,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses
+        );
+    }
+
     function getStageVolumeBoundaries(uint stageNumber) external view returns (uint[]) {
         return stages[stageNumber].volumeBoundaries;
     }
@@ -117,21 +129,26 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return stages[stages.length - 1].endDate;
     }
 
-    function getCurrentMilestoneIndex() public view returns (uint index) {
+    // returns last milestone index if completely ended or active milestone at now
+    function getCurrentMilestoneIndex() public view returns (uint index, bool found) {
         uint milestonesCount = milestones.length;
 
-        if(milestonesCount == 0)
-            revert();
+        if(milestonesCount == 0 || !isEnded()) return;
 
-        while(index < milestonesCount - 1 && now > milestoneDates[index * 3])
+        found = true;
+
+        // from withdrawalWindow begins next milestone
+        while(index < milestonesCount - 1 && now >= milestoneDates[(index + 1) * 3 - 1])
             index++;
     }
 
-    // returns last milestone if completely ended or active milestone at now
-    function getCurrentMilestone() external view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
-        uint index = getCurrentMilestoneIndex();
+    function getLastMilestoneIndex() public view returns (uint index, bool found) {
+        uint milestonesCount = milestones.length;
 
-        return getMilestone(index);
+        if (milestonesCount == 0 || !isEnded()) return;
+
+        found = true;
+        index = milestonesCount - 1;
     }
 
     function __setParameters(uint _price, address _serviceWallet) internal {
@@ -192,6 +209,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         stages[stage].volumeBoundaries = volumeBoundaries;
         stages[stage].volumeBonuses = volumeBonuses;
+
+        emit StageUpdated(stage);
     }
 
     function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeSaleStart {
@@ -239,6 +258,8 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         milestoneDates = dates;
         require(totalPercents == 100);
+
+        emit MilestonesUpdated();
     }
 
     function buyTokens() payable public nonReentrant onlyWhenSaleActive {

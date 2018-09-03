@@ -19,9 +19,10 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     WToken public wToken;
     uint public tokenDecimals; // TODO: refactor this
     mapping (address=>TokenPriceInfo) public buyers;
-    mapping (uint32 => bool) public completedTranches; // TODO: refactor this
+    mapping (uint => bool) public completedTranches; // TODO: refactor this
     uint public totalFunded;
     uint public totalRefunded;
+    uint8 public totalTranchePercentReleased;
     uint public trancheFeePercent;
 
     struct TokenPriceInfo {
@@ -32,7 +33,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
 
     event FundsReceived(address indexed buyer, uint weiAmount, uint tokenAmount);
     event FundsRefunded(address indexed buyer, uint weiAmount, uint tokenAmount);
-    event TrancheOperation(address indexed receiver, uint amount);
+    event TrancheReleased(address indexed receiver, uint amount);
 
     constructor(uint _trancheFeePercent) public {
         require(_trancheFeePercent.isPercent() && _trancheFeePercent.fromPercent() < 100);
@@ -100,64 +101,70 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
             || buyers[buyer].totalBought == 0
             || address(this).balance == 0
             || wToken.balanceOf(buyer) < wtokensToRefund
-            || buyers[buyer].totalBought < wtokensToRefund)
-            return 0;
+            || buyers[buyer].totalBought < wtokensToRefund
+        ) return;
 
-        if (address(this).balance > 0) {
-            uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
-            uint precisionComponent = allowedFund >= max ? 1 : 10 ** (tokenDecimals + 8);
+        uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
+        uint precisionComponent = allowedFund >= max ? 1 : 10 ** (tokenDecimals + 8);
 
-            result = result.add(
-                allowedFund
-                    .mul(precisionComponent)
-                    .div(buyers[buyer].totalBought)
-                    .mul(wtokensToRefund)
-                    .div(precisionComponent)
-            );
-        }
+        result = result.add(
+            allowedFund
+                .mul(precisionComponent)
+                .div(buyers[buyer].totalBought)
+                .mul(wtokensToRefund)
+                .div(precisionComponent)
+        );
     }
 
-    function getTrancheAmount() public view returns (uint) {
-        uint result = 0;
-        (uint8 tranchePercent, uint32 start, uint32 end) = getTrancheParameters();
-
-        bool completed = completedTranches[end];
+    function getTrancheAmount() public view returns (uint result) {
+        (uint8 tranchePercent, uint8 totalTranchePercentBefore, ) = getTrancheParameters();
 
         if (
-            !completed
-            && start > 0
-            && end >= now
-            && start < now
-            && tranchePercent > 0
-            && address(this).balance > 0
-        ) {
-            uint allowedFund = totalFunded.sub(totalRefunded);
+            tranchePercent == 0 && totalTranchePercentBefore == 0
+            || address(this).balance == 0
+        ) return;
 
-            result = result.add(
-                allowedFund
-                .mul(tranchePercent)
-                .div(100)
-            );
-        }
+        uint allowedFund = totalFunded.sub(totalRefunded);
+        uint8 trancheToRelease = tranchePercent + totalTranchePercentBefore - totalTranchePercentReleased;
 
-        return result;
+        result = result.add(
+            allowedFund
+            .mul(trancheToRelease)
+            .div(100)
+        );
     }
 
-    function getTrancheParameters() public view returns (uint8, uint32, uint32) {
-        (, uint8 tranchePercent, uint32 voteEndDate, uint32 withdrawalWindow,,) = crowdsale.getCurrentMilestone();
+    function getTrancheParameters() public view returns (uint8, uint8 totalTranchePercentBefore, uint) {
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
+        (,,, uint32 lastWithdrawalWindow,,) = crowdsale.getMilestone(lastIndex);
 
-        bool completed = completedTranches[withdrawalWindow];
+        if (!found || !trancheTransferAllowed()) return;
 
-        if (completed) {
-            return (0, 0, 0);
+        // get percent from prev milestone
+        index = index == 0 || now >= lastWithdrawalWindow ? index : index - 1;
+
+        ( , uint8 tranchePercent, , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
+
+        bool completed = completedTranches[index];
+
+        if (completed) return;
+
+        uint dIndex = index;
+
+        while (dIndex > 0) {
+            dIndex--;
+
+            (, uint8 _tranchePercent, , , , ) = crowdsale.getMilestone(dIndex);
+
+            totalTranchePercentBefore += _tranchePercent;
         }
 
         return (
             tranchePercent,
-            voteEndDate,
-            withdrawalWindow < now && withdrawalWindow > 0
-                ? uint32(-1)
-                : withdrawalWindow
+            // it will helps to calculate tranche
+            totalTranchePercentBefore,
+            index
         );
     }
 
@@ -165,11 +172,11 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         require(trancheTransferAllowed());
 
         uint trancheAmount = getTrancheAmount();
-        (,, uint32 withdrawalWindow) = getTrancheParameters();
+        (uint8 tranchePercent, ,uint milestoneIndex) = getTrancheParameters();
 
         require(trancheAmount > 0);
 
-        completedTranches[withdrawalWindow] = true;
+        completedTranches[milestoneIndex] = true;
 
         if (trancheFeePercent > 0) {
             uint fee = trancheAmount.percent(trancheFeePercent);
@@ -181,7 +188,9 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
 
         msg.sender.transfer(trancheAmount);
 
-        emit TrancheOperation(msg.sender, trancheAmount);
+        totalTranchePercentReleased += tranchePercent;
+
+        emit TrancheReleased(msg.sender, trancheAmount);
     }
 
     function refund(uint wtokensToRefund) external nonReentrant {
@@ -212,35 +221,27 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function refundAllowed() public view returns (bool) {
-        uint currentMilestoneIndex = crowdsale.getCurrentMilestoneIndex();
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
 
         // first milestone is reserved for the project to claim initial amount of payments. No refund allowed at this stage.
-        if(currentMilestoneIndex == 0)
-            return false;
+        if(index == 0) return;
 
-        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
-
-        // Refund allowed from ending of previous milestone to closing of withdrawal window
-        if(endDate <= now && now < withdrawalWindow)
-            return true;
-
-        (endDate, , , withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex);
+        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
 
         return endDate <= now && now < withdrawalWindow;
     }
 
     function trancheTransferAllowed() public view returns (bool) {
-        uint currentMilestoneIndex = crowdsale.getCurrentMilestoneIndex();
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
 
-        if(currentMilestoneIndex == 0)
-            return crowdsale.isEnded();
+        if(!found) return;
+        if(index == 0) return true;
 
-        (uint32 endDate, , , , , ) = crowdsale.getMilestone(currentMilestoneIndex);
-        (, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
+        (uint32 endDate, , , , , ) = crowdsale.getMilestone(index);
+        (, , ,uint32 lastWithdrawalWindow, , ) = crowdsale.getMilestone(lastIndex);
 
-
-        // Refund allowed from ending of previous milestone to closing of withdrawal window
-        return withdrawalWindow <= now && now < endDate;
+        return endDate > now || lastWithdrawalWindow <= now;
     }
 
     modifier onlyFrom(address sender) {
