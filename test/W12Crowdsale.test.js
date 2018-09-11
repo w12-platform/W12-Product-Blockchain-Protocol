@@ -61,7 +61,6 @@ contract('W12Crowdsale', async (accounts) => {
     });
 
     describe('stages and milestones', async () => {
-
         it('should set stages', async () => {
             const discountStages = [
                 {

@@ -239,7 +239,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         (, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(currentMilestoneIndex - 1);
 
 
-        // Refund allowed from ending of previous milestone to closing of withdrawal window
+        // Tranche allowed from closing of withdrawal window of previous milestone to end date of current milestone
         return withdrawalWindow <= now && now < endDate;
     }
 
