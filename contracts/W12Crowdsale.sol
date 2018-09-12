@@ -342,7 +342,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         if (!found) return 0;
 
-        Stage storage stage = stages[i];
+        Stage storage stage = stages[index];
 
         for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
             if (value >= stage.volumeBoundaries[i]) {
@@ -380,7 +380,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function isSaleActive() public view returns (bool) {
-        (uint index, bool found) = getCurrentStageIndex();
+        (, bool found) = getCurrentStageIndex();
 
         return found;
     }

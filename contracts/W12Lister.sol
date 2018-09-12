@@ -109,11 +109,13 @@ contract W12Lister is Ownable, ReentrancyGuard {
 
         ListedToken storage listedToken = getApprovedToken(tokenAddress, msg.sender);
 
-        ERC20 token = ERC20(tokenAddress);
+        DetailedERC20 token = DetailedERC20(tokenAddress);
         uint balanceBefore = token.balanceOf(swap);
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
             : 0;
+
+        require(token.decimals() == listedToken.decimals);
 
         uint amountWithoutFee = amount.sub(fee);
 
