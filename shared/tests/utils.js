@@ -122,14 +122,10 @@ function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBon
 }
 
 function toInternalPercent(percent) {
-    if (percent < 0 || percent > 100) throw new RangeError('percent is not in allowed range');
-
     return Math.floor(percent * 100);
 }
 
 function fromInternalPercent (percent) {
-    if (percent < 0 || percent > 10000) throw new RangeError('percent is not in allowed range');
-
     return percent / 100;
 }
 
