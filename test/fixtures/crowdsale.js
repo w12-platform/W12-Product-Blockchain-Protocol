@@ -2,6 +2,7 @@ const utils = require('../../shared/tests/utils.js');
 
 const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
+const Percent = artifacts.require('Percent');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12Fund = artifacts.require('W12Fund');
 
@@ -15,7 +16,7 @@ async function setTestStages (startDate, W12Crowdsale, owner) {
                 startDate + utils.time.duration.minutes(60),
             ],
             vestingTime: 0,
-            discount: 0
+            discount: utils.toInternalPercent(0),
         },
         {
             name: 'Stage 2',
@@ -23,7 +24,7 @@ async function setTestStages (startDate, W12Crowdsale, owner) {
                 startDate + utils.time.duration.minutes(80),
                 startDate + utils.time.duration.minutes(100),
             ],
-            discount: 5
+            discount: utils.toInternalPercent(5),
         },
         {
             name: 'Stage 3',
@@ -32,7 +33,7 @@ async function setTestStages (startDate, W12Crowdsale, owner) {
                 startDate + utils.time.duration.minutes(140),
             ],
             vestingTime: startDate + utils.time.duration.minutes(180),
-            discount: 10
+            discount: utils.toInternalPercent(10),
         }
     ];
 
@@ -157,7 +158,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
             name: "Milestone 1 name",
             description: "Milestone 2 description",
             endDate: startDate + utils.time.duration.days(10),
-            tranchePercent: 30,
+            tranchePercent: utils.toInternalPercent(30),
             voteEndDate: startDate + utils.time.duration.days(17),
             withdrawalWindow: startDate + utils.time.duration.days(20)
         },
@@ -165,7 +166,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
             name: "Milestone 2 name",
             description: "Milestone 2 description",
             endDate: startDate + utils.time.duration.days(21),
-            tranchePercent: 35,
+            tranchePercent: utils.toInternalPercent(35),
             voteEndDate: startDate + utils.time.duration.days(27),
             withdrawalWindow: startDate + utils.time.duration.days(30)
         },
@@ -173,7 +174,7 @@ async function setTestMilestones(startDate, W12Crowdsale, owner) {
             name: "Milestone 3 name",
             description: "Milestone 3 description",
             endDate: startDate + utils.time.duration.days(31),
-            tranchePercent: 35,
+            tranchePercent: utils.toInternalPercent(35),
             voteEndDate: startDate + utils.time.duration.days(37),
             withdrawalWindow: startDate + utils.time.duration.days(40)
         }

@@ -4,6 +4,7 @@ const utils = require('../shared/tests/utils.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
+const Percent = artifacts.require('Percent');
 const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const WToken = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
@@ -23,7 +24,7 @@ contract('W12Crowdsale', async (accounts) => {
     beforeEach(async () => {
         originToken = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner}).should.be.fulfilled;
         token = await WToken.new('TestToken', 'TT', 18, {from: tokenOwner}).should.be.fulfilled;
-        fund = await W12Fund.new(5 * 100, {from: tokenOwner}).should.be.fulfilled;
+        fund = await W12Fund.new(utils.toInternalPercent(5), {from: tokenOwner}).should.be.fulfilled;
         startDate = web3.eth.getBlock('latest').timestamp + 60;
 
         sut = await W12CrowdsaleStub.new(
@@ -33,8 +34,8 @@ contract('W12Crowdsale', async (accounts) => {
             100,
             serviceWallet,
             swap,
-            10 * 100,
-            10 * 100,
+            utils.toInternalPercent(10),
+            utils.toInternalPercent(10),
             fund.address,
             {from: tokenOwner}
         ).should.be.fulfilled;
@@ -53,8 +54,8 @@ contract('W12Crowdsale', async (accounts) => {
             (await sut.token()).should.be.equal(token.address);
             (await sut.originToken()).should.be.equal(originToken.address);
             (await sut.price()).should.bignumber.equal(100);
-            (await sut.serviceFee()).should.bignumber.equal(10 * 100);
-            (await sut.WTokenSaleFeePercent()).should.bignumber.equal(10 * 100);
+            (await sut.serviceFee()).should.bignumber.equal(utils.toInternalPercent(10));
+            (await sut.WTokenSaleFeePercent()).should.bignumber.equal(utils.toInternalPercent(10));
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
             (await sut.swap()).should.be.equal(swap);
         });
@@ -71,7 +72,7 @@ contract('W12Crowdsale', async (accounts) => {
                         startDate + utils.time.duration.minutes(60),
                     ],
                     vestingTime: 0,
-                    discount: 0
+                    discount: utils.toInternalPercent(0)
                 }
             ];
             const endDate = discountStages[discountStages.length - 1].dates[1];
@@ -137,7 +138,7 @@ contract('W12Crowdsale', async (accounts) => {
                 endDate: startDate + 30,
                 voteEndDate: startDate + 60,
                 withdrawalWindow: startDate + 120,
-                tranchePercent: 100
+                tranchePercent: utils.toInternalPercent(100)
             }];
 
             const encodedMilestones = expectedMilestones.map(item => {
@@ -183,7 +184,7 @@ contract('W12Crowdsale', async (accounts) => {
                     endDate: startDate + 30,
                     voteEndDate: startDate + 60,
                     withdrawalWindow: startDate + 120,
-                    tranchePercent: 50
+                    tranchePercent: utils.toInternalPercent(50)
                 },
                 {
                     name: "Milestone 2",
@@ -191,7 +192,7 @@ contract('W12Crowdsale', async (accounts) => {
                     endDate: startDate + 125,
                     voteEndDate: startDate + 126,
                     withdrawalWindow: startDate + 127,
-                    tranchePercent: 50
+                    tranchePercent: utils.toInternalPercent(50)
                 }
             ];
 
@@ -239,7 +240,7 @@ contract('W12Crowdsale', async (accounts) => {
                     tranchePercent: 10,
                     voteEndDate: startDate + 126,
                     withdrawalWindow: startDate + 127,
-                    tranchePercent: 50
+                    tranchePercent: utils.toInternalPercent(50)
                 },
                 {
                     name: "Milestone 1",
@@ -247,7 +248,7 @@ contract('W12Crowdsale', async (accounts) => {
                     endDate: startDate,
                     voteEndDate: startDate + 60,
                     withdrawalWindow: startDate + 120,
-                    tranchePercent: 50
+                    tranchePercent: utils.toInternalPercent(50)
                 }
             ].map(item => {
                 return utils.encodeMilestoneParameters(
@@ -277,7 +278,7 @@ contract('W12Crowdsale', async (accounts) => {
                 tranchePercent: 10,
                 voteEndDate: startDate + 121,
                 withdrawalWindow: startDate + 122,
-                tranchePercent: 100
+                tranchePercent: utils.toInternalPercent(100)
             }];
 
             const discountStages = [
@@ -288,7 +289,7 @@ contract('W12Crowdsale', async (accounts) => {
                         startDate + 121,
                     ],
                     vestingTime: 0,
-                    discount: 0
+                    discount: utils.toInternalPercent(0)
                 }
             ];
 
@@ -327,7 +328,7 @@ contract('W12Crowdsale', async (accounts) => {
                 tranchePercent: 10,
                 voteEndDate: startDate + 121,
                 withdrawalWindow: startDate + 122,
-                tranchePercent: 100
+                tranchePercent: utils.toInternalPercent(100)
             }];
 
             const discountStages = [
@@ -338,7 +339,7 @@ contract('W12Crowdsale', async (accounts) => {
                         startDate + 121,
                     ],
                     vestingTime: 0,
-                    discount: 0
+                    discount: utils.toInternalPercent(0)
                 }
             ];
 
@@ -381,7 +382,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(60),
                         ],
                         vestingTime: 0,
-                        discount: 0
+                        discount: utils.toInternalPercent(0)
                     },
                     {
                         name: 'Phase 5',
@@ -390,7 +391,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(90),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(210),
-                        discount: 5
+                        discount: utils.toInternalPercent(5)
                     },
                     {
                         name: 'Phase 10',
@@ -399,7 +400,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(120),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(180),
-                        discount: 10
+                        discount: utils.toInternalPercent(10)
                     }
                 ];
 
@@ -436,24 +437,43 @@ contract('W12Crowdsale', async (accounts) => {
             });
 
             it('should set stage bonuses', async () => {
-                await sut.setStageVolumeBonuses(0,
-                    [oneToken, oneToken.mul(2), oneToken.mul(10)],
-                    [1, 2, 10],
-                    {from: tokenOwner}).should.be.fulfilled;
+                const edges = [
+                    oneToken,
+                    oneToken.mul(2),
+                    oneToken.mul(10)
+                ];
+                const bonuses = [
+                    utils.toInternalPercent(1),
+                    utils.toInternalPercent(2),
+                    utils.toInternalPercent(3)
+                ];
+                await sut.setStageVolumeBonuses(0, edges, bonuses, {from: tokenOwner})
+                    .should.be.fulfilled;
 
-                const actualVolumeBoundaries = (await sut.getStageVolumeBoundaries(0).should.be.fulfilled).map(x => x.toNumber());
-                const actualVolumeBonuses = (await sut.getStageVolumeBonuses(0).should.be.fulfilled).map(x => x.toNumber());
+                const actualVolumeBoundaries = await sut.getStageVolumeBoundaries(0)
+                    .should.be.fulfilled;
+                const actualVolumeBonuses = await sut.getStageVolumeBonuses(0)
+                    .should.be.fulfilled;
 
-                actualVolumeBoundaries.should.be.equalTo([oneToken.toNumber(), oneToken.mul(2).toNumber(), oneToken.mul(10).toNumber()]);
-                actualVolumeBonuses.should.be.equalTo([1, 2, 10]);
+                for(const index in edges) {
+                    actualVolumeBoundaries[index].should.be.bignumber.eq(edges[index]);
+                    actualVolumeBonuses[index].should.be.bignumber.eq(bonuses[index]);
+                }
             });
 
             it('should not set stage bonuses if volume boundaries is not in ascending order', async () => {
-                await sut.setStageVolumeBonuses(0,
-                    [oneToken.mul(10), oneToken.mul(2), oneToken],
-                    [1, 2, 10],
-                    {from: tokenOwner}
-                ).should.be.rejectedWith(utils.EVMRevert);
+                const edges = [
+                    oneToken.mul(2),
+                    oneToken,
+                    oneToken.mul(10)
+                ];
+                const bonuses = [
+                    utils.toInternalPercent(1),
+                    utils.toInternalPercent(2),
+                    utils.toInternalPercent(3)
+                ];
+                await sut.setStageVolumeBonuses(0, edges, bonuses, {from: tokenOwner})
+                    .should.be.rejectedWith(utils.EVMRevert);
             });
 
             it('should end at the end date', async () => {
@@ -475,7 +495,7 @@ contract('W12Crowdsale', async (accounts) => {
                         name: "Milestone 1 name",
                         description: "Milestone 2 description",
                         endDate: startDate + utils.time.duration.days(10),
-                        tranchePercent: 30,
+                        tranchePercent: utils.toInternalPercent(30),
                         voteEndDate: startDate + utils.time.duration.days(17),
                         withdrawalWindow: startDate + utils.time.duration.days(20)
                     },
@@ -483,7 +503,7 @@ contract('W12Crowdsale', async (accounts) => {
                         name: "Milestone 2 name",
                         description: "Milestone 2 description",
                         endDate: startDate + utils.time.duration.days(21),
-                        tranchePercent: 35,
+                        tranchePercent: utils.toInternalPercent(35),
                         voteEndDate: startDate + utils.time.duration.days(27),
                         withdrawalWindow: startDate + utils.time.duration.days(30)
                     },
@@ -491,7 +511,7 @@ contract('W12Crowdsale', async (accounts) => {
                         name: "Milestone 3 name",
                         description: "Milestone 3 description",
                         endDate: startDate + utils.time.duration.days(31),
-                        tranchePercent: 35,
+                        tranchePercent: utils.toInternalPercent(35),
                         voteEndDate: startDate + utils.time.duration.days(37),
                         withdrawalWindow: startDate + utils.time.duration.days(40)
                     }
@@ -505,7 +525,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(60),
                         ],
                         vestingTime: 0,
-                        discount: 0
+                        discount: utils.toInternalPercent(0)
                     },
                     {
                         name: 'Phase 5',
@@ -514,7 +534,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(90),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(210),
-                        discount: 5
+                        discount: utils.toInternalPercent(5)
                     },
                     {
                         name: 'Phase 10',
@@ -523,7 +543,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(120),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(180),
-                        discount: 10
+                        discount: utils.toInternalPercent(10)
                     }
                 ];
 
@@ -607,7 +627,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(60),
                         ],
                         vestingTime: 0,
-                        discount: 0
+                        discount: utils.toInternalPercent(0)
                     },
                     {
                         name: 'Phase 5',
@@ -616,7 +636,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(90),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(210),
-                        discount: 5
+                        discount: utils.toInternalPercent(5)
                     },
                     {
                         name: 'Phase 10',
@@ -625,7 +645,7 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(120),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(180),
-                        discount: 10
+                        discount: utils.toInternalPercent(10)
                     }
                 ];
 
@@ -712,7 +732,7 @@ contract('W12Crowdsale', async (accounts) => {
             it('should not sell some tokens if sale is not active', async () => {
                 const someStage1 = discountStages[1];
                 const someStage2 = discountStages[2];
-                const someDate = someStage1.dates[1] + Math.ceil((someStage2.dates[0] - someStage1.dates[1]) / 2);
+                const someDate = someStage1.dates[1] + Math.floor((someStage2.dates[0] - someStage1.dates[1]) / 2);
 
                 await utils.time.increaseTimeTo(someDate);
 
@@ -780,10 +800,10 @@ contract('W12Crowdsale', async (accounts) => {
         describe('volume bonuses', async () => {
             const expected = [
                 // boundary, bonus, testWei
-                [new BigNumber(0), new BigNumber(0), new BigNumber(10000)], // no bonus
+                [new BigNumber(0), new BigNumber(utils.toInternalPercent(0)), new BigNumber(10000)], // no bonus
 
-                [new BigNumber(10000000), new BigNumber(5), new BigNumber(10000000)],
-                [new BigNumber(100000000), new BigNumber(10), new BigNumber(100000001)]
+                [new BigNumber(10000000), new BigNumber(utils.toInternalPercent(5)), new BigNumber(10000000)],
+                [new BigNumber(100000000), new BigNumber(utils.toInternalPercent(10)), new BigNumber(100000001)]
             ];
             let stage;
 
@@ -795,7 +815,7 @@ contract('W12Crowdsale', async (accounts) => {
                         startDate + utils.time.duration.minutes(90)
                     ],
                     vestingTime: 0,
-                    discount: 0,
+                    discount: utils.toInternalPercent(0),
                     volumeBonuses: expected.slice(1).map(item => ({
                         boundary: item[0],
                         bonus: item[1],
@@ -827,7 +847,7 @@ contract('W12Crowdsale', async (accounts) => {
 
                 const nextVolume = +itemIdx != (expected.length - 1) ? expected[+itemIdx + 1][0] : 'Infinity';
 
-                it(`should sell tokens for volume in [${volume.toString()}, ${nextVolume.toString()}) with bonus ${percent.toString()}%`, async () => {
+                it(`should sell tokens for volume in [${volume.toString()}, ${nextVolume.toString()}) with bonus ${utils.fromInternalPercent(percent.toNumber())}%`, async () => {
                     const tokens = utils.calculatePurchase(
                         wei
                         , price

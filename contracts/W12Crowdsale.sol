@@ -9,7 +9,6 @@ import "../openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 
-
 contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
@@ -18,15 +17,15 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     struct Stage {
         uint32 startDate;
         uint32 endDate;
-        uint8 discount;
+        uint discount;
         uint32 vesting;
         uint[] volumeBoundaries;
-        uint8[] volumeBonuses;
+        uint[] volumeBonuses;
     }
 
     struct Milestone {
         uint32 endDate;
-        uint8  tranchePercent;
+        uint  tranchePercent;
         uint32 voteEndDate;
         uint32 withdrawalWindow;
         bytes name;
@@ -93,7 +92,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return milestones.length;
     }
 
-    function getMilestone(uint index) public view returns (uint32, uint8, uint32, uint32, bytes, bytes) {
+    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes) {
         return (
             milestones[index].endDate,
             milestones[index].tranchePercent,
@@ -104,7 +103,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         );
     }
 
-    function getStage(uint index) public view returns (uint32, uint32, uint8, uint32, uint[], uint8[]) {
+    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]) {
         return (
             stages[index].startDate,
             stages[index].endDate,
@@ -119,7 +118,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         return stages[stageNumber].volumeBoundaries;
     }
 
-    function getStageVolumeBonuses(uint stageNumber) external view returns (uint8[]) {
+    function getStageVolumeBonuses(uint stageNumber) external view returns (uint[]) {
         return stages[stageNumber].volumeBonuses;
     }
 
@@ -163,7 +162,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         __setParameters(_price, serviceWallet);
     }
 
-    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
+    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
         require(dates.length <= uint8(-1));
         require(dates.length > 0);
         require(dates.length == stage_discounts.length);
@@ -178,7 +177,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         delete stages;
 
         for(uint8 i = 0; i < stagesCount; i++) {
-            require(stage_discounts[i] >= 0 && stage_discounts[i] < 100, "Stage discount is not in allowed range [0, 100)");
+            require(stage_discounts[i].isPercent() && stage_discounts[i].fromPercent() < 100, "Stage discount is not in allowed range [0, 99.99)");
             require(dates[i][0] > now);
             require(dates[i][0] < dates[i][1], "Stage start date must be gt end date");
 
@@ -192,18 +191,20 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
                 discount: stage_discounts[i],
                 vesting: stage_vestings[i],
                 volumeBoundaries: new uint[](0),
-                volumeBonuses: new uint8[](0)
+                volumeBonuses: new uint[](0)
             }));
         }
 
         emit StagesUpdated();
     }
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external onlyOwner beforeSaleStart {
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) external onlyOwner beforeSaleStart {
         require(volumeBoundaries.length == volumeBonuses.length);
         require(stage < stages.length);
 
         for(uint i = 0; i < volumeBoundaries.length; i++) {
+            require(volumeBonuses[i].isPercent() && volumeBonuses[i].fromPercent() < 100, "Bonus percent is not in allowed range [0, 99.99)");
+
             if (i > 0) {
                 require(volumeBoundaries[i - 1] < volumeBoundaries[i], "Volume boundaries must be in ascending order");
             }
@@ -218,8 +219,15 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         emit StageUpdated(stage);
     }
 
-    function setMilestones(uint32[] dates, uint8[] tranchePercents, uint32[] offsets, bytes namesAndDescriptions) external onlyOwner beforeSaleStart {
-        require(dates.length <= uint8(-1));
+    function setMilestones(
+        uint32[] dates,
+        uint[] tranchePercents,
+        uint32[] offsets,
+        bytes namesAndDescriptions
+    )
+        external onlyOwner beforeSaleStart
+    {
+        require(dates.length <= uint8(- 1));
         require(dates.length >= 3);
         require(dates.length % 3 == 0);
         require(tranchePercents.length.mul(2) == offsets.length);
@@ -227,29 +235,37 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(namesAndDescriptions.length >= tranchePercents.length * 2);
 
         if (stages.length > 0) {
-            require(stages[stages.length - 1].endDate < dates[0], "First milestone endDate must be greater than last stage endDate");
+            require(
+                stages[stages.length - 1].endDate < dates[0],
+                "First milestone endDate must be greater than last stage endDate"
+            );
         }
-
-        uint offset = 0;
-        uint8 totalPercents = 0;
 
         delete milestones;
         delete milestoneDates;
 
+        milestoneDates = dates;
+
+        uint offset = 0;
+        uint totalPercents = 0;
+
         for(uint8 i = 0; i < uint8(dates.length); i += 3) {
+            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
+            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
+
             require(dates[i] > now);
             require(dates[i + 1] > dates[i]);
             require(dates[i + 2] > dates[i + 1]);
+            require(name.length > 0);
+            require(description.length > 0);
+            require(
+                tranchePercents[i / 3].isPercent(),
+                "Tranche percent is not in allowed range [0, 100)"
+            );
 
             if (i > 0) {
                 require(dates[i - 1] < dates[i], "Milestone dates is not in ascending order");
             }
-
-            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
-            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
-
-            require(name.length > 0);
-            require(description.length > 0);
 
             milestones.push(Milestone({
                 endDate: dates[i],
@@ -264,8 +280,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
             totalPercents += tranchePercents[i / 3];
         }
 
-        milestoneDates = dates;
-        require(totalPercents == 100);
+        require(totalPercents == Percent.MAX());
 
         emit MilestonesUpdated();
     }
@@ -312,13 +327,13 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         require(balance >= 10 ** tokenDecimals);
 
         actualPrice = discount > 0
-            ? price.mul(100 - discount).div(100)
+            ? price.percent(Percent.MAX() - discount)
             : price;
 
         tokens = _wei
-            .mul(100 + volumeBonus)
+            .mul(Percent.MAX() + volumeBonus)
             .div(actualPrice)
-            .mul(10 ** (tokenDecimals - 2));
+            .mul(10 ** (tokenDecimals - Percent.EXP()));
 
         if (balance < tokens) {
             weiCost = _wei

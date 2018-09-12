@@ -104,21 +104,41 @@ function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBon
 
     result = round(
         weiBasePrice
-            .mul(new BigNumber(100).minus(stageDiscount))
-            .div(100)
+            .mul(new BigNumber(toInternalPercent(100)).minus(stageDiscount))
+            .div(toInternalPercent(100))
     )
     result = round(
         weiAmountPaid
-            .mul(volumeBonus.plus(100))
+            .mul(volumeBonus.plus(toInternalPercent(100)))
             .div(result)
     );
     result = round(
         result
             .mul(new BigNumber(10).pow(decimals))
-            .div(100)
+            .div(toInternalPercent(100))
     );
 
     return result;
+}
+
+function toInternalPercent(percent) {
+    if (percent < 0 || percent > 100) throw new RangeError('percent is not in allowed range');
+
+    return Math.floor(percent * 100);
+}
+
+function fromInternalPercent (percent) {
+    if (percent < 0 || percent > 10000) throw new RangeError('percent is not in allowed range');
+
+    return percent / 100;
+}
+
+function percent(val, percent) {
+    val = new BigNumber(val);
+
+    return round(
+        val.mul(percent).div(10000)
+    );
 }
 
 module.exports = {
@@ -132,5 +152,8 @@ module.exports = {
     calculateRefundAmount,
     encodeMilestoneParameters,
     getTransactionCost,
-    calculatePurchase
+    calculatePurchase,
+    toInternalPercent,
+    percent,
+    fromInternalPercent
 }

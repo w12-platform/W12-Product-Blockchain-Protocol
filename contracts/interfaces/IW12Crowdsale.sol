@@ -6,15 +6,15 @@ import "../WToken.sol";
 interface IW12Crowdsale {
     function setParameters(uint price) external;
 
-    function setStages(uint32[2][] dates, uint8[] stage_discounts, uint32[] stage_vestings) external;
+    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) external;
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint8[] volumeBonuses) external;
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) external;
 
     function getWToken() external view returns(WToken);
 
-    function getMilestone(uint index) external view returns (uint32, uint8, uint32, uint32, bytes, bytes);
+    function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes);
 
-    function getStage(uint index) external view returns (uint32, uint32, uint8, uint32, uint[], uint8[]);
+    function getStage(uint index) external view returns (uint32, uint32, uint, uint32, uint[], uint[]);
 
     function getCurrentMilestoneIndex() external view returns (uint, bool);
 
