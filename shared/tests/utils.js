@@ -121,6 +121,15 @@ function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBon
     return result;
 }
 
+Number.prototype['..']=function(to,step){
+    step = step || 1;
+    var arr = [],from=this;
+    while(from + step <= to){
+       arr.push(from += step);
+    }
+    return arr;
+};
+
 module.exports = {
     time,
     expectEvent,

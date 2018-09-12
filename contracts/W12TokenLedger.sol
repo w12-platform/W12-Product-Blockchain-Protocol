@@ -1,18 +1,17 @@
 pragma solidity ^0.4.23;
 
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "./WToken.sol";
 
 
-contract W12TokenLedger is Ownable, ReentrancyGuard {
+contract W12TokenLedger is Ownable {
     mapping (address => WToken) public listingTokenToWToken;
     mapping (address => ERC20) public listingWTokenToToken;
     mapping (address => mapping (address => bool)) pairs;
 
-    function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner nonReentrant {
-        require(token != address(0x0));
-        require(wToken != address(0x0));
+    function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner {
+        require(token != address(0));
+        require(wToken != address(0));
         require(token != wToken);
         require(!hasPair(token, wToken));
 
@@ -26,13 +25,13 @@ contract W12TokenLedger is Ownable, ReentrancyGuard {
     }
 
     function getWTokenByToken(address token) public view returns (WToken wTokenAddress) {
-        require(token != address(0x0));
+        require(token != address(0));
 
         wTokenAddress = listingTokenToWToken[token];
     }
 
     function getTokenByWToken(address wToken) public view returns (ERC20 tokenAddress) {
-        require(wToken != address(0x0));
+        require(wToken != address(0));
 
         tokenAddress = listingWTokenToToken[wToken];
     }

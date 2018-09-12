@@ -5,25 +5,22 @@ const utils = require('../shared/tests/utils.js');
 const W12Lister = artifacts.require('W12Lister');
 const W12AtomicSwap = artifacts.require('W12AtomicSwap');
 const W12TokenLedger = artifacts.require('W12TokenLedger');
-const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
-
-const oneToken = new BigNumber(10).pow(18);
 
 contract('W12Lister', async (accounts) => {
     let sut;
     let token;
     let factory;
     let fundFactory;
-    let lastDate;
     let swap;
+    let ledger;
     const wallet = accounts[9];
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
-        const ledger = await W12TokenLedger.new();
+        ledger = await W12TokenLedger.new();
         swap = await W12AtomicSwap.new(ledger.address);
 
         fundFactory = await W12FundFactory.new();
@@ -34,10 +31,13 @@ contract('W12Lister', async (accounts) => {
         await swap.transferOwnership(sut.address);
 
         token = await WToken.new('TestToken', 'TT', 18);
-        lastDate = web3.eth.getBlock('latest').timestamp;
     });
 
     describe('when called by the owner', async () => {
+        const literals = [ "TestToken", "ק", `ᥠ` ];
+        const validDecimalsArray = [0, 1, 2, 18, 30];
+        const validPercentsArray = [0, 1, 9999];
+
         it('should initialize wallet with supplied address', async () => {
             const actualWalletAddress = await sut.serviceWallet().should.be.fulfilled;
 
@@ -87,6 +87,33 @@ contract('W12Lister', async (accounts) => {
         it('should allow to add different tokens for the same owner', async () => {
             await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 5 * 100, 5 * 100, 5 * 100, 5 * 100).should.be.fulfilled;
             await sut.whitelistToken(accounts[1], utils.generateRandomAddress(), "TestTokenForSale", "TTFS", 18, 5 * 100, 5 * 100, 5 * 100, 5 * 100).should.be.fulfilled;
+        });
+
+        describe('when whitelisting a token with valid properties', async () => {
+            for(const validName of literals)
+            for(const validSymbol of literals)
+            for(const validDecimals of validDecimalsArray)
+            for(const validPercent of validPercentsArray)
+                it(`should whitelist token`, async () => {
+                    const testToken = await WToken.new(validName, validSymbol, validDecimals);
+
+                    await sut.whitelistToken(accounts[1], testToken.address, validName, validSymbol, validDecimals, validPercent, validPercent, validPercent, validPercent)
+                            .should.withMessage(`Address: ${accounts[1]}, Name: ${validName}, Symbol: ${validSymbol}, Decimals: ${validDecimals}, Percent: ${validPercent}`).be.fulfilled;
+
+                    await testToken.mint(accounts[1], 1, 0).should.be.fulfilled;
+                    await testToken.approve(sut.address, 1, { from: accounts[1] }).should.be.fulfilled;
+                    await sut.placeToken(testToken.address, 1, { from: accounts[1] } ).should.be.fulfilled;
+
+                    const actualWTokenAddress = await ledger.getWTokenByToken(testToken.address).should.be.fulfilled;
+
+                    actualWTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+
+                    const actualWToken = WToken.at(actualWTokenAddress);
+
+                    (await actualWToken.decimals().should.be.fulfilled).should.bignumber.equal(validDecimals);
+                    (await actualWToken.symbol().should.be.fulfilled).should.be.equal(validSymbol);
+                    (await actualWToken.name().should.be.fulfilled).should.be.equal(validName);
+                });
         });
 
         describe('when token is listed', async () => {
