@@ -94,11 +94,12 @@ contract('W12Lister', async (accounts) => {
             for(const validSymbol of literals)
             for(const validDecimals of validDecimalsArray)
             for(const validPercent of validPercentsArray)
-                it(`should whitelist token`, async () => {
+                it(`should whitelist token
+                Address: ${accounts[1]}, Name: ${validName}, Symbol: ${validSymbol}, Decimals: ${validDecimals}, Percent: ${validPercent}`, async () => {
                     const testToken = await WToken.new(validName, validSymbol, validDecimals);
 
                     await sut.whitelistToken(accounts[1], testToken.address, validName, validSymbol, validDecimals, validPercent, validPercent, validPercent, validPercent)
-                            .should.withMessage(`Address: ${accounts[1]}, Name: ${validName}, Symbol: ${validSymbol}, Decimals: ${validDecimals}, Percent: ${validPercent}`).be.fulfilled;
+                            .should.be.fulfilled;
 
                     await testToken.mint(accounts[1], 1, 0).should.be.fulfilled;
                     await testToken.approve(sut.address, 1, { from: accounts[1] }).should.be.fulfilled;
