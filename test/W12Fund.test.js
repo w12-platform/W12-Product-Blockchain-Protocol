@@ -17,7 +17,7 @@ contract('W12Fund', async (accounts) => {
     const tokenOwner = accounts[1];
     const buyer1 = accounts[3];
     const buyer2 = accounts[4];
-    const trancheFeePercent = new BigNumber(5 * 100);
+    const trancheFeePercent = new BigNumber(utils.toInternalPercent(5));
 
     describe('initialization methods', async () => {
         beforeEach(async () => {
@@ -121,8 +121,8 @@ contract('W12Fund', async (accounts) => {
                     serviceWalletAddress: utils.generateRandomAddress(),
                     swapAddress: utils.generateRandomAddress(),
                     price: tokenPrice,
-                    serviceFee: 10 * 100,
-                    saleFee: 10 * 100,
+                    serviceFee: utils.toInternalPercent(10),
+                    saleFee: utils.toInternalPercent(10),
                     fundAddress: utils.generateRandomAddress()
                 },
                 crowdsaleOwner,
@@ -387,8 +387,8 @@ contract('W12Fund', async (accounts) => {
                     serviceWalletAddress,
                     swapAddress,
                     price: tokenPrice,
-                    serviceFee: 10 * 100,
-                    saleFee: 10 * 100,
+                    serviceFee: utils.toInternalPercent(10),
+                    saleFee: utils.toInternalPercent(10),
                     fundAddress: utils.generateRandomAddress()
                 },
                 crowdsaleOwner,
@@ -482,7 +482,7 @@ contract('W12Fund', async (accounts) => {
                 const percent = firstMilestone.tranchePercent;
                 const totalFundedAmount = new BigNumber(100); // 100 wei
                 const account = accounts[0];
-                const expected = utils.round(totalFundedAmount.mul(percent).div(100));
+                const expected = utils.percent(totalFundedAmount, percent);
 
                 await utils.time.increaseTimeTo(withdrawalWindow - 60);
 
@@ -505,7 +505,7 @@ contract('W12Fund', async (accounts) => {
                 const totalRefundedAmount = totalFundedAmount.mul(0.1) // 10 wei
                 const diff = totalFundedAmount.minus(totalRefundedAmount);
                 const account = accounts[0];
-                const expected = utils.round(diff.mul(percent).div(100));
+                const expected = utils.round(diff.mul(percent).div(utils.toInternalPercent(100)));
 
                 await utils.time.increaseTimeTo(withdrawalWindow - 60);
 
@@ -615,8 +615,8 @@ contract('W12Fund', async (accounts) => {
                     accountBalanceBefore = await web3.eth.getBalance(account);
                     withdrawalWindow = milestone.withdrawalWindow;
                     tranchePercent = milestone.tranchePercent;
-                    expected = utils.round(totalFundedAmount.mul(tranchePercent).div(100));
-                    fee = utils.round(expected.mul(trancheFeePercent).div(100 * 100));
+                    expected = utils.round(totalFundedAmount.mul(tranchePercent).div(utils.toInternalPercent(100)));
+                    fee = utils.round(expected.mul(trancheFeePercent).div(utils.toInternalPercent(100)));
                     expectedWithoutFee = expected.sub(fee);
                     expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress)).plus(fee);
                     expectedFundBalance = totalFundedAmount.minus(expected);
@@ -649,8 +649,8 @@ contract('W12Fund', async (accounts) => {
                 it(`should release another`, async () => {
                     const {endDate, withdrawalWindow} = anotherMilestone;
                     const {tranchePercent} = trancheMilestone;
-                    const expectedAnother = utils.round(totalFundedAmount.mul(tranchePercent).div(100));
-                    const fee = utils.round(expectedAnother.mul(trancheFeePercent).div(100 * 100));
+                    const expectedAnother = utils.round(totalFundedAmount.mul(tranchePercent).div(utils.toInternalPercent(100)));
+                    const fee = utils.round(expectedAnother.mul(trancheFeePercent).div(utils.toInternalPercent(100)));
                     const expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress))
                         .plus(fee);
                     const expectedFundBalance = totalFundedAmount.minus(expected.plus(expectedAnother));
