@@ -740,6 +740,21 @@ contract('W12Crowdsale', async (accounts) => {
                     .should.be.rejectedWith(utils.EVMRevert);
             });
 
+            it('should sell tokens from each stage', async () => {
+                for (const stage of discountStages) {
+                    const balanceBefore = await token.balanceOf(buyer);
+
+                    await utils.time.increaseTimeTo(stage.dates[1] - 30);
+
+                    await sut.buyTokens({value: oneToken, from: buyer}).should.be.fulfilled;
+
+                    const balanceAfter = await token.balanceOf(buyer);
+
+                    balanceAfter.minus(balanceBefore)
+                        .should.bignumber.equal(utils.calculatePurchase(oneToken, price, stage.discount, BigNumber.Zero));
+                }
+            });
+
             describe('unsold tokens', async () => {
                 describe('return unsold tokens after the end', async () => {
                     let txReceipt;
@@ -779,21 +794,6 @@ contract('W12Crowdsale', async (accounts) => {
                     (await sut.isEnded()).should.be.equal(false);
                     await sut.claimRemainingTokens({from: tokenOwner}).should.be.rejectedWith(utils.EVMRevert);
                 });
-            })
-
-            it('should sell tokens from each stage', async () => {
-                for (const stage of discountStages) {
-                    const balanceBefore = await token.balanceOf(buyer);
-
-                    await utils.time.increaseTimeTo(stage.dates[1] - 30);
-
-                    await sut.buyTokens({ value: oneToken, from: buyer }).should.be.fulfilled;
-
-                    const balanceAfter = await token.balanceOf(buyer);
-
-                    balanceAfter.minus(balanceBefore)
-                        .should.bignumber.equal(utils.calculatePurchase(oneToken, price, stage.discount, BigNumber.Zero));
-                }
             });
         });
 
