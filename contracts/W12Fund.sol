@@ -87,7 +87,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         ( ( c * (a / b) ) / d ) * e = (refund amount)
     */
     function getRefundAmount(uint wtokensToRefund) public view returns (uint result) {
-        uint exp = tokenDecimals > tokenDecimals + 8 ? tokenDecimals + 8 : tokenDecimals;
+        uint exp = tokenDecimals < tokenDecimals + 8 ? tokenDecimals + 8 : tokenDecimals;
         uint max = uint(-1) / 10 ** exp;
         address buyer = msg.sender;
 
