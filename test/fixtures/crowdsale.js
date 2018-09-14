@@ -4,6 +4,7 @@ const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const Percent = artifacts.require('Percent');
 const W12Crowdsale = artifacts.require('W12Crowdsale');
+const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const W12Fund = artifacts.require('W12Fund');
 
 
@@ -125,7 +126,6 @@ async function createW12Crowdsale (
     const result = await W12Crowdsale.new(
         originTokenAddress,
         token.address,
-        await token.decimals(),
         price,
         serviceWalletAddress,
         swapAddress,
