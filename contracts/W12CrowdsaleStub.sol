@@ -7,7 +7,6 @@ contract W12CrowdsaleStub is W12Crowdsale {
     constructor (
         address _originToken,
         address _token,
-        uint _tokenDecimals,
         uint _price,
         address _serviceWallet,
         address _swap,
@@ -18,7 +17,6 @@ contract W12CrowdsaleStub is W12Crowdsale {
         W12Crowdsale(
             _originToken,
              _token,
-             _tokenDecimals,
              _price,
              _serviceWallet,
              _swap,
