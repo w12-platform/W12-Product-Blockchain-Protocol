@@ -34,9 +34,9 @@ contract('W12Lister', async (accounts) => {
     });
 
     describe('when called by the owner', async () => {
-        const literals = [ "TestToken", "ק", `ᥠ` ];
-        const validDecimalsArray = [0, 1, 2, 18, 30];
-        const validPercentsArray = [0, 1, 9999];
+        const literals = ["TestToken", "ק"];
+        const validDecimalsArray = [0, 127, 255];
+        const validPercentsArray = [0, 5000, 9999];
 
         it('should initialize wallet with supplied address', async () => {
             const actualWalletAddress = await sut.serviceWallet().should.be.fulfilled;
@@ -183,6 +183,7 @@ contract('W12Lister', async (accounts) => {
         });
 
         describe('when whitelisting a token with valid properties', async () => {
+            // oh my god
             for(const validName of literals)
             for(const validSymbol of literals)
             for(const validDecimals of validDecimalsArray)

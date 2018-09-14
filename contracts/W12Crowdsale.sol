@@ -34,7 +34,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
     WToken public token;
     ERC20 public originToken;
-    uint tokenDecimals;
     uint public price;
     uint public serviceFee;
     uint public WTokenSaleFeePercent;
@@ -57,7 +56,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     constructor (
         address _originToken,
         address _token,
-        uint _tokenDecimals,
         uint _price,
         address _serviceWallet,
         address _swap,
@@ -75,7 +73,6 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         token = WToken(_token);
         originToken = ERC20(_originToken);
-        tokenDecimals = _tokenDecimals;
 
         __setParameters(_price, _serviceWallet);
         serviceFee = _serviceFee;
@@ -324,7 +321,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         uint balance = token.balanceOf(address(this));
 
-        require(balance >= 10 ** tokenDecimals);
+        require(balance >= 10 ** uint(token.decimals()));
 
         actualPrice = discount > 0
             ? price.percent(Percent.MAX() - discount)
@@ -332,8 +329,9 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
 
         tokens = _wei
             .mul(Percent.MAX() + volumeBonus)
+            .mul(10 ** uint(token.decimals()))
             .div(actualPrice)
-            .mul(10 ** (tokenDecimals - Percent.EXP()));
+            .div(Percent.MAX());
 
         if (balance < tokens) {
             weiCost = _wei

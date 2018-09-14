@@ -100,6 +100,9 @@ async function getTransactionCost(txOutput) {
 }
 
 function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus, decimals = 18) {
+    weiAmountPaid = new BigNumber(weiAmountPaid);
+    weiBasePrice = new BigNumber(weiBasePrice);
+
     let result;
 
     result = round(
