@@ -87,7 +87,8 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         ( ( c * (a / b) ) / d ) * e = (refund amount)
     */
     function getRefundAmount(uint wtokensToRefund) public view returns (uint result) {
-        uint max = uint(-1) / 10 ** (tokenDecimals + 8);
+        uint exp = tokenDecimals < tokenDecimals + 8 ? tokenDecimals + 8 : tokenDecimals;
+        uint max = uint(-1) / 10 ** exp;
         address buyer = msg.sender;
 
         if(wtokensToRefund == 0
@@ -98,15 +99,13 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
         ) return;
 
         uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
-        uint precisionComponent = allowedFund >= max ? 1 : 10 ** (tokenDecimals + 8);
+        uint precisionComponent = allowedFund >= max ? 1 : 10 ** exp;
 
-        result = result.add(
-            allowedFund
-                .mul(precisionComponent)
-                .div(buyers[buyer].totalBought)
-                .mul(wtokensToRefund)
-                .div(precisionComponent)
-        );
+        result = allowedFund
+            .mul(precisionComponent)
+            .div(buyers[buyer].totalBought)
+            .mul(wtokensToRefund)
+            .div(precisionComponent);
     }
 
     function getTrancheAmount() public view returns (uint result) {

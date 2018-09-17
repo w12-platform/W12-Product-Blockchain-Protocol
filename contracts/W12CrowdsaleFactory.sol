@@ -34,7 +34,6 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         result = new W12Crowdsale(
             tokenAddress,
             wTokenAddress,
-            DetailedERC20(wTokenAddress).decimals(),
             price,
             serviceWallet,
             swap,
