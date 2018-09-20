@@ -1,46 +1,52 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
+defaults: &defaults
+  docker:
+  - image: circleci/node:8.11
+  working_directory: ~/code
+
 version: 2
 jobs:
-  build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/node:8.11
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-
-    working_directory: ~/code
-
+  setup:
+    <<: *defaults
     steps:
       - checkout
-      - run:
-          name: pull submodules
-          command: git submodule update --init --recursive
-      - run:
-          name: update npm
-          command: sudo npm i -g npm && npm -v
-
-      # Download and cache dependencies
+      - run: git config --global user.name "CircleCI"
+      - run: git config --global user.email "mr.hokid@gmail.com"
+      - run: git submodule update --init --recursive
+      - run: sudo npm i -g npm && npm -v
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-{{ checksum "package-lock.json" }}
             - v1-dependencies-
-
-      - run:
-          name: install dependencies
-          command: npm ci
-
+      - run: npm ci
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v1-dependencies-{{ checksum "package-lock.json" }}
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: npm run ci-test
+  deploy:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: ci-deploy-test-net
 
-      - run:
-          name: testing
-          command: npm run ci-test
+workflows:
+  version: 2
+  build_test_deploy:
+    jobs:
+      - setup
+      - test
+        requires:
+          - setup
+      - deploy:
+        requires:
+          - test
+        filters:
+          tags:
+            only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
+          branches:
+            only:
+              - master

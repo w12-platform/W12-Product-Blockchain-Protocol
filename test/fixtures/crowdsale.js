@@ -67,8 +67,8 @@ async function createW12CrowdsaleViaFabric(
     owner,
     token
 ) {
-    const fundFactory = await W12FundFactory.new();
-    const factory = await W12CrowdsaleFactory.new(fundFactory.address);
+    const fundFactory = await W12FundFactory.new(0);
+    const factory = await W12CrowdsaleFactory.new(0, fundFactory.address);
     const txParams = {from: owner};
     const txOutput = await factory.createCrowdsale(
         originTokenAddress,
@@ -124,6 +124,7 @@ async function createW12Crowdsale (
     const txParams = {from: owner};
     // constructor (address _token, uint32 _startDate, uint _price, address _serviceWallet, uint8 _serviceFee, W12Fund _fund)
     const result = await W12Crowdsale.new(
+        0,
         originTokenAddress,
         token.address,
         price,

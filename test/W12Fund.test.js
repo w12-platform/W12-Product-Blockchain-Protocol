@@ -21,7 +21,7 @@ contract('W12Fund', async (accounts) => {
 
     describe('initialization methods', async () => {
         beforeEach(async () => {
-            sut = await W12Fund.new(trancheFeePercent, { from: sutOwner });
+            sut = await W12Fund.new(0, trancheFeePercent, { from: sutOwner });
         });
 
         it('should set owner', async () => {
@@ -33,6 +33,7 @@ contract('W12Fund', async (accounts) => {
         beforeEach(async () => {
             tokenFixture = await TokenFixture.createToken(tokenOwner);
             sut = await W12FundStub.new(
+                0,
                 crowdsale = accounts[1],
                 swap = utils.generateRandomAddress(),
                 tokenFixture.token.address,
@@ -142,6 +143,7 @@ contract('W12Fund', async (accounts) => {
             );
 
             sut = await W12FundStub.new(
+                0,
                 crowdsaleFixture.W12Crowdsale.address,
                 crowdsaleFixture.args.swapAddress,
                 tokenFixture.token.address,
@@ -408,6 +410,7 @@ contract('W12Fund', async (accounts) => {
             ).should.be.fulfilled;
 
             sut = await W12FundStub.new(
+                0,
                 crowdsaleFixture.W12Crowdsale.address,
                 crowdsaleFixture.args.swapAddress,
                 tokenFixture.token.address,

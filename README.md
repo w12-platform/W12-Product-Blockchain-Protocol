@@ -10,3 +10,11 @@
 2. Set own infura token
 3. Set own mnemonic
 4. run `$ npm run t:migration:test`
+
+# Project structure
+
+* *abi/{contracts version}/* - lite versions of artifacts that includes only abi and contract name. Directory contains artifacts only for versions that has changes from previously version.
+
+# Commands
+
+ * `npm run abi` - generate lite versions of artifacts.

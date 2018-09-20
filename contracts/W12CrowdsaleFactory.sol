@@ -3,14 +3,15 @@ pragma solidity ^0.4.24;
 import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./interfaces/IW12FundFactory.sol";
 import "./W12Crowdsale.sol";
+import "./versioning/Versionable.sol";
 
 
-contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
+contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;
 
     event CrowdsaleCreated(address indexed owner, address indexed token, address crowdsaleAddress, address fundAddress);
 
-    constructor(IW12FundFactory _fundFactory) public {
+    constructor(uint version, IW12FundFactory _fundFactory) Versionable(version) public {
         require(_fundFactory != address(0), "Factory address required");
 
         fundFactory = _fundFactory;
@@ -32,6 +33,7 @@ contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
         IW12Fund fund = fundFactory.createFund(swap, serviceWallet, trancheFeePercent);
 
         result = new W12Crowdsale(
+            version,
             tokenAddress,
             wTokenAddress,
             price,

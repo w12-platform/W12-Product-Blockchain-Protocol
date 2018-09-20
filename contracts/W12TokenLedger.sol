@@ -2,12 +2,15 @@ pragma solidity ^0.4.23;
 
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./WToken.sol";
+import "./versioning/Versionable.sol";
 
 
-contract W12TokenLedger is Ownable {
+contract W12TokenLedger is Versionable, Ownable {
     mapping (address => WToken) public listingTokenToWToken;
     mapping (address => ERC20) public listingWTokenToToken;
     mapping (address => mapping (address => bool)) pairs;
+
+    constructor(uint version) Versionable(version) public {}
 
     function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner {
         require(token != address(0));

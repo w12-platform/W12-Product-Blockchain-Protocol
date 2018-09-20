@@ -8,7 +8,7 @@ contract('W12TokenLedger', async (accounts) => {
     let sut;
 
     beforeEach(async () => {
-        sut = await W12TokenLedger.new();
+        sut = await W12TokenLedger.new(0);
     });
 
     describe('when called by the owner', async () => {

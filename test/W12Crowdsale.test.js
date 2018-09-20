@@ -2,11 +2,6 @@ require('../shared/tests/setup.js');
 
 const utils = require('../shared/tests/utils.js');
 
-const W12Fund = artifacts.require('W12Fund');
-const W12Crowdsale = artifacts.require('W12Crowdsale');
-const Percent = artifacts.require('Percent');
-const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
-const WToken = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
 const helpers = require('./fixtures/W12Crowdsale');
 

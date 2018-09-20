@@ -56,8 +56,9 @@ async function generateW12CrowdsaleStubWithDifferentToken(
             }
         };
 
-        const fund = await W12Fund.new(utils.toInternalPercent(tranchePercent), {from: owner});
+        const fund = await W12Fund.new(0, utils.toInternalPercent(tranchePercent), {from: owner});
         const crowdsale = await W12CrowdsaleStub.new(
+            0,
             originToken.address,
             wtoken.address,
             price,

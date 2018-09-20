@@ -20,12 +20,12 @@ contract('W12Lister', async (accounts) => {
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
-        ledger = await W12TokenLedger.new();
-        swap = await W12AtomicSwap.new(ledger.address);
+        ledger = await W12TokenLedger.new(0);
+        swap = await W12AtomicSwap.new(0, ledger.address);
 
-        fundFactory = await W12FundFactory.new();
-        factory = await W12CrowdsaleFactory.new(fundFactory.address);
-        sut = await W12Lister.new(wallet, factory.address, ledger.address, swap.address);
+        fundFactory = await W12FundFactory.new(0);
+        factory = await W12CrowdsaleFactory.new(0, fundFactory.address);
+        sut = await W12Lister.new(0, wallet, factory.address, ledger.address, swap.address);
 
         await ledger.transferOwnership(sut.address);
         await swap.transferOwnership(sut.address);
