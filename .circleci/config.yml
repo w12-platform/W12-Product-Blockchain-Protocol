@@ -49,8 +49,14 @@ workflows:
   version: 2
   build_test_deploy:
     jobs:
-      - setup
+      - setup:
+          filters:
+            tags:
+              only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
 #      - test:
+#          filters:
+#            tags:
+#              only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
 #          requires:
 #            - setup
       - deploy:
