@@ -9,8 +9,6 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run: git config --global user.name "CircleCI"
-      - run: git config --global user.email "mr.hokid@gmail.com"
       - run: git submodule update --init --recursive
       - run: sudo npm i -g npm && npm -v
       - restore_cache:
@@ -26,11 +24,25 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - run: git submodule update --init --recursive
+      - run: sudo npm i -g npm && npm -v
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
       - run: npm run ci-test
   deploy:
     <<: *defaults
     steps:
       - checkout
+      - run: git submodule update --init --recursive
+      - run: sudo npm i -g npm && npm -v
+      - run: git config --global user.name "CircleCI"
+      - run: git config --global user.email "mr.hokid@gmail.com"
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
       - run: ci-deploy-test-net
 
 workflows:
