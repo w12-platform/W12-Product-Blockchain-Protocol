@@ -8,8 +8,9 @@ import "./interfaces/IW12Crowdsale.sol";
 import "../openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
+import "./versioning/Versionable.sol";
 
-contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
+contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using BytesLib for bytes;
@@ -54,6 +55,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
     event debug(uint value);
 
     constructor (
+        uint version,
         address _originToken,
         address _token,
         uint _price,
@@ -63,7 +65,7 @@ contract W12Crowdsale is IW12Crowdsale, Ownable, ReentrancyGuard {
         uint _WTokenSaleFeePercent,
         IW12Fund _fund
     )
-        public
+        Versionable(version) public
     {
         require(_token != address(0));
         require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);

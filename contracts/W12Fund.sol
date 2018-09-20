@@ -7,9 +7,9 @@ import "./WToken.sol";
 import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
+import "./versioning/Versionable.sol";
 
-
-contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
+contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
@@ -35,7 +35,7 @@ contract W12Fund is IW12Fund, Ownable, ReentrancyGuard {
     event FundsRefunded(address indexed buyer, uint weiAmount, uint tokenAmount);
     event TrancheReleased(address indexed receiver, uint amount);
 
-    constructor(uint _trancheFeePercent) public {
+    constructor(uint version, uint _trancheFeePercent) Versionable(version) public {
         require(_trancheFeePercent.isPercent() && _trancheFeePercent.fromPercent() < 100);
 
         trancheFeePercent = _trancheFeePercent;
