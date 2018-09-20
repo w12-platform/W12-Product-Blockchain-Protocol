@@ -5,6 +5,7 @@ import "./W12Crowdsale.sol";
 
 contract W12CrowdsaleStub is W12Crowdsale {
     constructor (
+        uint version,
         address _originToken,
         address _token,
         uint _price,
@@ -15,6 +16,7 @@ contract W12CrowdsaleStub is W12Crowdsale {
         IW12Fund _fund
     )
         W12Crowdsale(
+            version,
             _originToken,
              _token,
              _price,

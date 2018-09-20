@@ -8,9 +8,10 @@ import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "./libs/Percent.sol";
+import "./versioning/Versionable.sol";
 
 
-contract W12Lister is Ownable, ReentrancyGuard {
+contract W12Lister is Versionable, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
@@ -45,7 +46,13 @@ contract W12Lister is Ownable, ReentrancyGuard {
         address tokenAddress;
     }
 
-    constructor(address _serviceWallet, IW12CrowdsaleFactory _factory, W12TokenLedger _ledger, IW12AtomicSwap _swap) public {
+    constructor(
+        uint version,
+        address _serviceWallet,
+        IW12CrowdsaleFactory _factory,
+        W12TokenLedger _ledger,
+        IW12AtomicSwap _swap
+    ) Versionable(version) public {
         require(_serviceWallet != address(0));
         require(_factory != address(0));
         require(_ledger != address(0));
