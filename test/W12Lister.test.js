@@ -361,7 +361,7 @@ contract('W12Lister', async (accounts) => {
                 });
 
                 it('should emmit `CrowdsaleTokenMinted`', async () => {
-                    const event = utils.expectEvent.inLogs(logs, 'CrowdsaleTokenMinted');
+                    const event = await utils.expectEvent.inLogs(logs, 'CrowdsaleTokenMinted');
 
                     event.args.tokenAddress.should.eq(token.address);
                     event.args.tokenOwner.should.eq(fromTokenOwner.from);

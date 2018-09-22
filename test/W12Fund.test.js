@@ -685,7 +685,7 @@ contract('W12Fund', async (accounts) => {
                 });
 
                 it('should emmit event', async () => {
-                    const event = utils.expectEvent.inLogs(logs, 'TrancheReleased');
+                    const event = await utils.expectEvent.inLogs(logs, 'TrancheReleased');
 
                     event.args.receiver.should.eq(account);
                     event.args.amount.should.be.bignumber.equal(expectedWithoutFee);
