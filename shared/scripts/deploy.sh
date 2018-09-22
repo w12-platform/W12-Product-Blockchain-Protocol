@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-#cp example.config.js config.js
+cp example.config.js config.js
+
 echo "run migration..."
 
 if ! MIGRATE_LOG=$(npm run t:migrate:r:test); then
