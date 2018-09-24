@@ -4,9 +4,9 @@ import "./WToken.sol";
 import "./W12TokenLedger.sol";
 import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./interfaces/IW12AtomicSwap.sol";
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "./libs/Percent.sol";
 import "./versioning/Versionable.sol";
 

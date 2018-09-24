@@ -895,7 +895,7 @@ contract('W12Crowdsale', async (accounts) => {
                     });
 
                     it('should emit on return', async () => {
-                        const event = utils.expectEvent.inLogs(logs, 'UnsoldTokenReturned');
+                        const event = await utils.expectEvent.inLogs(logs, 'UnsoldTokenReturned');
 
                         event.args.owner.should.eq(owner);
                         event.args.amount.should.be.bignumber.equal(crowdsaleBalanceBefore);

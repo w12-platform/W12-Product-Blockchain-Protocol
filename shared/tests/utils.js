@@ -1,6 +1,6 @@
-import * as time from '../../openzeppelin-solidity/test/helpers/increaseTime';
-import EVMRevert from '../../openzeppelin-solidity/test/helpers/EVMRevert';
-import * as expectEvent from '../../openzeppelin-solidity/test/helpers/expectEvent';
+import * as time from 'openzeppelin-solidity/test/helpers/increaseTime';
+import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
+import * as expectEvent from 'openzeppelin-solidity/test/helpers/expectEvent';
 
 function generateRandomAddress () {
     return `0x${crypto.randomBytes(20).toString('hex')}`;
