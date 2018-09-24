@@ -140,6 +140,41 @@ function percent(val, percent) {
     );
 }
 
+function packSetupCrowdsaleParameters(stages, milestones) {
+    const pack1 = stages.map(stage => [...stage.dates, stage.discount, stage.vestingTime]);
+    const [pack2, pack3] = stages.reduce((result, stage, idx) => {
+        if (stage.volumeBonuses.length === 0) {
+            result[0].push([idx, 0, 0]);
+        } else {
+            const lastOffset = result[1].length;
+            result[0].push([idx, lastOffset, lastOffset + stage.volumeBonuses.length * 2]);
+            result[1].push(...stage.volumeBonuses.reduce((result, v, idx) => (result.push(stage.volumeBoundaries[idx], v), result), []));
+        }
+
+        return result;
+    }, [[], []]);
+    const [pack4, pack5, pack6] = milestones
+        .map(m =>
+            encodeMilestoneParameters(
+                m.name,
+                m.description,
+                m.tranchePercent,
+                m.endDate,
+                m.voteEndDate,
+                m.withdrawalWindow
+            )
+        )
+        .reduce((result, m, idx) => {
+            result[0].push([...m.dates, m.tranchePercent]);
+            result[1].push(...m.offsets);
+            result[2] += m.namesAndDescriptions.slice(2);
+
+            return result;
+        }, [[], [], '0x']);
+
+    return [pack1, pack2, pack3, pack4, pack5, pack6];
+}
+
 module.exports = {
     time,
     expectEvent,
@@ -154,5 +189,6 @@ module.exports = {
     calculatePurchase,
     toInternalPercent,
     percent,
-    fromInternalPercent
+    fromInternalPercent,
+    packSetupCrowdsaleParameters
 }

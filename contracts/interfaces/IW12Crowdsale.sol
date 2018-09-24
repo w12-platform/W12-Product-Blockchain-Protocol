@@ -6,9 +6,13 @@ import "../WToken.sol";
 interface IW12Crowdsale {
     function setParameters(uint price) external;
 
-    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) external;
+    // TODO: this should be external
+    // See https://github.com/ethereum/solidity/issues/4832
+    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) public;
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) external;
+    // TODO: this should be external
+    // See https://github.com/ethereum/solidity/issues/4832
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) public;
 
     function getWToken() external view returns(WToken);
 
