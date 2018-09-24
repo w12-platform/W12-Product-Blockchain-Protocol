@@ -217,10 +217,6 @@ contract WToken is DetailedERC20, Ownable {
         emit Transfer(_who, address(0), _value);
     }
 
-    function () external {
-        revert();
-    }
-
     function _checkMyVesting(address _from) internal {
         if (vestingBalanceOf[_from][0] == 0) return;
 
