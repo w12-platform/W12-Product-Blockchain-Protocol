@@ -12,6 +12,7 @@ jobs:
       - run: git submodule update --init --recursive
       - run: sudo npm i -g npm && npm -v
       - run: sudo npm i -g truffle
+      - run: cp example.config.js config.js
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "ethpm.json" }}
@@ -22,6 +23,7 @@ jobs:
           paths:
             - node_modules
             - installed_contracts
+            - config.js
           key: v1-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "ethpm.json" }}
   test:
     <<: *defaults
