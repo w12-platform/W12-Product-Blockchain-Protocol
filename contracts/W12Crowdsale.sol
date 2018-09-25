@@ -52,8 +52,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     event MilestonesUpdated();
     event UnsoldTokenReturned(address indexed owner, uint amount);
 
-    event debug(uint value);
-
     constructor (
         uint version,
         address _originToken,
@@ -161,7 +159,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         __setParameters(_price, serviceWallet);
     }
 
-    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
+    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) public onlyOwner beforeSaleStart {
         require(dates.length <= uint8(-1));
         require(dates.length > 0);
         require(dates.length == stage_discounts.length);
@@ -197,7 +195,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         emit StagesUpdated();
     }
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) external onlyOwner beforeSaleStart {
+    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) public onlyOwner beforeSaleStart {
         require(volumeBoundaries.length == volumeBonuses.length);
         require(stage < stages.length);
 
@@ -224,7 +222,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint32[] offsets,
         bytes namesAndDescriptions
     )
-        external onlyOwner beforeSaleStart
+        public onlyOwner beforeSaleStart
     {
         require(dates.length <= uint8(- 1));
         require(dates.length >= 3);
@@ -282,6 +280,109 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         require(totalPercents == Percent.MAX());
 
         emit MilestonesUpdated();
+    }
+
+    // setup all crowdsale parameters
+    function setup(
+        uint[4][] stagesParametersPack1,
+        uint[3][] stagesParametersPack2,
+        uint[] stagesParametersPack3,
+        uint[4][] milestonesParametersPack1,
+        uint32[] milestonesParametersPack2,
+        bytes milestonesParametersPack3
+    )
+        external onlyOwner beforeSaleStart
+    {
+
+        _setStagesFromPack(stagesParametersPack1);
+        _setStagesBonusesFromPack(stagesParametersPack2, stagesParametersPack3);
+        _setMilestonesFromPack(milestonesParametersPack1, milestonesParametersPack2, milestonesParametersPack3);
+    }
+
+    // uint[4][] pack => [[uint32 date1, uint32 date2, uint discount, uint32 vesting], ...];
+    function _setStagesFromPack(uint[4][] pack) internal onlyOwner beforeSaleStart {
+        require(pack.length <= uint8(-1));
+
+        uint32[2][] memory stagesDates = new uint32[2][](uint8(pack.length));
+        uint[] memory stagesDiscounts = new uint[](uint8(pack.length));
+        uint32[] memory stagesVestings = new uint32[](uint8(pack.length));
+
+        for (uint i = 0; i < pack.length; i++) {
+            require(pack[i][0] <= uint32(- 1));
+            require(pack[i][1] <= uint32(- 1));
+            require(pack[i][3] <= uint32(- 1));
+
+            stagesDates[i][0] = uint32(pack[i][0]);
+            stagesDates[i][1] = uint32(pack[i][1]);
+            stagesDiscounts[i] = pack[i][2];
+            stagesVestings[i] = uint32(pack[i][3]);
+        }
+
+        setStages(stagesDates, stagesDiscounts, stagesVestings);
+    }
+
+    // uint[3][] pack1 => [[uint stageIndex, uint start, uint end], ...];
+    // uint[] pack2    => [uint boundary, uint bonus, ...];
+    function _setStagesBonusesFromPack(uint[3][] pack1, uint[] pack2) internal onlyOwner beforeSaleStart {
+        uint prevOffset;
+
+        uint[] memory boundaries = new uint[](uint8(0));
+        uint[] memory bonuses = new uint[](uint8(0));
+
+        for (uint i = 0; i < pack1.length; i++) {
+            if (pack1[i][1] == 0 && pack1[i][2] == 0) {
+                setStageVolumeBonuses(pack1[i][0], new uint[](uint8(0)), new uint[](uint8(0)));
+                continue;
+            }
+
+            require(pack1[i][1] < pack1[i][2]);
+            require(pack1[i][2] % 2 == 0);
+            require(pack1[i][2] <= pack2.length);
+            require(prevOffset == pack1[i][1]);
+            require((pack1[i][2] - pack1[i][1]) / 2 <= uint8(-1));
+
+            boundaries = new uint[](uint8((pack1[i][2] - pack1[i][1]) / 2));
+            bonuses = new uint[](uint8((pack1[i][2] - pack1[i][1]) / 2));
+
+            uint k = 0;
+            for (uint j = pack1[i][1]; j < pack1[i][2]; j += 2) {
+                boundaries[k] = pack2[j];
+                bonuses[k] = pack2[j + 1];
+                k++;
+            }
+
+            prevOffset = pack1[i][2];
+
+            setStageVolumeBonuses(
+                pack1[i][0],
+                boundaries,
+                bonuses
+            );
+        }
+    }
+
+    // uint[4][] pack1 => [[uint32 date1, uint32 date2, uint32 date3, uint tranchPrecent], ...];
+    // uint[] pack2    => [uint32 offset1, uint32 offset2, ...];
+    // bytes pack3     => bytes namesAndDescriptions;
+    function _setMilestonesFromPack(uint[4][] pack1, uint32[] pack2, bytes pack3) internal onlyOwner beforeSaleStart {
+        require(pack1.length <= uint8(-1));
+        require(pack1.length * 3 <= uint8(-1));
+
+        uint32[] memory milestonesDates = new uint32[](uint8(pack1.length * 3));
+        uint[] memory milestonesTranchePercents = new uint[](uint8(pack1.length));
+
+        for (uint i = 0; i < pack1.length; i++) {
+            require(pack1[i][0] <= uint32(- 1));
+            require(pack1[i][1] <= uint32(- 1));
+            require(pack1[i][2] <= uint32(- 1));
+
+            milestonesDates[i * 3] = uint32(pack1[i][0]);
+            milestonesDates[i * 3 + 1] = uint32(pack1[i][1]);
+            milestonesDates[i * 3 + 2] = uint32(pack1[i][2]);
+            milestonesTranchePercents[i] = pack1[i][3];
+        }
+
+        setMilestones(milestonesDates, milestonesTranchePercents, pack2, pack3);
     }
 
     function buyTokens() payable public nonReentrant onlyWhenSaleActive {

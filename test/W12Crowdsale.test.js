@@ -609,6 +609,129 @@ contract('W12Crowdsale', async (accounts) => {
                 result[1].should.be.equal(true);
             });
         });
+
+        describe('full setup at a time', async () => {
+            let stages, milestones, packs, txOut;
+
+            beforeEach(async () => {
+                stages = [
+                    {
+                        name: 'Phase 0',
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ],
+                        vestingTime: 0,
+                        discount: utils.toInternalPercent(0),
+                        volumeBoundaries: [
+                            oneToken,
+                            oneToken.mul(2),
+                            oneToken.mul(10)
+                        ],
+                        volumeBonuses: [
+                            utils.toInternalPercent(1),
+                            utils.toInternalPercent(2),
+                            utils.toInternalPercent(3)
+                        ],
+                    },
+                    {
+                        name: 'Phase 5',
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(210),
+                        discount: utils.toInternalPercent(5),
+                        volumeBoundaries: [],
+                        volumeBonuses: []
+                    },
+                    {
+                        name: 'Phase 10',
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(180),
+                        discount: utils.toInternalPercent(10),
+                        volumeBoundaries: [
+                            oneToken,
+                            oneToken.mul(2),
+                            oneToken.mul(10)
+                        ],
+                        volumeBonuses: [
+                            utils.toInternalPercent(1),
+                            utils.toInternalPercent(2),
+                            utils.toInternalPercent(3)
+                        ],
+                    }
+                ];
+                milestones = [
+                    {
+                        name: "Milestone 1",
+                        description: "Milestone 1",
+                        endDate: startDate + utils.time.duration.minutes(200),
+                        voteEndDate: startDate + utils.time.duration.minutes(230),
+                        withdrawalWindow: startDate + utils.time.duration.minutes(240),
+                        tranchePercent: utils.toInternalPercent(50)
+                    },
+                    {
+                        name: "Milestone 2",
+                        description: "Milestone 2",
+                        endDate: startDate + utils.time.duration.minutes(260),
+                        voteEndDate: startDate + utils.time.duration.minutes(280),
+                        withdrawalWindow: startDate + utils.time.duration.minutes(300),
+                        tranchePercent: utils.toInternalPercent(50)
+                    }
+                ];
+                packs = utils.packSetupCrowdsaleParameters(stages, milestones);
+                txOut = sut.setup(...packs, {from: owner});
+            });
+
+            it('should success', async () => {
+                await txOut
+                    .should.be.fulfilled;
+            });
+
+            it('should set stages', async () => {
+                await txOut;
+
+                for (const index in stages) {
+                    const stage = stages[index];
+                    const actualStage = await sut.getStage(index);
+
+                    actualStage[0].should.bignumber.eq(stage.dates[0]);
+                    actualStage[1].should.bignumber.eq(stage.dates[1]);
+                    actualStage[2].should.bignumber.eq(stage.discount);
+                    actualStage[3].should.bignumber.eq(stage.vestingTime);
+                    actualStage[4].every((n, i) => n.eq(stage.volumeBoundaries[i])).should.be.true;
+                    actualStage[5].every((n, i) => n.eq(stage.volumeBonuses[i])).should.be.true;
+                }
+            });
+
+            it('should set milestones', async () => {
+                await txOut;
+
+                for (const index in milestones) {
+                    const milestone = milestones[index];
+                    const encoded = utils.encodeMilestoneParameters(
+                        milestone.name,
+                        milestone.description,
+                        milestone.tranchePercent,
+                        milestone.endDate,
+                        milestone.voteEndDate,
+                        milestone.withdrawalWindow
+                    );
+                    const actualMilestone = await sut.getMilestone(index);
+
+                    actualMilestone[0].should.bignumber.eq(milestone.endDate);
+                    actualMilestone[1].should.bignumber.eq(milestone.tranchePercent);
+                    actualMilestone[2].should.bignumber.eq(milestone.voteEndDate);
+                    actualMilestone[3].should.bignumber.eq(milestone.withdrawalWindow);
+                    actualMilestone[4].should.be.eq(encoded.nameHex);
+                    actualMilestone[5].should.be.eq(encoded.descriptionHex);
+                }
+            });
+        })
     });
 
     describe('token purchase', async () => {
