@@ -227,7 +227,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     )
         external onlyOwner beforeSaleStart
     {
-        require(dates.length <= uint8(- 1));
+        require(dates.length <= uint8(-1));
         require(dates.length >= 3);
         require(dates.length % 3 == 0);
         require(tranchePercents.length.mul(2) == offsets.length);

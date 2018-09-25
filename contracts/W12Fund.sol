@@ -62,6 +62,9 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
+        requrer(tokenAmount > 0);
+        requrer(msg.value > 0);
+
         buyers[buyer].totalBought = buyers[buyer].totalBought.add(tokenAmount);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
         buyers[buyer].averagePrice = (buyers[buyer].totalFunded.mul(10 ** tokenDecimals)).div(buyers[buyer].totalBought);
