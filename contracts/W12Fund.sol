@@ -183,7 +183,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
         totalTranchePercentReleased = totalTranchePercentReleased.add(tranchePercent);
 
-        fee > 0 && serviceWallet.transfer(fee);
+        if (fee > 0) serviceWallet.transfer(fee);
         msg.sender.transfer(trancheAmount);
 
         emit TrancheReleased(msg.sender, trancheAmount);
