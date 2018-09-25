@@ -181,16 +181,15 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
     }
 
     function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {
+        require(amountForSale > 0);
+        require(tokenAddress != address(0));
+        require(ledger.getWTokenByToken(tokenAddress) != address(0));
+        require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
 
         WToken token = ledger.getWTokenByToken(tokenAddress);
-
-        require(token != address(0));
-
         IW12Crowdsale crowdsale = getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress;
-
-        require(crowdsale != address(0));
 
         getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount = getApprovedToken(tokenAddress, msg.sender)
             .wTokensIssuedAmount.add(amountForSale);
