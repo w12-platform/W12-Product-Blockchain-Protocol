@@ -117,23 +117,23 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         ListedToken storage listedToken = getApprovedToken(tokenAddress, msg.sender);
 
         DetailedERC20 token = DetailedERC20(tokenAddress);
+
+        require(token.decimals() == listedToken.decimals);
+
         uint balanceBefore = token.balanceOf(swap);
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
             : 0;
-
-        require(token.decimals() == listedToken.decimals);
-
         uint amountWithoutFee = amount.sub(fee);
 
-        getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
+        // check for overflow. we are not sure that the placed token has implemented save math
+        token.balanceOf(swap).add(amountWithoutFee);
+        token.balanceOf(serviceWallet).add(fee);
 
         token.transferFrom(msg.sender, swap, amountWithoutFee);
         token.transferFrom(msg.sender, serviceWallet, fee);
 
-        uint balanceAfter = token.balanceOf(swap);
-
-        require(balanceAfter == balanceBefore.add(amountWithoutFee));
+        listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
         if(ledger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
