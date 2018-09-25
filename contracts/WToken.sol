@@ -2,9 +2,11 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 
 contract WToken is DetailedERC20, Ownable {
+    using SafeMath for uint256;
 
     mapping (address => mapping (address => uint256)) internal allowed;
 
@@ -42,9 +44,9 @@ contract WToken is DetailedERC20, Ownable {
         require(_to != address(0));
         require(_value <= accountBalance(msg.sender));
 
-        balances[msg.sender] -= _value;
+        balances[msg.sender] = balances[msg.sender].sub(_value);
 
-        balances[_to] += _value;
+        balances[_to] = balances[_to].add(_value);
 
         emit Transfer(msg.sender, _to, _value);
 
@@ -85,9 +87,9 @@ contract WToken is DetailedERC20, Ownable {
         require(_value <= accountBalance(_from));
         require(_value <= allowed[_from][msg.sender]);
 
-        balances[_from] -= _value;
-        balances[_to] += _value;
-        allowed[_from][msg.sender] -= _value;
+        balances[_from] = balances[_from].sub(_value);
+        balances[_to] = balances[_to].add(_value);
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
 
         emit Transfer(_from, _to, _value);
         return true;
@@ -131,7 +133,7 @@ contract WToken is DetailedERC20, Ownable {
     * @param _addedValue The amount of tokens to increase the allowance by.
     */
     function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
-        allowed[msg.sender][_spender] += _addedValue;
+        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
 
         return true;
@@ -152,7 +154,7 @@ contract WToken is DetailedERC20, Ownable {
         if (_subtractedValue >= oldValue) {
             allowed[msg.sender][_spender] = 0;
         } else {
-            allowed[msg.sender][_spender] = oldValue - _subtractedValue;
+            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
         }
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
 
@@ -160,14 +162,14 @@ contract WToken is DetailedERC20, Ownable {
     }
 
     function mint(address _to, uint _amount, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
-        require(_totalSupply + _amount > _totalSupply);
+        require(_totalSupply.add(_amount) > _totalSupply);
 
         if (_vestingTime > now) {
             _addToVesting(address(0), _to, _vestingTime, _amount);
         }
 
-        balances[_to] += _amount;
-        _totalSupply += _amount;
+        balances[_to] = balances[_to].add(_amount);
+        _totalSupply = _totalSupply.add(_amount);
         emit Transfer(address(0), _to, _amount);
         emit VestingTransfer(address(0), _to, _amount, _vestingTime);
 
@@ -175,12 +177,12 @@ contract WToken is DetailedERC20, Ownable {
     }
 
     function _addToVesting(address _from, address _to, uint256 _vestingTime, uint256 _amount) internal {
-        vestingBalanceOf[_to][0] += _amount;
+        vestingBalanceOf[_to][0] = vestingBalanceOf[_to][0].add(_amount);
 
         if(vestingBalanceOf[_to][_vestingTime] == 0)
             vestingTimes[_to].push(_vestingTime);
 
-        vestingBalanceOf[_to][_vestingTime] += _amount;
+        vestingBalanceOf[_to][_vestingTime] = vestingBalanceOf[_to][_vestingTime].add(_amount);
     }
 
     /**
@@ -200,7 +202,7 @@ contract WToken is DetailedERC20, Ownable {
         require(_value <= allowed[_from][msg.sender]);
         // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
         // this function needs to emit an event with the updated approval.
-        allowed[_from][msg.sender] -= _value;
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
         _burn(_from, _value);
     }
 
@@ -211,8 +213,8 @@ contract WToken is DetailedERC20, Ownable {
         // no need to require value <= totalSupply, since that would imply the
         // sender's balance is greater than the totalSupply, which *should* be an assertion failure
 
-        balances[_who] -= _value;
-        _totalSupply -= _value;
+        balances[_who] = balances[_who].sub(_value);
+        _totalSupply = _totalSupply.sub(_value);
         emit Burn(_who, _value);
         emit Transfer(_who, address(0), _value);
     }
@@ -222,7 +224,8 @@ contract WToken is DetailedERC20, Ownable {
 
         for (uint256 k = 0; k < vestingTimes[_from].length; k++) {
             if (vestingTimes[_from][k] < now) {
-                vestingBalanceOf[_from][0] -= vestingBalanceOf[_from][vestingTimes[_from][k]];
+                vestingBalanceOf[_from][0] = vestingBalanceOf[_from][0]
+                    .sub(vestingBalanceOf[_from][vestingTimes[_from][k]]);
                 vestingBalanceOf[_from][vestingTimes[_from][k]] = 0;
             }
         }
@@ -235,7 +238,7 @@ contract WToken is DetailedERC20, Ownable {
 
         for (uint256 k = 0; k < vestingTimes[_address].length; k++) {
             if (vestingTimes[_address][k] >= now) {
-                balance -= vestingBalanceOf[_address][vestingTimes[_address][k]];
+                balance = balance.sub(vestingBalanceOf[_address][vestingTimes[_address][k]]);
             }
         }
     }
