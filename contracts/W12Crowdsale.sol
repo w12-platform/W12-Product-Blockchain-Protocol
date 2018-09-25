@@ -301,9 +301,11 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     // uint[4][] pack => [[uint32 date1, uint32 date2, uint discount, uint32 vesting], ...];
     function _setStagesFromPack(uint[4][] pack) internal onlyOwner beforeSaleStart {
-        uint32[2][] memory stagesDates = new uint32[2][](pack.length);
-        uint[] memory stagesDiscounts = new uint[](pack.length);
-        uint32[] memory stagesVestings = new uint32[](pack.length);
+        require(pack.length <= uint8(-1));
+
+        uint32[2][] memory stagesDates = new uint32[2][](uint8(pack.length));
+        uint[] memory stagesDiscounts = new uint[](uint8(pack.length));
+        uint32[] memory stagesVestings = new uint32[](uint8(pack.length));
 
         for (uint i = 0; i < pack.length; i++) {
             require(pack[i][0] <= uint32(- 1));
@@ -323,12 +325,13 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     // uint[] pack2    => [uint boundary, uint bonus, ...];
     function _setStagesBonusesFromPack(uint[3][] pack1, uint[] pack2) internal onlyOwner beforeSaleStart {
         uint prevOffset;
-        uint[] memory boundaries;
-        uint[] memory bonuses;
+
+        uint[] memory boundaries = new uint[](uint8(0));
+        uint[] memory bonuses = new uint[](uint8(0));
 
         for (uint i = 0; i < pack1.length; i++) {
             if (pack1[i][1] == 0 && pack1[i][2] == 0) {
-                setStageVolumeBonuses(pack1[i][0], new uint[](0), new uint[](0));
+                setStageVolumeBonuses(pack1[i][0], new uint[](uint8(0)), new uint[](uint8(0)));
                 continue;
             }
 
@@ -336,9 +339,10 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             require(pack1[i][2] % 2 == 0);
             require(pack1[i][2] <= pack2.length);
             require(prevOffset == pack1[i][1]);
+            require((pack1[i][2] - pack1[i][1]) / 2 <= uint8(-1));
 
-            boundaries = new uint[]((pack1[i][2] - pack1[i][1]) / 2);
-            bonuses = new uint[]((pack1[i][2] - pack1[i][1]) / 2);
+            boundaries = new uint[](uint8((pack1[i][2] - pack1[i][1]) / 2));
+            bonuses = new uint[](uint8((pack1[i][2] - pack1[i][1]) / 2));
 
             uint k = 0;
             for (uint j = pack1[i][1]; j < pack1[i][2]; j += 2) {
@@ -361,8 +365,11 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     // uint[] pack2    => [uint32 offset1, uint32 offset2, ...];
     // bytes pack3     => bytes namesAndDescriptions;
     function _setMilestonesFromPack(uint[4][] pack1, uint32[] pack2, bytes pack3) internal onlyOwner beforeSaleStart {
-        uint32[] memory milestonesDates = new uint32[](pack1.length * 3);
-        uint[] memory milestonesTranchePercents = new uint[](pack1.length);
+        require(pack1.length <= uint8(-1));
+        require(pack1.length * 3 <= uint8(-1));
+
+        uint32[] memory milestonesDates = new uint32[](uint8(pack1.length * 3));
+        uint[] memory milestonesTranchePercents = new uint[](uint8(pack1.length));
 
         for (uint i = 0; i < pack1.length; i++) {
             require(pack1[i][0] <= uint32(- 1));
