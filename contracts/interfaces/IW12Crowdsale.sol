@@ -8,11 +8,13 @@ interface IW12Crowdsale {
 
     // TODO: this should be external
     // See https://github.com/ethereum/solidity/issues/4832
-    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) public;
-
-    // TODO: this should be external
-    // See https://github.com/ethereum/solidity/issues/4832
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) public;
+    function setup(
+        uint[6][] parametersOfStages,
+        uint[] bonusConditionsOfStages,
+        uint[4][] parametersOfMilestones,
+        uint32[] nameAndDescriptionsOffsetOfMilestones,
+        bytes nameAndDescriptionsOfMilestones
+    ) external;
 
     function getWToken() external view returns(WToken);
 

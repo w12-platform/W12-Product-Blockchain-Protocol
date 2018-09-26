@@ -141,19 +141,23 @@ function percent(val, percent) {
 }
 
 function packSetupCrowdsaleParameters(stages, milestones) {
-    const pack1 = stages.map(stage => [...stage.dates, stage.discount, stage.vestingTime]);
-    const [pack2, pack3] = stages.reduce((result, stage, idx) => {
+    const [pack1, pack2] = stages.reduce((result, stage, idx) => {
+        const pack1 = [...stage.dates, stage.discount, stage.vestingTime];
+
         if (stage.volumeBonuses.length === 0) {
-            result[0].push([idx, 0, 0]);
+            pack1.push(0, 0);
         } else {
             const lastOffset = result[1].length;
-            result[0].push([idx, lastOffset, lastOffset + stage.volumeBonuses.length * 2]);
+
+            pack1.push(lastOffset, lastOffset + stage.volumeBonuses.length * 2);
             result[1].push(...stage.volumeBonuses.reduce((result, v, idx) => (result.push(stage.volumeBoundaries[idx], v), result), []));
         }
 
+        result[0].push(pack1);
+
         return result;
     }, [[], []]);
-    const [pack4, pack5, pack6] = milestones
+    const [pack3, pack4, pack5] = milestones
         .map(m =>
             encodeMilestoneParameters(
                 m.name,
@@ -172,7 +176,43 @@ function packSetupCrowdsaleParameters(stages, milestones) {
             return result;
         }, [[], [], '0x']);
 
-    return [pack1, pack2, pack3, pack4, pack5, pack6];
+    return [pack1, pack2, pack3, pack4, pack5];
+}
+
+function createStagesGenerator(defaults) {
+    defaults = Object.assign({discount: toInternalPercent(0), vestingTime: 0, volumeBonuses: [], volumeBoundaries: []}, defaults);
+
+    return (params => {
+        return Array.isArray(params)
+            ? params.map(i => Object.assign({}, defaults, i))
+            : [Object.assign({}, defaults, params)];
+    });
+}
+
+function createMilestonesGenerator (defaults) {
+    defaults = Object.assign({ name: "Milestone", description: "Milestone" }, defaults);
+
+    return (params => {
+        const ln = params && params.length;
+        let percentPerItem = !!ln
+            ? Math.floor(100 / ln)
+            : 100;
+        const add = !!ln
+            ? percentPerItem * ln === 100
+                ? 0
+                : 100 - percentPerItem * ln
+            : 0;
+
+        return Array.isArray(params)
+            ? params.map((i, idx) =>  {
+                return Object.assign({}, defaults,{
+                    tranchePercent: idx === ln - 1
+                        ? toInternalPercent(percentPerItem + add)
+                        : toInternalPercent(percentPerItem)
+                }, i || {})
+            })
+            : [Object.assign({}, defaults, { tranchePercent: toInternalPercent(percentPerItem) }, params || {})];
+    });
 }
 
 module.exports = {
@@ -190,5 +230,7 @@ module.exports = {
     toInternalPercent,
     percent,
     fromInternalPercent,
-    packSetupCrowdsaleParameters
+    packSetupCrowdsaleParameters,
+    createStagesGenerator,
+    createMilestonesGenerator
 }

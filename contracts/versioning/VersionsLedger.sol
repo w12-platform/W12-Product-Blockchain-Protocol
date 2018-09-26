@@ -12,20 +12,16 @@ contract VersionsLedger is Ownable {
     mapping(uint => address) public addressByVersion;
     mapping(address => uint) public versionByAddress;
 
-    function setVersion(address _address, uint version) public onlyOwner returns (bool result) {
-        // already exists
-        if (addressByVersion[version] != address(0)) return;
+    function setVersion(address _address, uint version) public onlyOwner {
+        require(addressByVersion[version] != address(0));
 
-        // wrong order
-        (uint lastV, bool found) = getLastVersion();
+        (uint lastV, ) = getLastVersion();
 
-        if (found && lastV > version) return;
+        require(lastV < version);
 
         versions.push(version);
         addressByVersion[version] = _address;
         versionByAddress[_address] = version;
-
-        result = true;
     }
 
     function getVersions() public view returns (uint[]) {
