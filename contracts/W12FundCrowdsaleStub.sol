@@ -29,7 +29,7 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, Reentrancy
 
     constructor(uint version) Versionable(version) public {}
 
-//    function setParameters(uint price) external {}
+    function setParameters(uint price) external {}
 
     function setup(
         uint[6][] parametersOfStages,
