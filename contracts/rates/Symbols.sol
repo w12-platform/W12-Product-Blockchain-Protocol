@@ -25,6 +25,10 @@ contract Symbols {
         return symbols[symbol];
     }
 
+    function getSymbolsList() public view returns(bytes32[]) {
+        return symbolsList;
+    }
+
     function _removeSymbolByIndex(uint index) internal {
         require(index < symbolsList.length);
 
