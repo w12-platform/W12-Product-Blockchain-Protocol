@@ -9,6 +9,7 @@ import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./versioning/Versionable.sol";
+import "./token/WToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;

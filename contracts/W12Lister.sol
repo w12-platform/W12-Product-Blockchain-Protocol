@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
-import "./WToken.sol";
-import "./W12TokenLedger.sol";
-import "./interfaces/IW12CrowdsaleFactory.sol";
-import "./interfaces/IW12AtomicSwap.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./libs/Percent.sol";
+import "./token/WToken.sol";
+import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
 
 
@@ -15,16 +15,15 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
+    ITokenExchanger public exchanger;
+    IW12CrowdsaleFactory public factory;
     // get token index in approvedTokens list by token address and token owner address
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     // return owners by token address
     mapping ( address => address[] ) approvedOwnersList;
     uint16 public approvedTokensLength;
-    IW12AtomicSwap public swap;
-    W12TokenLedger public ledger;
     address public serviceWallet;
-    IW12CrowdsaleFactory public factory;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, address indexed tokenOwner, uint tokenAmount, address placedTokenAddress);
@@ -50,16 +49,13 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         uint version,
         address _serviceWallet,
         IW12CrowdsaleFactory _factory,
-        W12TokenLedger _ledger,
-        IW12AtomicSwap _swap
+        ITokenExchanger _exchanger
     ) Versionable(version) public {
         require(_serviceWallet != address(0));
         require(_factory != address(0));
-        require(_ledger != address(0));
-        require(_swap != address(0));
+        require(_exchanger != address(0));
 
-        ledger = _ledger;
-        swap = _swap;
+        exchanger = _exchanger;
         serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
@@ -120,28 +116,28 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
 
         require(token.decimals() == listedToken.decimals);
 
-        uint balanceBefore = token.balanceOf(swap);
+        uint balanceBefore = token.balanceOf(exchanger);
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
             : 0;
         uint amountWithoutFee = amount.sub(fee);
 
         // check for overflow. we are not sure that the placed token has implemented save math
-        token.balanceOf(swap).add(amountWithoutFee);
+        token.balanceOf(exchanger).add(amountWithoutFee);
         token.balanceOf(serviceWallet).add(fee);
 
-        token.transferFrom(msg.sender, swap, amountWithoutFee);
+        token.transferFrom(msg.sender, exchanger, amountWithoutFee);
         token.transferFrom(msg.sender, serviceWallet, fee);
 
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
-        if(ledger.getWTokenByToken(tokenAddress) == address(0)) {
+        if(exchanger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
-            ledger.addTokenToListing(ERC20(tokenAddress), wToken);
+            exchanger.addTokenToListing(ERC20(tokenAddress), wToken);
         }
 
-        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, ledger.getWTokenByToken(tokenAddress));
+        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, exchanger.getWTokenByToken(tokenAddress));
     }
 
     function initCrowdsale(address tokenAddress, uint amountForSale, uint price) external nonReentrant {
@@ -149,7 +145,7 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress == address(0));
 
-        WToken wtoken = ledger.getWTokenByToken(tokenAddress);
+        WToken wtoken = exchanger.getWTokenByToken(tokenAddress);
 
         IW12Crowdsale crowdsale = factory.createCrowdsale(
             address(tokenAddress),
@@ -159,7 +155,7 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
             getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
             getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
-            swap,
+            exchanger,
             msg.sender
         );
 
@@ -167,8 +163,8 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         wtoken.addTrustedAccount(crowdsale);
 
         if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
-            swap.approve(
-                tokenAddress,
+            exchanger.approve(
+                ERC20(tokenAddress),
                 address(crowdsale),
                 getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount
                     .percent(getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent)
@@ -183,12 +179,12 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
     function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {
         require(amountForSale > 0);
         require(tokenAddress != address(0));
-        require(ledger.getWTokenByToken(tokenAddress) != address(0));
+        require(exchanger.getWTokenByToken(tokenAddress) != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
 
-        WToken token = ledger.getWTokenByToken(tokenAddress);
+        WToken token = exchanger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsale = getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress;
 
         getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount = getApprovedToken(tokenAddress, msg.sender)
@@ -207,8 +203,8 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         return approvedOwnersList[token];
     }
 
-    function getSwap() view external returns (address) {
-        return swap;
+    function getExchanger() view external returns (address) {
+        return exchanger;
     }
 
     function getApprovedToken(address tokenAddress, address ownerAddress) internal view returns (ListedToken storage result) {
