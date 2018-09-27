@@ -28,7 +28,10 @@ contract Symbols {
     function _removeSymbolByIndex(uint index) internal {
         require(index < symbolsList.length);
 
-        symbolsList[index] = symbolsList[symbolsList.length - 1];
+        if (index != symbolsList.length - 1) {
+            symbolsList[index] = symbolsList[symbolsList.length - 1];
+        }
+
         symbolsList.length--;
     }
 }
