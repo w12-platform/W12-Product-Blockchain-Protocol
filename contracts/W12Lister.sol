@@ -217,7 +217,7 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         return approvedOwnersList[token];
     }
 
-    function getExchanger() view external returns (address) {
+    function getExchanger() view external returns (ITokenExchanger) {
         return exchanger;
     }
 
