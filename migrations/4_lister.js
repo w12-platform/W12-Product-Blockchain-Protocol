@@ -13,15 +13,9 @@ module.exports = function (deployer, network, accounts) {
             const owner = accounts[0];
             const serviceWallet = accounts[0];
 
-            await deployer.deploy(W12TokenLedger, semint.encode(version, 4));
-            // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-            await utils.wait(10000);
-            await deployer.deploy(W12AtomicSwap, semint.encode(version, 4), W12TokenLedger.address);
-            // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-            await utils.wait(10000);
-            await deployer.deploy(W12Lister, semint.encode(version, 4), W12CrowdsaleFactory.address, W12TokenLedger.address, W12AtomicSwap.address);
-            // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-            await utils.wait(10000);
+            await utils.deploy(deployer, W12TokenLedger, semint.encode(version, 4));
+            await utils.deploy(deployer, W12AtomicSwap, semint.encode(version, 4), W12TokenLedger.address);
+            await utils.deploy(deployer, W12Lister, semint.encode(version, 4), W12CrowdsaleFactory.address, W12TokenLedger.address, W12AtomicSwap.address);
 
             await (await W12TokenLedger.deployed()).transferOwnership(W12Lister.address);
             await (await W12AtomicSwap.deployed()).transferOwnership(W12Lister.address);

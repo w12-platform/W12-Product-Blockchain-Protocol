@@ -11,9 +11,7 @@ module.exports = function(deployer, network, accounts) {
             if (!semint.isValid(version, 4)) throw new Error('version in package.json is not valid');
 
             // firstly deploy versions ledger
-            await deployer.deploy(Versions, {overwrite: false});
-            // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-            await utils.wait(10000);
+            await utils.deploy(deployer, Versions, {overwrite: false});
             // get all existing versions
             const versions = (await (await Versions.deployed()).getVersions())
                 .map(v => semint.decode(v.toNumber(), 4));
@@ -24,9 +22,7 @@ module.exports = function(deployer, network, accounts) {
 
             if (exists) throw new Error(`version ${version} already deployed`);
 
-            await deployer.deploy(Migrations, semint.encode(version, 4));
-            // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-            await utils.wait(10000);
+            await utils.deploy(deployer, Migrations, semint.encode(version, 4));
         });
     }
 };
