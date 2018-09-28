@@ -20,7 +20,7 @@ You will need install thes tools:
  * Node JS 8+
  * NPM 6+
 
-And than install project dependecies:
+And then install project dependecies:
 
 ```
 $ npm install
