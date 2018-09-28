@@ -53,6 +53,7 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
     }
 
     function exchange(ERC20 fromToken, uint amount) external nonReentrant {
+        require(amount > 0);
         require(fromToken != address(0));
         // Checking if fromToken is WToken and have actual pair
         ERC20 toToken = getTokenByWToken(fromToken);
