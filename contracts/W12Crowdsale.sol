@@ -9,6 +9,7 @@ import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./versioning/Versionable.sol";
+import "./token/WToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -67,16 +68,17 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     )
         Versionable(version) public
     {
+        require(_originToken != address(0));
         require(_token != address(0));
         require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);
         require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
         require(_swap != address(0));
 
+        __setParameters(_price, _serviceWallet);
+
         token = WToken(_token);
         originToken = ERC20(_originToken);
-
-        __setParameters(_price, _serviceWallet);
         serviceFee = _serviceFee;
         swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
@@ -226,7 +228,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     )
         external onlyOwner beforeSaleStart
     {
-        require(dates.length <= uint8(- 1));
+        require(dates.length <= uint8(-1));
         require(dates.length >= 3);
         require(dates.length % 3 == 0);
         require(tranchePercents.length.mul(2) == offsets.length);

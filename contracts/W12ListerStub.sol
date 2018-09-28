@@ -1,6 +1,7 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "./W12Lister.sol";
+import "./token/exchanger/ITokenExchanger.sol";
 
 contract W12ListerStub is W12Lister {
 
@@ -14,7 +15,6 @@ contract W12ListerStub is W12Lister {
     constructor(
         uint version,
         IW12CrowdsaleFactory _factory,
-        W12TokenLedger _ledger,
-        IW12AtomicSwap _swap
-    ) W12Lister(version, msg.sender, _factory, _ledger, _swap) public { }
+        ITokenExchanger _exchanger
+    ) W12Lister(version, msg.sender, _factory, _exchanger) public { }
 }
