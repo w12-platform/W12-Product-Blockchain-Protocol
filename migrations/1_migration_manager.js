@@ -3,6 +3,7 @@ const Versions = artifacts.require("./versioning/VersionsLedger.sol");
 const version = require('../package').version;
 const semint = require('@redtea/semint');
 const semver = require('semver');
+const utils = require('../shared/utils');
 
 module.exports = function(deployer, network, accounts) {
     if (network === 'test') {
@@ -10,8 +11,7 @@ module.exports = function(deployer, network, accounts) {
             if (!semint.isValid(version, 4)) throw new Error('version in package.json is not valid');
 
             // firstly deploy versions ledger
-            await deployer.deploy(Versions, {overwrite: false});
-
+            await utils.deploy(deployer, Versions, {overwrite: false});
             // get all existing versions
             const versions = (await (await Versions.deployed()).getVersions())
                 .map(v => semint.decode(v.toNumber(), 4));
@@ -22,7 +22,7 @@ module.exports = function(deployer, network, accounts) {
 
             if (exists) throw new Error(`version ${version} already deployed`);
 
-            await deployer.deploy(Migrations, semint.encode(version, 4));
+            await utils.deploy(deployer, Migrations, semint.encode(version, 4));
         });
     }
 };
