@@ -104,40 +104,54 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         emit OwnerWhitelisted(tokenAddress, tokenOwner, name, symbol);
     }
 
+    /**
+     * @notice Place token for sale
+     * @param tokenAddress Token that will be placed
+     * @param amount Token amount to place
+     */
     function placeToken(address tokenAddress, uint amount) external nonReentrant {
         require(amount > 0);
         require(tokenAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).tokenAddress == tokenAddress);
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender]);
 
-        ListedToken storage listedToken = getApprovedToken(tokenAddress, msg.sender);
-
         DetailedERC20 token = DetailedERC20(tokenAddress);
 
         require(token.decimals() == listedToken.decimals);
+        require(token.allowance(msg.sender, address(this)) >= amount);
 
-        uint balanceBefore = token.balanceOf(exchanger);
+        ListedToken storage listedToken = getApprovedToken(tokenAddress, msg.sender);
+
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
             : 0;
         uint amountWithoutFee = amount.sub(fee);
 
-        // check for overflow. we are not sure that the placed token has implemented save math
-        token.balanceOf(exchanger).add(amountWithoutFee);
-        token.balanceOf(serviceWallet).add(fee);
-
-        token.transferFrom(msg.sender, exchanger, amountWithoutFee);
-        token.transferFrom(msg.sender, serviceWallet, fee);
+        _secureTokenTransfer(token, exchanger, amountWithoutFee);
+        _secureTokenTransfer(token, serviceWallet, fee);
 
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
-        if(exchanger.getWTokenByToken(tokenAddress) == address(0)) {
+        if (exchanger.getWTokenByToken(tokenAddress) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
             exchanger.addTokenToListing(ERC20(tokenAddress), wToken);
         }
 
         emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, exchanger.getWTokenByToken(tokenAddress));
+    }
+
+    /**
+     * @dev Securely transfer token from sender to account
+     */
+    function _secureTokenTransfer(ERC20 token, address to, uint value) internal {
+        // check for overflow before. we are not sure that the placed token has implemented save math
+        uint expectedBalance = token.balanceOf(to).add(value);
+
+        token.transferFrom(msg.sender, to, value);
+
+        // check balance to be sure it was filled correctly
+        assert(token.balanceOf(to) == expectedBalance);
     }
 
     function initCrowdsale(address tokenAddress, uint amountForSale, uint price) external nonReentrant {
