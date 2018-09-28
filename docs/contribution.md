@@ -82,7 +82,12 @@ We use CircleCI to run CI jobs. All CI process cosists of 3 stages:
 
 Sending work result. After have done your work send PR to `master` branch and request reviewer to check changes and accept PR.
 
-Deploing new version. Before triggering deploy process you must change version in `package.json`, use `npm version` command to do it correcly, then push new version tag(created by `npm version`) to repository and wait deploy stage to be done.
+Deploing new version. Before triggering deploy process you must change version in `package.json`, use `npm version` command to do it correcly. For example:
+```
+$ npm run version patch -m 'v%s [ci skip]'
+```
+Command above increment version and commit changes with `v<version> [ci skip]` message(`[ci skip]` to skip ci to be triggered).
+After all ush new version tag(created by `npm version`) to repository and wait deploy stage to be done.
 
 If you want to skip CI stage add `[ci skip]` tag at any place of your commit.
 
