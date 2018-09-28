@@ -117,10 +117,11 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
 
         DetailedERC20 token = DetailedERC20(tokenAddress);
 
-        require(token.decimals() == listedToken.decimals);
         require(token.allowance(msg.sender, address(this)) >= amount);
 
         ListedToken storage listedToken = getApprovedToken(tokenAddress, msg.sender);
+
+        require(token.decimals() == listedToken.decimals);
 
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
