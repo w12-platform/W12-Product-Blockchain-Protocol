@@ -354,7 +354,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             }));
         }
 
-        assert(totalPercents == Percent.MAX());
+        require(totalPercents == Percent.MAX());
 
         emit MilestonesUpdated();
     }
