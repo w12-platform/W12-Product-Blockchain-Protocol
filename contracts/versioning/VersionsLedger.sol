@@ -2,10 +2,9 @@ pragma solidity ^0.4.24;
 
 // https://semver.org. Version represent as decimal number, 4 decimals per part, max 9999 9999 9999
 // 1.1.1 => 100010001
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract VersionsLedger {
-    address public owner;
-
+contract VersionsLedger is Ownable {
     // all versions in net
     uint[] public versions;
 
@@ -13,28 +12,16 @@ contract VersionsLedger {
     mapping(uint => address) public addressByVersion;
     mapping(address => uint) public versionByAddress;
 
-    modifier restricted() {
-        if (msg.sender == owner) _;
-    }
+    function setVersion(address _address, uint version) public onlyOwner {
+        require(addressByVersion[version] != address(0));
 
-    constructor() public {
-        owner = msg.sender;
-    }
+        (uint lastV, ) = getLastVersion();
 
-    function setVersion(address _address, uint version) public restricted returns (bool result) {
-        // already exists
-        if (addressByVersion[version] != address(0)) return;
-
-        // wrong order
-        (uint lastV, bool found) = getLastVersion();
-
-        if (found && lastV > version) return;
+        require(lastV < version);
 
         versions.push(version);
         addressByVersion[version] = _address;
         versionByAddress[_address] = version;
-
-        result = true;
     }
 
     function getVersions() public view returns (uint[]) {
@@ -44,10 +31,10 @@ contract VersionsLedger {
     function getAddresses() public view returns (address[]) {
         if (versions.length == 0) return;
 
-        address[] storage result;
+        address[] memory result = new address[](versions.length);
 
         for (uint i = 0; i < versions.length; i++) {
-            result.push(addressByVersion[versions[i]]);
+            result[i] = addressByVersion[versions[i]];
         }
 
         return result;

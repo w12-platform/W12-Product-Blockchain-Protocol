@@ -11,8 +11,7 @@ module.exports = {
             port: 7545,
             network_id: '*', // Match any network id
             gasPrice: 0,
-            gas: 8000000,
-            gasLimit: 8000000
+            gas: 8000000
         },
         test: {
             provider() {
@@ -24,7 +23,9 @@ module.exports = {
     mocha: {
         // grep: ''
     },
-    optimizer: {
-        enabled: true
+    solc: {
+        optimizer: {
+            enabled: true
+        }
     }
 };

@@ -45,15 +45,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     Stage[] public stages;
     Milestone[] public milestones;
-    uint32[] public milestoneDates;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
     event StageUpdated(uint index);
     event MilestonesUpdated();
     event UnsoldTokenReturned(address indexed owner, uint amount);
-
-    event debug(uint value);
 
     constructor (
         uint version,
@@ -115,40 +112,31 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         );
     }
 
-    function getStageVolumeBoundaries(uint stageNumber) external view returns (uint[]) {
-        return stages[stageNumber].volumeBoundaries;
-    }
-
-    function getStageVolumeBonuses(uint stageNumber) external view returns (uint[]) {
-        return stages[stageNumber].volumeBonuses;
-    }
-
     function getEndDate() external view returns (uint32) {
         require(stages.length > 0);
 
         return stages[stages.length - 1].endDate;
     }
 
-    // returns last milestone index if completely ended or active milestone at now
+    /**
+     * @dev Returns index of active milestone or last milestone
+     */
     function getCurrentMilestoneIndex() public view returns (uint index, bool found) {
-        uint milestonesCount = milestones.length;
-
-        if(milestonesCount == 0 || !isEnded()) return;
+        if(milestones.length == 0 || !isEnded()) return;
 
         found = true;
 
         // from withdrawalWindow begins next milestone
-        while(index < milestonesCount - 1 && now >= milestoneDates[(index + 1) * 3 - 1])
+        while(index < milestones.length - 1 && now >= milestones[index].withdrawalWindow) {
             index++;
+        }
     }
 
     function getLastMilestoneIndex() public view returns (uint index, bool found) {
-        uint milestonesCount = milestones.length;
-
-        if (milestonesCount == 0 || !isEnded()) return;
+        if (milestones.length == 0 || !isEnded()) return;
 
         found = true;
-        index = milestonesCount - 1;
+        index = milestones.length - 1;
     }
 
     function __setParameters(uint _price, address _serviceWallet) internal {
@@ -163,122 +151,207 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         __setParameters(_price, serviceWallet);
     }
 
-    function setStages(uint32[2][] dates, uint[] stage_discounts, uint32[] stage_vestings) external onlyOwner beforeSaleStart {
-        require(dates.length <= uint8(-1));
-        require(dates.length > 0);
-        require(dates.length == stage_discounts.length);
-        require(dates.length == stage_vestings.length);
+    /**
+     * @dev Setup all crowdsale parameters at a time
+     */
+    function setup(
+        uint[6][] parametersOfStages,
+        uint[] bonusConditionsOfStages,
+        uint[4][] parametersOfMilestones,
+        uint32[] nameAndDescriptionsOffsetOfMilestones,
+        bytes nameAndDescriptionsOfMilestones
+    )
+        external onlyOwner beforeSaleStart
+    {
+        // primary check of parameters of stages
+        require(parametersOfStages.length != 0);
+        require(parametersOfStages.length <= uint8(- 1));
 
+        // primary check of parameters of milestones
+        require(parametersOfMilestones.length <= uint8(- 1));
+        require(parametersOfMilestones.length == nameAndDescriptionsOffsetOfMilestones.length / 2);
+        require(parametersOfMilestones.length <= nameAndDescriptionsOfMilestones.length / 2);
+
+        _setStages(
+            parametersOfStages,
+            bonusConditionsOfStages
+        );
+
+        _setMilestones(
+            parametersOfMilestones,
+            nameAndDescriptionsOffsetOfMilestones,
+            nameAndDescriptionsOfMilestones
+        );
+    }
+
+    /**
+     * @dev Update stages
+     * @param parameters List of primary parameters:
+     * [
+     *   uint32 startDate,
+     *   uint32 endDate,
+     *   uint discount,
+     *   uint32 vesting,
+     *   uint8 startIndexOfBonusConditions
+     *   uint8 endIndexOfBonusConditions
+     * ],
+     * @param bonusConditions List of bonus conditions:
+     * [uint boundary, uint bonus, ...]
+     */
+    function _setStages(uint[6][] parameters, uint[] bonusConditions) internal {
         if (milestones.length > 0) {
-            require(milestones[0].endDate > dates[dates.length - 1][1], "Last stage endDate must be less than first milestone endDate");
+            // end date of firs milestone must be greater then end date of last stage
+            require(milestones[0].endDate > parameters[parameters.length - 1][1]);
         }
-
-        uint8 stagesCount = uint8(dates.length);
 
         delete stages;
 
-        for(uint8 i = 0; i < stagesCount; i++) {
-            require(stage_discounts[i].isPercent() && stage_discounts[i].fromPercent() < 100, "Stage discount is not in allowed range [0, 99.99)");
-            require(dates[i][0] > now);
-            require(dates[i][0] < dates[i][1], "Stage start date must be gt end date");
+        for (uint8 i = 0; i < parameters.length; i++) {
+            // check overflow
+            require(parameters[i][0] <= uint32(-1));
+            require(parameters[i][1] <= uint32(-1));
+            require(parameters[i][3] <= uint32(-1));
+            require(parameters[i][4] <= uint8(-1));
+            require(parameters[i][5] <= uint8(-1));
+
+            // check dates
+            require(parameters[i][0] > now);
+            require(parameters[i][0] < parameters[i][1]);
 
             if (i > 0) {
-                require(dates[i - 1][1] <= dates[i][0], "Stages are not in historical order");
+                require(parameters[i - 1][1] <= parameters[i][0]);
             }
 
+            // check discount
+            require(parameters[i][2].isPercent());
+            require(parameters[i][2] < Percent.MAX());
+
             stages.push(Stage({
-                startDate: dates[i][0],
-                endDate: dates[i][1],
-                discount: stage_discounts[i],
-                vesting: stage_vestings[i],
+                startDate: uint32(parameters[i][0]),
+                endDate: uint32(parameters[i][1]),
+                discount: parameters[i][2],
+                vesting: uint32(parameters[i][3]),
                 volumeBoundaries: new uint[](0),
                 volumeBonuses: new uint[](0)
             }));
+
+            _setStageBonusConditions(
+                uint8(stages.length - 1),
+                uint8(parameters[i][4]),
+                uint8(parameters[i][5]),
+                bonusConditions
+            );
         }
 
         emit StagesUpdated();
     }
 
-    function setStageVolumeBonuses(uint stage, uint[] volumeBoundaries, uint[] volumeBonuses) external onlyOwner beforeSaleStart {
-        require(volumeBoundaries.length == volumeBonuses.length);
-        require(stage < stages.length);
+    /**
+     * @dev Set stage bonus conditions by stage index
+     * @param bonusConditions List of bonus conditions:
+     * [uint boundary, uint bonus, ...]
+     */
+    function _setStageBonusConditions(uint8 stageIndex, uint8 start, uint8 end, uint[] bonusConditions) internal {
+        if (start == 0 && end == 0) {
+            stages[stageIndex].volumeBoundaries = new uint[](0);
+            stages[stageIndex].volumeBonuses = new uint[](0);
 
-        for(uint i = 0; i < volumeBoundaries.length; i++) {
-            require(volumeBonuses[i].isPercent() && volumeBonuses[i].fromPercent() < 100, "Bonus percent is not in allowed range [0, 99.99)");
-
-            if (i > 0) {
-                require(volumeBoundaries[i - 1] < volumeBoundaries[i], "Volume boundaries must be in ascending order");
-            }
+            return;
         }
 
-        delete stages[stage].volumeBoundaries;
-        delete stages[stage].volumeBonuses;
+        require(end <= bonusConditions.length);
+        require(start < end);
+        require(start % 2 == 0);
+        require(end % 2 == 0);
 
-        stages[stage].volumeBoundaries = volumeBoundaries;
-        stages[stage].volumeBonuses = volumeBonuses;
+        uint[] memory boundaries = new uint[]((end - start) / 2);
+        uint[] memory bonuses = new uint[]((end - start) / 2);
+        uint k = 0;
 
-        emit StageUpdated(stage);
+        while (start < end) {
+            // check bonus
+            require(bonusConditions[start + 1].isPercent());
+            require(bonusConditions[start + 1] < Percent.MAX());
+
+            // check boundary
+            if (k > 0) {
+                require(boundaries[k - 1] < bonusConditions[start]);
+            }
+
+            boundaries[k] = bonusConditions[start];
+            bonuses[k] = bonusConditions[start + 1];
+            k++;
+            start += 2;
+        }
+
+        stages[stageIndex].volumeBoundaries = boundaries;
+        stages[stageIndex].volumeBonuses = bonuses;
     }
 
-    function setMilestones(
-        uint32[] dates,
-        uint[] tranchePercents,
+    /**
+     * @dev Update milestones
+     * @param parameters List of primary parameters:
+     * [
+     *   uint32 endDate,
+     *   uint32 voteEndDate,
+     *   uint32 withdrawalWindow,
+     *   uint tranchPercent
+     * ]
+     * @param offsets Offsets of names and descriptions in namesAndDescriptions:
+     * [uint32 offset1, uint32 offset2, ...]
+     * @param namesAndDescriptions Names and descriptions
+     */
+    function _setMilestones(
+        uint[4][] parameters,
         uint32[] offsets,
         bytes namesAndDescriptions
     )
-        external onlyOwner beforeSaleStart
+        internal
     {
-        require(dates.length <= uint8(-1));
-        require(dates.length >= 3);
-        require(dates.length % 3 == 0);
-        require(tranchePercents.length.mul(2) == offsets.length);
-        require(tranchePercents.length.mul(3) == dates.length);
-        require(namesAndDescriptions.length >= tranchePercents.length * 2);
-
         if (stages.length > 0) {
-            require(
-                stages[stages.length - 1].endDate < dates[0],
-                "First milestone endDate must be greater than last stage endDate"
-            );
+            require(stages[stages.length - 1].endDate < parameters[0][0]);
         }
 
         delete milestones;
-        delete milestoneDates;
-
-        milestoneDates = dates;
 
         uint offset = 0;
+        uint k = 0;
         uint totalPercents = 0;
 
-        for(uint8 i = 0; i < uint8(dates.length); i += 3) {
-            bytes memory name = namesAndDescriptions.slice(offset, offsets[i / 3 * 2]);
-            bytes memory description = namesAndDescriptions.slice(offset + offsets[i / 3 * 2], offsets[i / 3 * 2 + 1]);
+        for (uint8 i = 0; i < parameters.length; i++) {
+            // check overflow
+            require(parameters[i][0] <= uint32(- 1));
+            require(parameters[i][1] <= uint32(- 1));
+            require(parameters[i][2] <= uint32(- 1));
 
-            require(dates[i] > now);
-            require(dates[i + 1] > dates[i]);
-            require(dates[i + 2] > dates[i + 1]);
-            require(name.length > 0);
-            require(description.length > 0);
-            require(
-                tranchePercents[i / 3].isPercent(),
-                "Tranche percent is not in allowed range [0, 100)"
-            );
+            // check dates
+            require(parameters[i][0] > now);
+            require(parameters[i][1] > parameters[i][0]);
+            require(parameters[i][2] > parameters[i][1]);
 
             if (i > 0) {
-                require(dates[i - 1] < dates[i], "Milestone dates is not in ascending order");
+                require(parameters[i - 1][2] < parameters[i][0]);
             }
 
+            // check tranch percent
+            require(parameters[i][3].isPercent());
+
+            bytes memory name = namesAndDescriptions.slice(offset, offsets[k]);
+            offset = offset.add(offsets[k]);
+            bytes memory description = namesAndDescriptions.slice(offset, offsets[k + 1]);
+            offset = offset.add(offsets[k + 1]);
+            k = k.add(2);
+
+            totalPercents = totalPercents.add(parameters[i][3]);
+
             milestones.push(Milestone({
-                endDate: dates[i],
-                tranchePercent: tranchePercents[i / 3],
-                voteEndDate: dates[i + 1],
-                withdrawalWindow: dates[i + 2],
+                endDate: uint32(parameters[i][0]),
+                tranchePercent: parameters[i][3],
+                voteEndDate: uint32(parameters[i][1]),
+                withdrawalWindow: uint32(parameters[i][2]),
                 name: name,
                 description: description
             }));
-
-            offset += offsets[i / 3] + offsets[i / 3 + 1];
-            totalPercents += tranchePercents[i / 3];
         }
 
         require(totalPercents == Percent.MAX());

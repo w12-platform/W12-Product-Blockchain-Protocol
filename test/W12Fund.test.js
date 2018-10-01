@@ -8,12 +8,53 @@ const FundFixture = require('./fixtures/fund.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12FundStub = artifacts.require('W12FundStub');
+const W12FundCrowdsaleStub = artifacts.require('W12FundCrowdsaleStub');
 const oneToken = new BigNumber(10).pow(18);
+const defaultStagesGenerator = utils.createStagesGenerator();
+const defaultMilestonesGenerator = utils.createMilestonesGenerator();
+const stagesDefaultFixture = (startDate) => defaultStagesGenerator([
+    {
+        dates: [
+            startDate + utils.time.duration.minutes(40),
+            startDate + utils.time.duration.minutes(60),
+        ]
+    },
+    {
+        dates: [
+            startDate + utils.time.duration.minutes(80),
+            startDate + utils.time.duration.minutes(100),
+        ]
+    },
+    {
+        dates: [
+            startDate + utils.time.duration.minutes(120),
+            startDate + utils.time.duration.minutes(140),
+        ]
+    }
+]);
+const milestonesDefaultFixture = (startDate) => defaultMilestonesGenerator([
+    {
+        endDate: startDate + utils.time.duration.days(10),
+        voteEndDate: startDate + utils.time.duration.days(17),
+        withdrawalWindow: startDate + utils.time.duration.days(20)
+    },
+    {
+        endDate: startDate + utils.time.duration.days(21),
+        voteEndDate: startDate + utils.time.duration.days(27),
+        withdrawalWindow: startDate + utils.time.duration.days(30)
+    },
+    {
+        endDate: startDate + utils.time.duration.days(31),
+        voteEndDate: startDate + utils.time.duration.days(37),
+        withdrawalWindow: startDate + utils.time.duration.days(40)
+    }
+]);
+
 
 contract('W12Fund', async (accounts) => {
     let sut, swap, crowdsale;
-    let crowdsaleFixture, milestoneFixture, tokenFixture, originTokenFixture, stagesFixture;
-    const sutOwner = accounts[0];
+    let crowdsaleFixture, milestonesFixture, tokenFixture, originTokenFixture, stagesFixture;
+    const sutOwner = accounts[7];
     const tokenOwner = accounts[1];
     const buyer1 = accounts[3];
     const buyer2 = accounts[4];
@@ -108,50 +149,52 @@ contract('W12Fund', async (accounts) => {
     });
 
     describe('refund', async () => {
+        let crowdsaleMock, encodedMilestoneFixture, startData;
+
         const crowdsaleOwner = accounts[0];
         const mintAmount = oneToken.mul(10000);
         const tokenPrice = new BigNumber(1000);
+        const setupMilestoneMockData = async (index) => {
+            await crowdsaleMock._getCurrentMilestoneIndexMockData(index, true);
+            await crowdsaleMock._getMilestoneMockData(
+                index,
+                encodedMilestoneFixture[index].dates[0],
+                encodedMilestoneFixture[index].tranchePercent,
+                encodedMilestoneFixture[index].dates[1],
+                encodedMilestoneFixture[index].dates[2],
+                encodedMilestoneFixture[index].nameHex,
+                encodedMilestoneFixture[index].descriptionHex
+            );
+        };
 
         beforeEach(async () => {
+            startData = web3.eth.getBlock('latest').timestamp;
             tokenFixture = await TokenFixture.createToken(tokenOwner);
             originTokenFixture = await TokenFixture.createToken(tokenOwner);
-
-            crowdsaleFixture = await CrowdsaleFixture.createW12Crowdsale(
-                {
-                    originTokenAddress: originTokenFixture.token.address,
-                    serviceWalletAddress: utils.generateRandomAddress(),
-                    swapAddress: utils.generateRandomAddress(),
-                    price: tokenPrice,
-                    serviceFee: utils.toInternalPercent(10),
-                    saleFee: utils.toInternalPercent(10),
-                    fundAddress: utils.generateRandomAddress()
-                },
-                crowdsaleOwner,
-                tokenFixture.token
-            );
-
-            stagesFixture = await CrowdsaleFixture.setTestStages(
-                web3.eth.getBlock('latest').timestamp + 60,
-                crowdsaleFixture.W12Crowdsale,
-                crowdsaleOwner
-            );
-
-            milestoneFixture = await CrowdsaleFixture.setTestMilestones(
-                stagesFixture.stages[stagesFixture.stages.length - 1].dates[1] + 60,
-                crowdsaleFixture.W12Crowdsale,
-                crowdsaleOwner
-            );
-
+            milestonesFixture = milestonesDefaultFixture(startData);
+            encodedMilestoneFixture = milestonesFixture
+                .map(m =>
+                    utils.encodeMilestoneParameters(
+                        m.name,
+                        m.description,
+                        m.tranchePercent,
+                        m.endDate,
+                        m.voteEndDate,
+                        m.withdrawalWindow
+                    )
+                )
+            crowdsaleMock = await W12FundCrowdsaleStub.new(0, { crowdsaleOwner });
             sut = await W12FundStub.new(
                 0,
-                crowdsaleFixture.W12Crowdsale.address,
-                crowdsaleFixture.args.swapAddress,
+                crowdsaleMock.address,
+                utils.generateRandomAddress(),
                 tokenFixture.token.address,
                 utils.generateRandomAddress(),
                 trancheFeePercent,
                 {from: sutOwner}
             );
 
+            await setupMilestoneMockData(0);
             await tokenFixture.token.mint(buyer1, mintAmount, 0, {from: tokenOwner});
             await tokenFixture.token.mint(buyer2, mintAmount, 0, {from: tokenOwner});
             await tokenFixture.token.approve(sut.address, mintAmount, {from: buyer1});
@@ -159,9 +202,12 @@ contract('W12Fund', async (accounts) => {
         });
 
         describe('getRefundAmount', async () => {
-            for (const milestoneIndex of [1,2])
+
+            for (const milestoneIndex of [1,2]) {
                 it(`should calculate full refund amount after milestone #${milestoneIndex} in case with one investor`, async () => {
-                    const withdrawalEndDate = milestoneFixture.milestones[milestoneIndex].withdrawalWindow;
+                    await setupMilestoneMockData(milestoneIndex);
+
+                    const withdrawalEndDate = milestonesFixture[milestoneIndex].withdrawalWindow;
                     const purchaseTokens = new BigNumber(20);
                     const purchaseTokensRecord = oneToken.mul(20);
                     const purchaseCost = purchaseTokens.mul(tokenPrice);
@@ -188,9 +234,10 @@ contract('W12Fund', async (accounts) => {
 
                     refundAmount.should.bignumber.eq(expectedRefundAmount);
                 });
+            }
 
             it('partial refund in case with two investors', async () => {
-                const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
+                const withdrawalEndDate = milestonesFixture[0].withdrawalWindow;
                 const records = [
                     {
                         buyer: buyer1,
@@ -224,14 +271,13 @@ contract('W12Fund', async (accounts) => {
                     tokenDecimals
                 );
 
-
                 const refundAmount2 = await sut.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
 
                 refundAmount2.should.bignumber.eq(expectedRefundAmount);
             });
 
             it('should not refund on non investor address', async () => {
-                const withdrawalEndDate = milestoneFixture.milestones[0].withdrawalWindow;
+                const withdrawalEndDate = milestonesFixture[0].withdrawalWindow;
                 const records = [
                     {
                         buyer: buyer1,
@@ -264,7 +310,8 @@ contract('W12Fund', async (accounts) => {
 
         for (const milestoneIndex of [1, 2]) {
             it(`should refund buyer after milestone #${milestoneIndex} ended`, async () => {
-                await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 60);
+                await setupMilestoneMockData(milestoneIndex);
+                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].withdrawalWindow - 60);
 
                 const funds = new BigNumber(web3.toWei(0.1, 'ether'));
                 const tokens = oneToken.mul(20);
@@ -311,16 +358,17 @@ contract('W12Fund', async (accounts) => {
             });
 
             it(`should allow refund between milestone ${milestoneIndex} end date and the end of withdrawal window`, async () => {
-                await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].endDate + 5);
+                await setupMilestoneMockData(milestoneIndex);
+                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].endDate + 5);
                 (await sut.refundAllowed()).should.be.true;
 
-                await utils.time.increaseTimeTo(milestoneFixture.milestones[milestoneIndex].withdrawalWindow - 5);
+                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].withdrawalWindow - 5);
                 (await sut.refundAllowed()).should.be.true;
             });
         }
 
         it('should reject refund if provide zero tokens', async () => {
-            await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
+            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow - 60);
 
             const funds = new BigNumber(web3.toWei(0.1, 'ether'));
             const tokens = oneToken.mul(20);
@@ -334,7 +382,7 @@ contract('W12Fund', async (accounts) => {
         });
 
         it('should reject refund if provided tokens amount gte investment number', async () => {
-            await utils.time.increaseTimeTo(milestoneFixture.milestones[0].voteEndDate - 60);
+            await utils.time.increaseTimeTo(milestonesFixture[0].voteEndDate - 60);
 
             const funds = new BigNumber(web3.toWei(0.1, 'ether'));
             const tokens = oneToken.mul(20);
@@ -348,7 +396,7 @@ contract('W12Fund', async (accounts) => {
         });
 
         it('should reject refund if address is not an investor address', async () => {
-            await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow - 60);
+            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow - 60);
 
             await sut.refund(1, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
         });
@@ -362,57 +410,61 @@ contract('W12Fund', async (accounts) => {
                 value: funds
             }).should.be.fulfilled;
 
-            await utils.time.increaseTimeTo(milestoneFixture.milestones[0].endDate - 60);
+            await utils.time.increaseTimeTo(milestonesFixture[0].endDate - 60);
 
             await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
 
-            await utils.time.increaseTimeTo(milestoneFixture.milestones[0].withdrawalWindow + 60);
+            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow + 60);
 
             await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
         });
     });
 
     describe('tranche', async () => {
-        const crowdsaleOwner = accounts[0];
+        let crowdsaleMock, encodedMilestoneFixture, startData;
+
         const swapAddress = accounts[1];
         const serviceWalletAddress = accounts[4];
+        const crowdsaleOwner = accounts[0];
         const mintAmount = oneToken.mul(10000);
         const tokenPrice = new BigNumber(1000);
+        const setupMilestoneMockData = async (index) => {
+            await crowdsaleMock._getCurrentMilestoneIndexMockData(index, true);
+            await crowdsaleMock._getLastMilestoneIndexMockData(encodedMilestoneFixture.length - 1, true);
+            for (const milestoneIndex in  encodedMilestoneFixture) {
+                await crowdsaleMock._getMilestoneMockData(
+                    milestoneIndex,
+                    encodedMilestoneFixture[milestoneIndex].dates[0],
+                    encodedMilestoneFixture[milestoneIndex].tranchePercent,
+                    encodedMilestoneFixture[milestoneIndex].dates[1],
+                    encodedMilestoneFixture[milestoneIndex].dates[2],
+                    encodedMilestoneFixture[milestoneIndex].nameHex,
+                    encodedMilestoneFixture[milestoneIndex].descriptionHex
+                );
+            }
+        };
 
         beforeEach(async () => {
+            startData = web3.eth.getBlock('latest').timestamp;
             tokenFixture = await TokenFixture.createToken(tokenOwner);
             originTokenFixture = await TokenFixture.createToken(tokenOwner);
-
-            crowdsaleFixture = await CrowdsaleFixture.createW12Crowdsale(
-                {
-                    originTokenAddress: originTokenFixture.token.address,
-                    serviceWalletAddress,
-                    swapAddress,
-                    price: tokenPrice,
-                    serviceFee: utils.toInternalPercent(10),
-                    saleFee: utils.toInternalPercent(10),
-                    fundAddress: utils.generateRandomAddress()
-                },
-                crowdsaleOwner,
-                tokenFixture.token
-            );
-
-            stagesFixture = await CrowdsaleFixture.setTestStages(
-                web3.eth.getBlock('latest').timestamp + 60,
-                crowdsaleFixture.W12Crowdsale,
-                crowdsaleOwner
-            );
-
-            milestoneFixture = await CrowdsaleFixture.setTestMilestones(
-                stagesFixture.stages[stagesFixture.stages.length - 1].dates[1] + 60,
-                crowdsaleFixture.W12Crowdsale,
-                crowdsaleOwner
-            ).should.be.fulfilled;
-
+            milestonesFixture = milestonesDefaultFixture(startData);
+            encodedMilestoneFixture = milestonesFixture
+                .map(m =>
+                    utils.encodeMilestoneParameters(
+                        m.name,
+                        m.description,
+                        m.tranchePercent,
+                        m.endDate,
+                        m.voteEndDate,
+                        m.withdrawalWindow
+                    )
+                )
+            crowdsaleMock = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
             sut = await W12FundStub.new(
                 0,
-                crowdsaleFixture.W12Crowdsale.address,
-                crowdsaleFixture.args.swapAddress,
+                crowdsaleMock.address,
+                swapAddress,
                 tokenFixture.token.address,
                 serviceWalletAddress,
                 trancheFeePercent,
@@ -443,10 +495,10 @@ contract('W12Fund', async (accounts) => {
                 result.should.bignumber.eq(expected);
             });
 
-            // TODO: windows always open 
+            // TODO: windows always open
 
             // it('should return zero if withdrawal window was not open yet', async () => {
-            //     const firstMilestone = milestoneFixture.milestones[0];
+            //     const firstMilestone = milestonesFixture.milestones[0];
             //     const firstMilestoneEnd = firstMilestone.endDate;
             //     const totalFundedAmount = new BigNumber(100); // 100 wei
             //     const account = accounts[0];
@@ -466,7 +518,9 @@ contract('W12Fund', async (accounts) => {
             // });
 
             it('should return zero if balance is empty', async () => {
-                const firstMilestone = milestoneFixture.milestones[0];
+                await setupMilestoneMockData(0, 2);
+
+                const firstMilestone = milestonesFixture[0];
                 const withdrawalWindow = firstMilestone.withdrawalWindow;
                 const account = accounts[0];
                 const expected = 0;
@@ -480,7 +534,9 @@ contract('W12Fund', async (accounts) => {
             });
 
             it('should return non zero if balance is filled', async () => {
-                const firstMilestone = milestoneFixture.milestones[0];
+                await setupMilestoneMockData(0, 2);
+
+                const firstMilestone = milestonesFixture[0];
                 const withdrawalWindow = firstMilestone.withdrawalWindow;
                 const percent = firstMilestone.tranchePercent;
                 const totalFundedAmount = new BigNumber(100); // 100 wei
@@ -501,7 +557,9 @@ contract('W12Fund', async (accounts) => {
             });
 
             it('should return non zero in case, where balance is filled and there is refunded resources', async () => {
-                const firstMilestone = milestoneFixture.milestones[0];
+                await setupMilestoneMockData(0, 2);
+
+                const firstMilestone = milestonesFixture[0];
                 const withdrawalWindow = firstMilestone.withdrawalWindow;
                 const percent = firstMilestone.tranchePercent;
                 const totalFundedAmount = new BigNumber(100); // 100 wei
@@ -528,7 +586,7 @@ contract('W12Fund', async (accounts) => {
             // TODO: now it`s not work. it should work?
 
             // it('should return non zero in case, where balance is filled and last milestone was end', async () => {
-            //     const lastMilestone = milestoneFixture.milestones[2];
+            //     const lastMilestone = milestonesFixture.milestones[2];
             //     const withdrawalWindow = lastMilestone.withdrawalWindow;
             //     const percent = lastMilestone.tranchePercent;
             //     const totalFundedAmount = new BigNumber(100); // 100 wei
@@ -550,7 +608,9 @@ contract('W12Fund', async (accounts) => {
         });
 
         it('should revert if sender is not a owner', async () => {
-            const firstMilestone = milestoneFixture.milestones[0];
+            await setupMilestoneMockData(0, 2);
+
+            const firstMilestone = milestonesFixture[0];
             const withdrawalWindow = firstMilestone.withdrawalWindow;
             const totalFundedAmount = new BigNumber(100); // 100 wei
             const account = accounts[5];
@@ -581,7 +641,7 @@ contract('W12Fund', async (accounts) => {
             let total = BigNumber.Zero;
 
             beforeEach(async () => {
-                milestones = milestoneFixture.milestones;
+                milestones = milestonesFixture;
                 account = await sut.owner();
 
                 await sut.sendTransaction({value: totalFundedAmount, from: account})
@@ -610,7 +670,7 @@ contract('W12Fund', async (accounts) => {
 
 
                 beforeEach(async () => {
-                    milestones = milestoneFixture.milestones;
+                    milestones = milestonesFixture;
                     milestone = milestones[index];
                     anotherMilestone = milestones[anotherIndex];
                     trancheMilestone = milestones[trancheMilestoneIndex];
@@ -624,6 +684,7 @@ contract('W12Fund', async (accounts) => {
                     expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress)).plus(fee);
                     expectedFundBalance = totalFundedAmount.minus(expected);
 
+                    await setupMilestoneMockData(index, 2);
                     await utils.time.increaseTimeTo(withdrawalWindow - 60);
 
                     txReceipt = await sut.tranche({from: account});
@@ -650,6 +711,8 @@ contract('W12Fund', async (accounts) => {
                 });
 
                 it(`should release another`, async () => {
+                    await setupMilestoneMockData(anotherIndex, 2);
+
                     const {endDate, withdrawalWindow} = anotherMilestone;
                     const {tranchePercent} = trancheMilestone;
                     const expectedAnother = utils.round(totalFundedAmount.mul(tranchePercent).div(utils.toInternalPercent(100)));

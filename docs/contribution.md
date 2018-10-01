@@ -49,6 +49,7 @@ All of main commands used in development definded in `packages.json` under `scri
  * `dev-net` - start ethereum local dev network
  * `ci-test` - command used by CI service to run tests
  * `ci-deploy-test-net` - used by CI service to deploy process
+ * `estimate-gas` - estimate gas usage for all contracts and print result
 
 All dev scripts stored under `shared/scripts` directory. `create-flatters.sh` creates flatterns versions of contracts, you may use this flatterns to verefy contract code on any block explorer services. `deploy.sh` used to deploy contract.  `generate-abi.js` used to generate ABIs for all contracts of current version, this script uses build result of truffle compile command. ABIs will not be generate if current ABI version of contracts have not diffrent from previosly.
 
