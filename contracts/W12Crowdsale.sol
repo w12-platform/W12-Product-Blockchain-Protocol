@@ -198,7 +198,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
      * @param bonusConditions List of bonus conditions:
      * [uint boundary, uint bonus, ...]
      */
-    function _setStages(uint[6][] parameters, uint[] bonusConditions) internal onlyOwner beforeSaleStart {
+    function _setStages(uint[6][] parameters, uint[] bonusConditions) internal {
         if (milestones.length > 0) {
             // end date of firs milestone must be greater then end date of last stage
             require(milestones[0].endDate > parameters[parameters.length - 1][1]);
@@ -251,7 +251,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
      * @param bonusConditions List of bonus conditions:
      * [uint boundary, uint bonus, ...]
      */
-    function _setStageBonusConditions(uint8 stageIndex, uint8 start, uint8 end, uint[] bonusConditions) internal onlyOwner beforeSaleStart {
+    function _setStageBonusConditions(uint8 stageIndex, uint8 start, uint8 end, uint[] bonusConditions) internal {
         if (start == 0 && end == 0) {
             stages[stageIndex].volumeBoundaries = new uint[](0);
             stages[stageIndex].volumeBonuses = new uint[](0);
@@ -306,7 +306,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint32[] offsets,
         bytes namesAndDescriptions
     )
-        internal onlyOwner beforeSaleStart
+        internal
     {
         if (stages.length > 0) {
             require(stages[stages.length - 1].endDate < parameters[0][0]);
@@ -319,6 +319,11 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint totalPercents = 0;
 
         for (uint8 i = 0; i < parameters.length; i++) {
+            // check overflow
+            require(parameters[i][0] <= uint32(- 1));
+            require(parameters[i][1] <= uint32(- 1));
+            require(parameters[i][2] <= uint32(- 1));
+
             // check dates
             require(parameters[i][0] > now);
             require(parameters[i][1] > parameters[i][0]);
