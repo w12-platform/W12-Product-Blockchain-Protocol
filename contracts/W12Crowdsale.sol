@@ -127,7 +127,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         found = true;
 
         // from withdrawalWindow begins next milestone
-        while(index < milestones.length && now >= milestones[index].withdrawalWindow) {
+        while(index < milestones.length - 1 && now >= milestones[index].withdrawalWindow) {
             index++;
         }
     }
