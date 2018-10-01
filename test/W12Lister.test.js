@@ -3,8 +3,7 @@ require('../shared/tests/setup.js');
 const utils = require('../shared/tests/utils.js');
 
 const W12Lister = artifacts.require('W12Lister');
-const W12AtomicSwap = artifacts.require('W12AtomicSwap');
-const W12TokenLedger = artifacts.require('W12TokenLedger');
+const TokenExchanger = artifacts.require('TokenExchanger');
 const W12FundFactory = artifacts.require('W12FundFactory');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
@@ -14,21 +13,17 @@ contract('W12Lister', async (accounts) => {
     let token;
     let factory;
     let fundFactory;
-    let swap;
-    let ledger;
+    let exchanger;
     const wallet = accounts[9];
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
-        ledger = await W12TokenLedger.new(0);
-        swap = await W12AtomicSwap.new(0, ledger.address);
-
+        exchanger = await TokenExchanger.new(0);
         fundFactory = await W12FundFactory.new(0);
         factory = await W12CrowdsaleFactory.new(0, fundFactory.address);
-        sut = await W12Lister.new(0, wallet, factory.address, ledger.address, swap.address);
+        sut = await W12Lister.new(0, wallet, factory.address, exchanger.address);
 
-        await ledger.transferOwnership(sut.address);
-        await swap.transferOwnership(sut.address);
+        await exchanger.transferOwnership(sut.address);
 
         token = await WToken.new('TestToken', 'TT', 18);
     });
@@ -144,6 +139,7 @@ contract('W12Lister', async (accounts) => {
                 utils.toInternalPercent(5),
                 utils.toInternalPercent(5)
             ).should.be.fulfilled;
+
             await sut.whitelistToken(
                 accounts[2],
                 token.address,
@@ -169,6 +165,7 @@ contract('W12Lister', async (accounts) => {
                 utils.toInternalPercent(5),
                 utils.toInternalPercent(5)
             ).should.be.fulfilled;
+
             await sut.whitelistToken(
                 accounts[1],
                 utils.generateRandomAddress(),
@@ -199,7 +196,7 @@ contract('W12Lister', async (accounts) => {
                     await testToken.approve(sut.address, 1, { from: accounts[1] }).should.be.fulfilled;
                     await sut.placeToken(testToken.address, 1, { from: accounts[1] } ).should.be.fulfilled;
 
-                    const actualWTokenAddress = await ledger.getWTokenByToken(testToken.address).should.be.fulfilled;
+                    const actualWTokenAddress = await exchanger.getWTokenByToken(testToken.address).should.be.fulfilled;
 
                     actualWTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
@@ -262,9 +259,9 @@ contract('W12Lister', async (accounts) => {
                 placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
                 placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
-                const swapAddress = await sut.swap();
+                const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
-                const actualExchangerBalance = await token.balanceOf(swapAddress);
+                const actualExchangerBalance = await token.balanceOf(exchangerAddress);
                 const actualServiceWalletBalance = await token.balanceOf(serviceWalletAddress);
 
                 actualExchangerBalance.should.bignumber.equal(oneToken.mul(7));
@@ -284,9 +281,9 @@ contract('W12Lister', async (accounts) => {
                 placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
                 placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
-                const swapAddress = await sut.swap();
+                const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
-                const actualExchangerBalance = await token.balanceOf(swapAddress);
+                const actualExchangerBalance = await token.balanceOf(exchangerAddress);
                 const actualServiceWalletBalance = await token.balanceOf(serviceWalletAddress);
 
                 actualExchangerBalance.should.bignumber.equal(oneToken.mul(6));
@@ -356,7 +353,7 @@ contract('W12Lister', async (accounts) => {
 
                     const expectedCrowdsaleSwapAllowance = utils.percent(saleAmount, buyCommissionInTokens);
 
-                    (await token.allowance(swap.address, crowdsaleAddress))
+                    (await token.allowance(exchanger.address, crowdsaleAddress))
                         .should.bignumber.eq(expectedCrowdsaleSwapAllowance);
                 });
 

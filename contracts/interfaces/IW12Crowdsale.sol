@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../WToken.sol";
+import "../token/WToken.sol";
 
 
 interface IW12Crowdsale {

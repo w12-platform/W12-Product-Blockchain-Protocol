@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-set -e
-
 cp example.config.js config.js
 
 echo "run migration..."
 
-if ! MIGRATE_LOG=$(npm run t:migrate:r:test); then
-    echo "$MIGRATE_LOG"
-    exit $?
-fi
+MIGRATE_LOG=$(npm run --silent t:migrate:r:test);
+EXIT_STATUS=$?
 
 echo "$MIGRATE_LOG"
+
+if  [ ${EXIT_STATUS} -gt 0 ]
+then
+    echo "migration script exit with status $EXIT_STATUS";
+    exit $EXIT_STATUS;
+fi
+
+set -e
 
 # because `build/` in gitignore
 git add -f build/

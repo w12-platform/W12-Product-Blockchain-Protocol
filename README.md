@@ -4,6 +4,6 @@
 
 
 
-# Contests
+# Contents
 
  * [Contribution](./docs/contribution.md)

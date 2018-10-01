@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./WToken.sol";
+import "./token/WToken.sol";
 import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
@@ -62,6 +62,9 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function recordPurchase(address buyer, uint tokenAmount) external payable onlyFrom(crowdsale) {
+        require(tokenAmount > 0);
+        require(msg.value > 0);
+
         buyers[buyer].totalBought = buyers[buyer].totalBought.add(tokenAmount);
         buyers[buyer].totalFunded = buyers[buyer].totalFunded.add(msg.value);
         buyers[buyer].averagePrice = (buyers[buyer].totalFunded.mul(10 ** tokenDecimals)).div(buyers[buyer].totalBought);
@@ -87,7 +90,10 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         ( ( c * (a / b) ) / d ) * e = (refund amount)
     */
     function getRefundAmount(uint wtokensToRefund) public view returns (uint result) {
-        uint exp = tokenDecimals < tokenDecimals + 8 ? tokenDecimals + 8 : tokenDecimals;
+        uint exp = tokenDecimals < tokenDecimals.add(8) ? tokenDecimals.add(8) : tokenDecimals;
+
+        require(uint(- 1) / 10 >= exp);
+
         uint max = uint(-1) / 10 ** exp;
         address buyer = msg.sender;
 
@@ -117,7 +123,9 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         ) return;
 
         uint allowedFund = totalFunded.sub(totalRefunded);
-        uint trancheToRelease = tranchePercent + totalTranchePercentBefore - totalTranchePercentReleased;
+        uint trancheToRelease = tranchePercent
+            .add(totalTranchePercentBefore)
+            .sub(totalTranchePercentReleased);
 
         result = allowedFund.percent(trancheToRelease);
     }
@@ -145,7 +153,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             (, uint _tranchePercent, , , , ) = crowdsale.getMilestone(dIndex);
 
-            totalTranchePercentBefore += _tranchePercent;
+            totalTranchePercentBefore = totalTranchePercentBefore.add(_tranchePercent);
         }
 
         return (
@@ -166,17 +174,17 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
         completedTranches[milestoneIndex] = true;
 
+        uint fee;
+
         if (trancheFeePercent > 0) {
-            uint fee = trancheAmount.percent(trancheFeePercent);
-
-            serviceWallet.transfer(fee);
-
+            fee = trancheAmount.percent(trancheFeePercent);
             trancheAmount = trancheAmount.sub(fee);
         }
 
-        msg.sender.transfer(trancheAmount);
+        totalTranchePercentReleased = totalTranchePercentReleased.add(tranchePercent);
 
-        totalTranchePercentReleased += tranchePercent;
+        if (fee > 0) serviceWallet.transfer(fee);
+        msg.sender.transfer(trancheAmount);
 
         emit TrancheReleased(msg.sender, trancheAmount);
     }
@@ -193,7 +201,6 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         uint transferAmount = getRefundAmount(wtokensToRefund);
 
         require(transferAmount > 0);
-        require(wToken.transferFrom(buyer, swap, wtokensToRefund));
 
         buyers[buyer].totalBought = buyers[buyer].totalBought
             .sub(wtokensToRefund);
@@ -203,6 +210,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         // update total refunded amount counter
         totalRefunded = totalRefunded.add(transferAmount);
 
+        require(wToken.transferFrom(buyer, swap, wtokensToRefund));
         buyer.transfer(transferAmount);
 
         emit FundsRefunded(buyer, transferAmount, wtokensToRefund);
