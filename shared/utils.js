@@ -3,10 +3,10 @@ function wait(ms) {
 }
 
 // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
-async function deploy(deployer, contract, ...args) {
+async function deploy(net, deployer, contract, ...args) {
     await deployer.deploy(contract, ...args);
     await contract.deployed();
-    await wait(20000);
+    await wait(net === 'development' ? 0 : 60000);
 }
 
 module.exports = {

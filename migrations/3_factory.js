@@ -9,7 +9,7 @@ const utils = require('../shared/utils');
 
 module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
-        await utils.deploy(deployer, Percent);
+        await utils.deploy(network, deployer, Percent);
 
         W12CrowdsaleStub.link(Percent);
         W12Crowdsale.link(Percent);
@@ -18,8 +18,8 @@ module.exports = function (deployer, network, accounts) {
 
     if(network === 'test') {
     	deployer.then(async () => {
-            await utils.deploy(deployer, W12FundFactory, semint.encode(version, 4));
-    		await utils.deploy(deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address);
+            await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4));
+    		await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address);
         });
     }
 };
