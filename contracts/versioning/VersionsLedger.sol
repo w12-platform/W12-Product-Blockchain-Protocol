@@ -8,12 +8,12 @@ contract VersionsLedger is Ownable {
     // all versions in net
     uint[] public versions;
 
-    // use only one main address to map version
+    // used only one main address to map version
     mapping(uint => address) public addressByVersion;
     mapping(address => uint) public versionByAddress;
 
     function setVersion(address _address, uint version) public onlyOwner {
-        require(addressByVersion[version] != address(0));
+        require(addressByVersion[version] == address(0));
 
         (uint lastV, ) = getLastVersion();
 
