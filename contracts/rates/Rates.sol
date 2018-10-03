@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./IRates.sol";
 import "./roles/Pricer.sol";
 import "./Symbols.sol";
 
-contract Rates is Symbols, PricerRole, Ownable {
+contract Rates is IRates, Symbols, PricerRole, Ownable {
     mapping (bytes32 => uint) rates;
     mapping (bytes32 => address) tokenAddress;
 
