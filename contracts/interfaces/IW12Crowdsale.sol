@@ -13,7 +13,8 @@ interface IW12Crowdsale {
         uint[] bonusConditionsOfStages,
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
-        bytes nameAndDescriptionsOfMilestones
+        bytes nameAndDescriptionsOfMilestones,
+        bytes32[] paymentMethodsList
     ) external;
 
     function getWToken() external view returns(WToken);

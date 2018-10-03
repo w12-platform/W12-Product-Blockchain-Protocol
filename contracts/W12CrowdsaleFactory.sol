@@ -4,17 +4,20 @@ import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./interfaces/IW12FundFactory.sol";
 import "./W12Crowdsale.sol";
 import "./versioning/Versionable.sol";
-
+import "./rates/IRates.sol";
 
 contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;
+    IRates private rates;
 
     event CrowdsaleCreated(address indexed owner, address indexed token, address crowdsaleAddress, address fundAddress);
 
-    constructor(uint version, IW12FundFactory _fundFactory) Versionable(version) public {
-        require(_fundFactory != address(0), "Factory address required");
+    constructor(uint version, IW12FundFactory _fundFactory, IRates _rates) Versionable(version) public {
+        require(_fundFactory != address(0));
+        require(_rates != address(0));
 
         fundFactory = _fundFactory;
+        rates = rates;
     }
 
     function createCrowdsale(
@@ -41,7 +44,8 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             swap,
             serviceFee,
             WTokenSaleFeePercent,
-            fund
+            fund,
+            rates
         );
 
         result.transferOwnership(owner);

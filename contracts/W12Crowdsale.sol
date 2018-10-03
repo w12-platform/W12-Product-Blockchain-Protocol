@@ -10,20 +10,28 @@ import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./versioning/Versionable.sol";
 import "./token/WToken.sol";
+import "./libs/PaymentMethods.sol";
+import "./rates/IRates.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using BytesLib for bytes;
+    using PaymentMethods for PaymentMethods.Methods;
 
     WToken public token;
     ERC20 public originToken;
     IW12Fund public fund;
+    IRates public rates;
     uint public price;
     uint public serviceFee;
     uint public WTokenSaleFeePercent;
     address public serviceWallet;
     address public swap;
+
+    // list of payment methods
+    PaymentMethods.Methods paymentMethods;
+
     Stage[] public stages;
     Milestone[] public milestones;
 
@@ -60,7 +68,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         address _swap,
         uint _serviceFee,
         uint _WTokenSaleFeePercent,
-        IW12Fund _fund
+        IW12Fund _fund,
+        IRates _rates
     )
         Versionable(version) public
     {
@@ -70,6 +79,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
         require(_swap != address(0));
+        require(_rates != address(0));
 
         __setParameters(_price, _serviceWallet);
 
@@ -79,6 +89,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
         fund = _fund;
+        rates = _rates;
     }
 
     function stagesLength() external view returns (uint) {
@@ -158,7 +169,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint[] bonusConditionsOfStages,
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
-        bytes nameAndDescriptionsOfMilestones
+        bytes nameAndDescriptionsOfMilestones,
+        bytes32[] paymentMethodsList
     )
         external onlyOwner beforeSaleStart
     {
@@ -171,6 +183,13 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         require(parametersOfMilestones.length == nameAndDescriptionsOffsetOfMilestones.length / 2);
         require(parametersOfMilestones.length <= nameAndDescriptionsOfMilestones.length / 2);
 
+        // check payment methods list
+        require(paymentMethodsList.length != 0);
+
+        for (uint i = 0; i < paymentMethodsList.length; i++) {
+            require(rates.hasSymbol(paymentMethodsList[i]));
+        }
+
         _setStages(
             parametersOfStages,
             bonusConditionsOfStages
@@ -181,6 +200,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             nameAndDescriptionsOffsetOfMilestones,
             nameAndDescriptionsOfMilestones
         );
+
+        paymentMethods.update(paymentMethodsList);
     }
 
     /**
@@ -424,6 +445,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function getFund() external view returns(IW12Fund) {
         return fund;
+    }
+
+    function getPaymentMethodsList() external view returns(bytes32[]) {
+        return paymentMethods.list();
+    }
+
+    function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
+        return paymentMethods.isAllowed(_method);
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
