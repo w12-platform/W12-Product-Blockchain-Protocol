@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./W12Crowdsale.sol";
-
+import "./rates/IRates.sol";
 
 contract W12CrowdsaleStub is W12Crowdsale {
     constructor (
@@ -13,7 +13,8 @@ contract W12CrowdsaleStub is W12Crowdsale {
         address _swap,
         uint _serviceFee,
         uint _WTokenSaleFeePercent,
-        IW12Fund _fund
+        IW12Fund _fund,
+        IRates _rates
     )
         W12Crowdsale(
             version,
@@ -24,7 +25,8 @@ contract W12CrowdsaleStub is W12Crowdsale {
              _swap,
              _serviceFee,
             _WTokenSaleFeePercent,
-             _fund
+             _fund,
+            _rates
         ) public
     {}
 
