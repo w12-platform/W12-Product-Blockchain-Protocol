@@ -538,6 +538,56 @@ contract('W12Crowdsale', async (accounts) => {
                 result[0].should.bignumber.equal(expectedMilestones.length - 1);
                 result[1].should.be.equal(true);
             });
+
+            it('must check that the function returns the correct Milestone index for each date in the given array', async () => {
+                const controlArray = [{
+                    time: startDate + utils.time.duration.minutes(60) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: false
+                }, {
+                    time: startDate + utils.time.duration.days(15),
+                    index: 0,
+                    found: true
+                }, {
+                    time: startDate + utils.time.duration.days(20) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: true
+                },{
+                    time: startDate + utils.time.duration.days(20) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(20) - 1,
+                    index: 0,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(20) + utils.time.duration.minutes(1),
+                    index: 1,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(30) + utils.time.duration.minutes(1),
+                    index: 2,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(40) - 1,
+                    index: 2,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(40) + utils.time.duration.minutes(1),
+                    index: 2,
+                    found: true,
+                }];
+
+                for (const elem of controlArray) {
+                    await utils.time.increaseTimeTo(elem.time);
+
+                    const result = await sut.getCurrentMilestoneIndex()
+                        .should.be.fulfilled;
+
+                    result[0].should.bignumber.equal(elem.index);
+                    result[1].should.be.equal(elem.found);
+                }
+            });
         });
     });
 
