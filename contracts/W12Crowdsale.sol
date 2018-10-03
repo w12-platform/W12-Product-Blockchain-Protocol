@@ -16,6 +16,17 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using Percent for uint;
     using BytesLib for bytes;
 
+    WToken public token;
+    ERC20 public originToken;
+    IW12Fund public fund;
+    uint public price;
+    uint public serviceFee;
+    uint public WTokenSaleFeePercent;
+    address public serviceWallet;
+    address public swap;
+    Stage[] public stages;
+    Milestone[] public milestones;
+
     struct Stage {
         uint32 startDate;
         uint32 endDate;
@@ -27,24 +38,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     struct Milestone {
         uint32 endDate;
-        uint  tranchePercent;
+        uint tranchePercent;
         uint32 voteEndDate;
         uint32 withdrawalWindow;
         bytes name;
         bytes description;
     }
-
-    WToken public token;
-    ERC20 public originToken;
-    uint public price;
-    uint public serviceFee;
-    uint public WTokenSaleFeePercent;
-    address public serviceWallet;
-    address public swap;
-    IW12Fund public fund;
-
-    Stage[] public stages;
-    Milestone[] public milestones;
 
     event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
     event StagesUpdated();
