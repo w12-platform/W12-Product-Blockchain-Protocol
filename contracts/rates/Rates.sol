@@ -6,14 +6,36 @@ import "./Symbols.sol";
 
 contract Rates is Symbols, PricerRole, Ownable {
     mapping (bytes32 => uint) rates;
+    mapping (bytes32 => address) tokenAddress;
 
-    function addSymbol(bytes32 symbol) public onlyPricer {
+    function addSymbol(bytes32 symbol, address _address) public onlyPricer {
         Symbols.addSymbol(symbol);
+
+        if (_address != address(0)) setTokenAddress(symbol, _address);
     }
 
     function removeSymbol(bytes32 symbol) public onlyPricer {
+        setTokenAddress(symbol, address(0));
         Symbols.removeSymbol(symbol);
         rates[symbol] = 0;
+    }
+
+    function setTokenAddress(bytes32 symbol, address _address) public onlyPricer {
+        require(hasSymbol(symbol));
+
+        tokenAddress[symbol] = _address;
+    }
+
+    function getTokenAddress(bytes32 symbol) public view returns(address) {
+        require(isToken(symbol));
+
+        return tokenAddress[symbol];
+    }
+
+    function isToken(bytes32 symbol) public view returns (bool) {
+        require(hasSymbol(symbol));
+
+        return tokenAddress[symbol] != address(0);
     }
 
     function addPricer(address account) public onlyOwner {
