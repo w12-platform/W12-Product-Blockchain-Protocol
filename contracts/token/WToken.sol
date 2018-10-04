@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./IWToken.sol";
 
 
-contract WToken is DetailedERC20, Ownable {
+contract WToken is IWToken, Ownable {
     using SafeMath for uint256;
 
     mapping (address => mapping (address => uint256)) internal allowed;

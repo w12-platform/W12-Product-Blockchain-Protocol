@@ -3,14 +3,16 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "./interfaces/IW12Crowdsale.sol";
 import "./interfaces/IW12Fund.sol";
 import "./libs/Percent.sol";
 import "./versioning/Versionable.sol";
 import "./token/WToken.sol";
 import "./libs/PaymentMethods.sol";
+import "./libs/PurchaseProcessing.sol";
 import "./rates/IRates.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
@@ -379,64 +381,62 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         emit MilestonesUpdated();
     }
 
-    function buyTokens() payable public nonReentrant onlyWhenSaleActive {
-        require(msg.value > 0);
+    function buyTokens(bytes32 method, uint amount) payable public nonReentrant onlyWhenSaleActive {
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            require(rates.getTokenAddress(method) != address(0));
+        }
 
         (uint index, ) = getCurrentStageIndex();
 
-        uint discount = stages[index].discount;
-        uint32 vesting = stages[index].vesting;
-        uint volumeBonus = getSaleVolumeBonus(msg.value);
+        // [tokenAmount, cost, costUSD, change, actualTokenPriceUSD]
+        uint[5] memory invoice = PurchaseProcessing.invoice(
+            method,
+            amount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            rates.get(method),
+            price,
+            uint(token.decimals()),
+            PurchaseProcessing.METHOD_ETH() == method
+                ? 18
+                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
+            token.balanceOf(address(this))
+        );
 
-        (uint tokenAmount, uint weiCost, uint change, ) = _purchaseOrder(msg.value, discount, volumeBonus);
+        uint[2] memory fee = PurchaseProcessing.fee(invoice[0], invoice[1], WTokenSaleFeePercent, serviceFee);
 
-        if (WTokenSaleFeePercent > 0) {
-            uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
+        _transferFee(fee, method);
+        _transferPurchase(invoice, stages[index].vesting, method);
+        _recordPurchase(invoice, fee, method);
 
-            require(originToken.transferFrom(swap, serviceWallet, tokensFee));
-            require(token.transfer(swap, tokensFee));
-        }
-
-        require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
-
-        if (change > 0) {
-            msg.sender.transfer(change);
-        }
-
-        if(serviceFee > 0)
-            serviceWallet.transfer(weiCost.percent(serviceFee));
-
-        fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
-
-        emit TokenPurchase(msg.sender, weiCost, tokenAmount, change);
+//        emit TokenPurchase(msg.sender, invoice, tokenAmount, change);
     }
 
-    function _purchaseOrder(uint _wei, uint discount, uint volumeBonus)
-        internal view returns (uint tokens, uint weiCost, uint change, uint actualPrice)
-    {
-        weiCost = _wei;
+    function _transferFee(uint[2] memory fee, bytes32 method) internal {
+        PurchaseProcessing.transferFee(
+            fee,
+            method,
+            rates.getTokenAddress(method),
+            address(token),
+            address(originToken),
+            swap,
+            serviceWallet
+        );
+    }
 
-        uint balance = token.balanceOf(address(this));
+    function _transferPurchase(uint[5] memory invoice, uint32 vesting, bytes32 method) internal {
+        PurchaseProcessing.transferPurchase(
+            invoice,
+            vesting,
+            method,
+            rates.getTokenAddress(method),
+            address(token)
+        );
+    }
 
-        require(balance >= 10 ** uint(token.decimals()));
-
-        actualPrice = discount > 0
-            ? price.percent(Percent.MAX() - discount)
-            : price;
-
-        tokens = _wei
-            .mul(Percent.MAX() + volumeBonus)
-            .mul(10 ** uint(token.decimals()))
-            .div(actualPrice)
-            .div(Percent.MAX());
-
-        if (balance < tokens) {
-            weiCost = _wei
-                .mul(balance)
-                .div(tokens);
-            change = _wei - weiCost;
-            tokens = balance;
-        }
+    function _recordPurchase(uint[5] memory invoice, uint[2] memory fee, bytes32 method) internal {
+        // fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
     }
 
     function getWToken() external view returns(WToken) {
@@ -458,17 +458,11 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
         (uint index, bool found) = getCurrentStageIndex();
 
-        if (!found) return 0;
+        if (!found) return;
 
         Stage storage stage = stages[index];
 
-        for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
-            if (value >= stage.volumeBoundaries[i]) {
-                bonus = stage.volumeBonuses[i];
-            } else {
-                break;
-            }
-        }
+        return PurchaseProcessing.getBonus(value, stage.volumeBoundaries, stage.volumeBonuses);
     }
 
     function getCurrentStageIndex() public view returns (uint index, bool found) {
@@ -501,10 +495,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         (, bool found) = getCurrentStageIndex();
 
         return found;
-    }
-
-    function() payable external {
-        buyTokens();
     }
 
     modifier beforeSaleStart() {

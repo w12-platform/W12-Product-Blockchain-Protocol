@@ -37,9 +37,7 @@ interface IW12Crowdsale {
 
     function isSaleActive() external view returns (bool);
 
-    function () payable external;
-
-    function buyTokens() payable external;
+    function buyTokens(bytes32 method, uint amount) payable external;
 
     function transferOwnership(address newOwner) external;
 }
