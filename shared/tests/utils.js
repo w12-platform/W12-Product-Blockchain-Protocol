@@ -99,29 +99,114 @@ async function getTransactionCost(txOutput) {
     return gasPrice.mul(gasUsed);
 }
 
-function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus, decimals = 18) {
-    weiAmountPaid = new BigNumber(weiAmountPaid);
-    weiBasePrice = new BigNumber(weiBasePrice);
+function toInternalUSD(usd) {
+    usd = new BigNumber(usd);
+    return usd.mul(10 ** 8);
+}
 
-    let result;
+function fromInternalUSD (usd) {
+    usd = new BigNumber(usd);
+    return usd.div(10 ** 8);
+}
 
-    result = round(
-        weiBasePrice
-            .mul(new BigNumber(toInternalPercent(100)).minus(stageDiscount))
-            .div(toInternalPercent(100))
-    )
-    result = round(
-        weiAmountPaid
-            .mul(volumeBonus.plus(toInternalPercent(100)))
-            .div(result)
+function calculatePurchase(
+    method,
+    paymentAmount,
+    stageDiscount,
+    volumeBoundaries,
+    volumeBonuses,
+    methodAmountPriceUSD,
+    tokenPriceUSD,
+    tokenDecimals,
+    methodDecimals,
+    currentBalanceInTokens
+) {
+    paymentAmount = new BigNumber(paymentAmount);
+    stageDiscount = new BigNumber(stageDiscount);
+    methodAmountPriceUSD = new BigNumber(methodAmountPriceUSD);
+    tokenPriceUSD = new BigNumber(tokenPriceUSD);
+    tokenDecimals = new BigNumber(tokenDecimals);
+    methodDecimals = new BigNumber(methodDecimals);
+    currentBalanceInTokens = new BigNumber(currentBalanceInTokens);
+    
+    const ten = new BigNumber(10);
+    const oneHundredPercent = new BigNumber(toInternalPercent(100));
+    
+    let result = {
+        tokenAmount: new BigNumber(0),
+        cost: new BigNumber(0),
+        costUSD: new BigNumber(0),
+        change: new BigNumber(0),
+        actualTokenPriceUSD: new BigNumber(0)
+    };
+
+    result.costUSD = round(
+        paymentAmount
+            .mul(methodAmountPriceUSD)
+            .div(ten.pow(methodDecimals))
     );
-    result = round(
-        result
-            .mul(new BigNumber(10).pow(decimals))
-            .div(toInternalPercent(100))
+
+    const volumeBonus = getPurchaseBonus(result.costUSD, volumeBoundaries, volumeBonuses);
+
+    result.actualTokenPriceUSD = stageDiscount.gt(0)
+        ? percent(tokenPriceUSD, oneHundredPercent.sub(stageDiscount))
+        : tokenPriceUSD;
+
+    result.tokenAmount = round(
+        result.costUSD
+            .mul(oneHundredPercent.add(volumeBonus))
+            .mul(ten.pow(tokenDecimals))
+            .div(result.actualTokenPriceUSD.mul(oneHundredPercent))
     );
+
+    if (currentBalanceInTokens.lt(result.tokenAmount)) {
+        result.costUSD = round(
+            currentBalanceInTokens
+                .mul(result.actualTokenPriceUSD)
+                .div(ten.pow(tokenDecimals))
+        );
+        result.tokenAmount = currentBalanceInTokens;
+    }
+
+    result.cost = round(
+        result.costUSD
+            .mul(ten.pow(methodDecimals))
+            .div(methodAmountPriceUSD)
+    );
+
+    result.change = paymentAmount.sub(result.cost);
 
     return result;
+}
+
+function getPurchaseBonus(value, volumeBoundaries, volumeBonuses) {
+    let bonus = new BigNumber(0);
+
+    for (let i = 0; i < volumeBoundaries.length; i++) {
+        if (value >= volumeBoundaries[i]) {
+            bonus = volumeBonuses[i];
+        } else {
+            break;
+        }
+    }
+
+    return bonus;
+}
+
+// negative means the investor has paid less
+function getPurchaseRoundLoss(tokenAmount, cost, methodAmountPriceUSD, tokenPriceUSD, tokenDecimal, methodDecimal) {
+    tokenAmount = new BigNumber(tokenAmount);
+    cost = new BigNumber(cost);
+    methodAmountPriceUSD = new BigNumber(methodAmountPriceUSD);
+    tokenPriceUSD = new BigNumber(tokenPriceUSD);
+
+    const ten = new BigNumber(10);
+
+    return fromInternalUSD(
+        cost
+            .mul(methodAmountPriceUSD).div(ten.pow(methodDecimal))
+            .sub(tokenAmount.mul(tokenPriceUSD).div(ten.pow(tokenDecimal)))
+    );
 }
 
 function toInternalPercent(percent) {
@@ -232,5 +317,9 @@ module.exports = {
     fromInternalPercent,
     packSetupCrowdsaleParameters,
     createStagesGenerator,
-    createMilestonesGenerator
+    createMilestonesGenerator,
+    toInternalUSD,
+    fromInternalUSD,
+    getPurchaseRoundLoss,
+    getPurchaseBonus
 }
