@@ -15,8 +15,11 @@ module.exports = function (deployer, network, accounts) {
         await utils.deploy(network, deployer, Utils);
 
         W12CrowdsaleStub.link(Percent);
+        W12CrowdsaleStub.link(Utils);
         W12Crowdsale.link(Percent);
+        W12Crowdsale.link(Utils);
         W12CrowdsaleFactory.link(Percent);
+        W12CrowdsaleFactory.link(Utils);
 
         if (network === 'development') {
             PurchaseProcessingMock.link(Percent);
