@@ -79,43 +79,37 @@ library PurchaseProcessing {
         ));
 
         // costUSD
-        // 0 0123456789 * 0 00012345 / 10 ** 10 = 0 00000152 . 4074060205
-        // 13 * 0 00012345 +
         result[2] = Utils.saveConvertByRate(paymentAmount, methodDecimals, methodUSDRate);
 
         // min costUSD = tokenUSDRate
-        // tokenUSDRate = 1 00005555
         require(result[2] >= tokenUSDRate);
 
-        // 13 33
         uint bonus = getBonus(result[2], volumeBoundaries, volumeBonuses);
 
         // priceUSD
-        // 1 00005555 * (100 00 - 22 22) / 100 00 = 0 77784320 . 679
         result[4] = discount > 0
             ? tokenUSDRate.percent(Percent.MAX() - discount)
             : tokenUSDRate;
 
         // tokens
-        // 0 00000152 * (10000 + 1333) * 10 ** 10 / (0 77784320 * 10000) = 0 0000022146 . 057200217216
-//        result[0] = Utils.saveReconvertByRate(result[2].percent(Percent.MAX().add(bonus)), tokenDecimals, result[4]);
         result[0] = Utils.saveReconvertByRate(result[2].percent(Percent.MAX().add(bonus)), tokenDecimals, result[4]);
 
         // if current balance is not enough
         if (currentBalanceInTokens < result[0]) {
-            // 0 0000012146 * 0 77784320 / 10 ** 10 = 0 00000094 . 476835072
             result[2] = Utils.saveConvertByRate(currentBalanceInTokens, tokenDecimals, result[4]);
             result[0] = currentBalanceInTokens;
         }
 
         // cost
-        // 0 00000152 * 10 ** 10 / 0 00012345 = 0 0123126771 . 97245848
-        // if (currentBalanceInTokens < result[0]): 0 00000094 * 10 ** 10 / 0 00012345 = 0 0076144187 . 93033616
         result[1] = Utils.saveReconvertByRate(result[2], methodDecimals, methodUSDRate);
 
+        // reset if cost is zero
+        if (result[1] == 0) {
+            result[0] = 0;
+            result[2] = 0;
+        }
+
         // change
-        // 0 0123456789 - 0 0123126771 = 0 0000330018
-        // if (currentBalanceInTokens < result[0]): 0 0123456789 - 0 0076144187 = 0 0047312602
         result[3] = paymentAmount.sub(result[1]);
     }
 
