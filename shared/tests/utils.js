@@ -186,6 +186,11 @@ function calculatePurchase(
 
     result.cost = saveReconvertByRate(result.costUSD, methodDecimals, methodAmountPriceUSD);
 
+    if (result.cost.eq(0)) {
+        result.tokenAmount = new BigNumber(0);
+        result.costUSD = new BigNumber(0);
+    }
+
     result.change = paymentAmount.sub(result.cost);
 
     return result;
