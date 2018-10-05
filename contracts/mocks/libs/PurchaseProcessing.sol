@@ -4,8 +4,6 @@ import "../../libs/PurchaseProcessing.sol";
 
 contract PurchaseProcessingMock {
 
-    bool public _checkInvoiceInputCallResult;
-
     function checkInvoiceInput(
         bytes32 method,
         uint paymentAmount,
@@ -14,8 +12,8 @@ contract PurchaseProcessingMock {
         uint currentBalanceInTokens,
         uint tokenDecimals,
         uint methodDecimals
-    ) public payable {
-        _checkInvoiceInputCallResult = PurchaseProcessing.checkInvoiceInput(
+    ) public view returns(bool) {
+        return PurchaseProcessing.checkInvoiceInput(
             method,
             paymentAmount,
             methodUSDRate,
@@ -25,9 +23,6 @@ contract PurchaseProcessingMock {
             methodDecimals
         );
     }
-
-    uint[5] public __invoiceCallResult;
-    function _invoiceCallResult() public view returns(uint[5]) { return __invoiceCallResult; }
 
     function invoice(
         bytes32 method,
@@ -41,9 +36,9 @@ contract PurchaseProcessingMock {
         uint methodDecimals,
         uint currentBalanceInTokens
     )
-        public payable
+        public view returns(uint[5])
     {
-        __invoiceCallResult = PurchaseProcessing.invoice(
+        return PurchaseProcessing.invoice(
             method,
             paymentAmount,
             discount,
@@ -57,11 +52,8 @@ contract PurchaseProcessingMock {
         );
     }
 
-    uint[2] public __feeCallResult;
-    function _feeCallResult() public view returns(uint[2]) {return __feeCallResult;}
-
-    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) public {
-        __feeCallResult = PurchaseProcessing.fee(
+    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) public view returns(uint[2]) {
+        return PurchaseProcessing.fee(
             tokenAmount,
             cost,
             tokenFee,
@@ -106,4 +98,6 @@ contract PurchaseProcessingMock {
             volumeBonuses
         );
     }
+
+    function () public payable {}
 }

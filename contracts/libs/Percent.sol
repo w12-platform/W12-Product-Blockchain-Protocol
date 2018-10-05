@@ -11,8 +11,6 @@ library Percent {
     function MAX() public pure returns (uint) { return 10 ** EXP(); }
 
     function percent(uint _a, uint _b) internal pure returns (uint) {
-        require(isPercent(_b));
-
         return _a.mul(_b).div(MAX());
     }
 

@@ -1,6 +1,7 @@
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const Percent = artifacts.require('Percent');
+const Utils = artifacts.require('Utils');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
 const W12FundFactory = artifacts.require('W12FundFactory');
@@ -11,6 +12,7 @@ const utils = require('../shared/utils');
 module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
         await utils.deploy(network, deployer, Percent);
+        await utils.deploy(network, deployer, Utils);
 
         W12CrowdsaleStub.link(Percent);
         W12Crowdsale.link(Percent);
@@ -18,6 +20,7 @@ module.exports = function (deployer, network, accounts) {
 
         if (network === 'development') {
             PurchaseProcessingMock.link(Percent);
+            PurchaseProcessingMock.link(Utils);
         }
     });
 
