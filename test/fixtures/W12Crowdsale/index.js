@@ -1,6 +1,7 @@
 const WToken = artifacts.require('WToken');
 const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const W12Fund = artifacts.require('W12Fund');
+const Rates = artifacts.require('Rates');
 
 const utils = require('../../../shared/tests/utils.js');
 
@@ -57,6 +58,7 @@ async function generateW12CrowdsaleStubWithDifferentToken(
         };
 
         const fund = await W12Fund.new(0, utils.toInternalPercent(tranchePercent), {from: owner});
+        const rates = await Rates.new({from: owner});
         const crowdsale = await W12CrowdsaleStub.new(
             0,
             originToken.address,
@@ -67,6 +69,7 @@ async function generateW12CrowdsaleStubWithDifferentToken(
             utils.toInternalPercent(serviceFee),
             utils.toInternalPercent(saleFee),
             fund.address,
+            rates.address,
             {from: owner}
         );
         const wtokenOwner = await wtoken.owner();
@@ -79,6 +82,7 @@ async function generateW12CrowdsaleStubWithDifferentToken(
 
         item.fund = fund;
         item.crowdsale = crowdsale;
+        item.rates = rates;
 
         list.push(item);
     }

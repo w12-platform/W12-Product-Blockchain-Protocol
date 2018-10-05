@@ -2,6 +2,7 @@ require('../shared/tests/setup.js');
 
 const utils = require('../shared/tests/utils.js');
 
+const Token = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
 const helpers = require('./fixtures/W12Crowdsale');
 const defaultStagesGenerator = utils.createStagesGenerator();
@@ -80,10 +81,20 @@ contract('W12Crowdsale', async (accounts) => {
     });
 
     describe('setup', async () => {
+        const paymentMethods = [
+            'ETH',
+            'TT',
+        ];
+        const paymentMethodsBytes32List = paymentMethods.map(m => web3.fromUtf8(m));
         let sut;
 
         beforeEach(async () => {
             sut = crowdsales[0].crowdsale;
+
+            const token = await Token.new('TT', 'TT', 18);
+
+            await crowdsales[0].rates.addSymbol(paymentMethodsBytes32List[0]);
+            await crowdsales[0].rates.addSymbolWithTokenAddress(paymentMethodsBytes32List[1], token.address);
         });
 
         describe('should setup', async () => {
@@ -152,7 +163,7 @@ contract('W12Crowdsale', async (accounts) => {
                         tranchePercent: utils.toInternalPercent(50)
                     }
                 ]);
-                params = utils.packSetupCrowdsaleParameters(stages, milestones);
+                params = utils.packSetupCrowdsaleParameters(stages, milestones, paymentMethodsBytes32List);
                 txOut = sut.setup(...params, {from: owner});
             });
 
@@ -200,6 +211,15 @@ contract('W12Crowdsale', async (accounts) => {
                     actualMilestone[5].should.be.eq(encoded.descriptionHex);
                 }
             });
+
+            it('should set payment methods', async () => {
+                const actual = await sut.getPaymentMethodsList();
+
+                actual.should.to.be.a('array');
+                actual.length.should.to.be.eq(2);
+                web3.toUtf8(actual[0]).should.to.be.eq(paymentMethods[0]);
+                web3.toUtf8(actual[1]).should.to.be.eq(paymentMethods[1]);
+            });
         });
 
         it('should revert if stages is not in ascending order', async () => {
@@ -217,7 +237,7 @@ contract('W12Crowdsale', async (accounts) => {
                     ]
                 }
             ]);
-            const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate));
+            const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
 
             await sut.setup(...params, { from: owner })
                 .should.be.rejectedWith(utils.EVMRevert);
@@ -247,7 +267,7 @@ contract('W12Crowdsale', async (accounts) => {
                     item.withdrawalWindow
                 );
             });
-            const params = utils.packSetupCrowdsaleParameters(stages, expectedMilestones);
+            const params = utils.packSetupCrowdsaleParameters(stages, expectedMilestones, paymentMethodsBytes32List);
 
             await sut.setup(...params, {from: owner})
                 .should.be.fulfilled;
@@ -287,7 +307,7 @@ contract('W12Crowdsale', async (accounts) => {
                     withdrawalWindow: startDate + 1200
                 }
             ]);
-            const params = utils.packSetupCrowdsaleParameters(stages, milestones);
+            const params = utils.packSetupCrowdsaleParameters(stages, milestones, paymentMethodsBytes32List);
 
             await sut.setup(...params, {from: owner}).should.be.rejectedWith(utils.EVMRevert);
         });
@@ -304,7 +324,7 @@ contract('W12Crowdsale', async (accounts) => {
                     startDate + 121,
                 ]
             });
-            const params = utils.packSetupCrowdsaleParameters(discountStages, milestones);
+            const params = utils.packSetupCrowdsaleParameters(discountStages, milestones, paymentMethodsBytes32List);
 
             await sut.setup(...params, { from: owner })
                 .should.be.rejectedWith(utils.EVMRevert);
@@ -322,7 +342,7 @@ contract('W12Crowdsale', async (accounts) => {
                     startDate + 121,
                 ]
             });
-            const params = utils.packSetupCrowdsaleParameters(discountStages, milestones);
+            const params = utils.packSetupCrowdsaleParameters(discountStages, milestones, paymentMethodsBytes32List);
 
             await sut.setup(...params, {from: owner})
                 .should.be.rejectedWith(utils.EVMRevert);
@@ -357,7 +377,7 @@ contract('W12Crowdsale', async (accounts) => {
                         discount: utils.toInternalPercent(10)
                     }
                 ]);
-                const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate));
+                const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
 
                 await sut.setup(...params, {from: owner});
             });
@@ -403,7 +423,7 @@ contract('W12Crowdsale', async (accounts) => {
                         utils.toInternalPercent(3)
                     ]
                 });
-                const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate));
+                const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
 
                 await sut.setup(...params, {from: owner})
                     .should.be.fulfilled;
@@ -436,7 +456,7 @@ contract('W12Crowdsale', async (accounts) => {
                         utils.toInternalPercent(3)
                     ]
                 });
-                const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate));
+                const params = utils.packSetupCrowdsaleParameters(stages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
 
                 await sut.setup(...params, {from: owner})
                     .should.be.rejectedWith(utils.EVMRevert);
@@ -497,7 +517,7 @@ contract('W12Crowdsale', async (accounts) => {
                         item.withdrawalWindow
                     );
                 });
-                const params = utils.packSetupCrowdsaleParameters(discountStages, expectedMilestones);
+                const params = utils.packSetupCrowdsaleParameters(discountStages, expectedMilestones, paymentMethodsBytes32List);
 
                 await sut.setup(...params, {from: owner})
                     .should.be.fulfilled;
@@ -576,6 +596,7 @@ contract('W12Crowdsale', async (accounts) => {
         const notBuyer = accounts[7];
         let firstCrowdsale;
         let firstCrowdsaleFund;
+        let firstCrowdsaleRates;
         let firstCrowdsaleWToken;
         let firstCrowdsaleOriginToken;
         let discountStages;
@@ -585,6 +606,7 @@ contract('W12Crowdsale', async (accounts) => {
         beforeEach(async () => {
             firstCrowdsale = crowdsales[0].crowdsale;
             firstCrowdsaleFund = crowdsales[0].fund;
+            firstCrowdsaleRates = crowdsales[0].rates;
             firstCrowdsaleWToken = crowdsales[0].wtoken;
             firstCrowdsaleOriginToken = crowdsales[0].originToken;
             oneWToken = new BigNumber(10).pow(await firstCrowdsaleWToken.decimals());
