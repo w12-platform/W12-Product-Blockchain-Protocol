@@ -6,6 +6,8 @@ import "./roles/IPricer.sol";
 contract IRates is ISymbols, IPricerRole {
     address public owner;
 
+    function addSymbolWithTokenAddress(bytes32 symbol, address _address) public;
+
     function setTokenAddress(bytes32 symbol, address _address) public;
 
     function getTokenAddress(bytes32 symbol) public view returns (address);

@@ -9,7 +9,7 @@ contract Rates is IRates, Symbols, PricerRole, Ownable {
     mapping (bytes32 => uint) rates;
     mapping (bytes32 => address) tokenAddress;
 
-    function addSymbol(bytes32 symbol, address _address) public onlyPricer {
+    function addSymbolWithTokenAddress(bytes32 symbol, address _address) public onlyPricer {
         Symbols.addSymbol(symbol);
 
         if (_address != address(0)) setTokenAddress(symbol, _address);
