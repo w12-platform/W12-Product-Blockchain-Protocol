@@ -55,7 +55,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         bytes description;
     }
 
-    event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
+    event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
     event StagesUpdated();
     event StageUpdated(uint index);
     event MilestonesUpdated();
@@ -386,31 +386,16 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             require(rates.getTokenAddress(method) != address(0));
         }
 
-        (uint index, ) = getCurrentStageIndex();
+        (uint index, /*bool found*/) = getCurrentStageIndex();
 
-        // [tokenAmount, cost, costUSD, change, actualTokenPriceUSD]
-        uint[5] memory invoice = PurchaseProcessing.invoice(
-            method,
-            amount,
-            stages[index].discount,
-            stages[index].volumeBoundaries,
-            stages[index].volumeBonuses,
-            rates.get(method),
-            price,
-            uint(token.decimals()),
-            PurchaseProcessing.METHOD_ETH() == method
-                ? 18
-                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
-            token.balanceOf(address(this))
-        );
-
-        uint[2] memory fee = PurchaseProcessing.fee(invoice[0], invoice[1], WTokenSaleFeePercent, serviceFee);
+        uint[5] memory invoice = getInvoice(method, amount);
+        uint[2] memory fee = getFee(invoice[0], invoice[1]);
 
         _transferFee(fee, method);
         _transferPurchase(invoice, stages[index].vesting, method);
         _recordPurchase(invoice, fee, method);
 
-//        emit TokenPurchase(msg.sender, invoice, tokenAmount, change);
+        emit TokenPurchase(msg.sender, invoice[0], invoice[1], invoice[3]);
     }
 
     function _transferFee(uint[2] memory fee, bytes32 method) internal {
@@ -453,6 +438,31 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
         return paymentMethods.isAllowed(_method);
+    }
+
+    function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        return PurchaseProcessing.invoice(
+            method,
+            amount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            rates.get(method),
+            price,
+            uint(token.decimals()),
+            PurchaseProcessing.METHOD_ETH() == method
+                ? 18
+                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
+            token.balanceOf(address(this))
+        );
+    }
+
+    function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
+        return PurchaseProcessing.fee(tokenAmount, cost, WTokenSaleFeePercent, serviceFee);
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {

@@ -109,6 +109,31 @@ function fromInternalUSD (usd) {
     return usd.div(10 ** 8);
 }
 
+function saveConvertByRate(value, decimals, rate) {
+    const ten = new BigNumber(10);
+    value = new BigNumber(value);
+    decimals = new BigNumber(decimals);
+    rate = new BigNumber(rate);
+
+    return round(value.div(ten.pow(decimals)))
+        .mul(rate)
+        .add(
+            round(value
+                .mod(ten.pow(decimals))
+                .mul(rate)
+                .div(ten.pow(decimals)))
+        );
+}
+
+function saveReconvertByRate(value, decimals, rate) {
+    const ten = new BigNumber(10);
+    value = new BigNumber(value);
+    decimals = new BigNumber(decimals);
+    rate = new BigNumber(rate);
+
+    return round(value.div(rate)).mul(ten.pow(decimals)).add(round(value.mod(rate).mul(ten.pow(decimals)).div(rate)));
+}
+
 function calculatePurchase(
     method,
     paymentAmount,
@@ -140,11 +165,7 @@ function calculatePurchase(
         actualTokenPriceUSD: new BigNumber(0)
     };
 
-    result.costUSD = round(
-        paymentAmount
-            .mul(methodAmountPriceUSD)
-            .div(ten.pow(methodDecimals))
-    );
+    result.costUSD = saveConvertByRate(paymentAmount, methodDecimals, methodAmountPriceUSD);
 
     const volumeBonus = getPurchaseBonus(result.costUSD, volumeBoundaries, volumeBonuses);
 
@@ -152,27 +173,18 @@ function calculatePurchase(
         ? percent(tokenPriceUSD, oneHundredPercent.sub(stageDiscount))
         : tokenPriceUSD;
 
-    result.tokenAmount = round(
-        result.costUSD
-            .mul(oneHundredPercent.add(volumeBonus))
-            .mul(ten.pow(tokenDecimals))
-            .div(result.actualTokenPriceUSD.mul(oneHundredPercent))
+    result.tokenAmount = saveReconvertByRate(
+        percent(result.costUSD, oneHundredPercent.add(volumeBonus)),
+        tokenDecimals,
+        result.actualTokenPriceUSD
     );
 
     if (currentBalanceInTokens.lt(result.tokenAmount)) {
-        result.costUSD = round(
-            currentBalanceInTokens
-                .mul(result.actualTokenPriceUSD)
-                .div(ten.pow(tokenDecimals))
-        );
+        result.costUSD = saveConvertByRate(currentBalanceInTokens, tokenDecimals, result.actualTokenPriceUSD);
         result.tokenAmount = currentBalanceInTokens;
     }
 
-    result.cost = round(
-        result.costUSD
-            .mul(ten.pow(methodDecimals))
-            .div(methodAmountPriceUSD)
-    );
+    result.cost = saveReconvertByRate(result.costUSD, methodDecimals, methodAmountPriceUSD);
 
     result.change = paymentAmount.sub(result.cost);
 
@@ -321,5 +333,7 @@ module.exports = {
     toInternalUSD,
     fromInternalUSD,
     getPurchaseRoundLoss,
-    getPurchaseBonus
+    getPurchaseBonus,
+    saveConvertByRate,
+    saveReconvertByRate
 }

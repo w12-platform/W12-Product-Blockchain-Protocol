@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Percent.sol";
+import "./Utils.sol";
 import "../token/IWToken.sol";
 
 library PurchaseProcessing {
@@ -19,23 +20,23 @@ library PurchaseProcessing {
         uint currentBalanceInTokens,
         uint tokenDecimals,
         uint methodDecimals
-    ) internal returns(bool result) {
+    ) internal view returns(bool result) {
         result = paymentAmount > 0
             && methodUSDRate > 0
             && tokenUSDRate > 0
             && currentBalanceInTokens >= 10 ** tokenDecimals;
 
         if (method == METHOD_ETH()) {
-            result = result && paymentAmount == msg.value && methodDecimals == 18;
+            result = result && methodDecimals == 18;
         }
     }
 
     /**
-     * @notice Calculate invoice
+     * @notice Generate invoice
      * @dev 1 USD = 10^8. In this case precision will be up to 10^8 decimals after point
      * @param method Payment method
      * @param paymentAmount Payment amount
-     * @param discount Discount
+     * @param discount Discount percent
      * @param volumeBoundaries Volume boundaries to calculate bonus
      * @param volumeBonuses List of bonuses bound to boundaries
      * @param methodUSDRate Payment method rate in USD
@@ -65,7 +66,7 @@ library PurchaseProcessing {
         uint methodDecimals,
         uint currentBalanceInTokens
     )
-        internal returns(uint[5] result)
+        internal view returns(uint[5] result)
     {
         require(checkInvoiceInput(
             method,
@@ -79,7 +80,8 @@ library PurchaseProcessing {
 
         // costUSD
         // 0 0123456789 * 0 00012345 / 10 ** 10 = 0 00000152 . 4074060205
-        result[2] = paymentAmount.mul(methodUSDRate).div(10 ** methodDecimals);
+        // 13 * 0 00012345 +
+        result[2] = Utils.saveConvertByRate(paymentAmount, methodDecimals, methodUSDRate);
 
         // min costUSD = tokenUSDRate
         // tokenUSDRate = 1 00005555
@@ -96,23 +98,20 @@ library PurchaseProcessing {
 
         // tokens
         // 0 00000152 * (10000 + 1333) * 10 ** 10 / (0 77784320 * 10000) = 0 0000022146 . 057200217216
-        result[0] = result[2]
-            .mul(Percent.MAX().add(bonus))
-            .mul(10 ** tokenDecimals)
-            .div(result[4].mul(Percent.MAX()));
+//        result[0] = Utils.saveReconvertByRate(result[2].percent(Percent.MAX().add(bonus)), tokenDecimals, result[4]);
+        result[0] = Utils.saveReconvertByRate(result[2].percent(Percent.MAX().add(bonus)), tokenDecimals, result[4]);
 
         // if current balance is not enough
         if (currentBalanceInTokens < result[0]) {
             // 0 0000012146 * 0 77784320 / 10 ** 10 = 0 00000094 . 476835072
-            result[2] = currentBalanceInTokens.mul(result[4])
-                .div(10 ** tokenDecimals);
+            result[2] = Utils.saveConvertByRate(currentBalanceInTokens, tokenDecimals, result[4]);
             result[0] = currentBalanceInTokens;
         }
 
         // cost
         // 0 00000152 * 10 ** 10 / 0 00012345 = 0 0123126771 . 97245848
         // if (currentBalanceInTokens < result[0]): 0 00000094 * 10 ** 10 / 0 00012345 = 0 0076144187 . 93033616
-        result[1] = result[2].mul(10 ** methodDecimals).div(methodUSDRate);
+        result[1] = Utils.saveReconvertByRate(result[2], methodDecimals, methodUSDRate);
 
         // change
         // 0 0123456789 - 0 0123126771 = 0 0000330018
@@ -120,7 +119,7 @@ library PurchaseProcessing {
         result[3] = paymentAmount.sub(result[1]);
     }
 
-    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal returns(uint[2] result) {
+    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal view returns(uint[2] result) {
         if (tokenFee > 0) result[0] = tokenAmount.percent(tokenFee);
         if (purchaseFee > 0) result[1] = cost.percent(purchaseFee);
     }
@@ -159,9 +158,18 @@ library PurchaseProcessing {
 
     function transferPurchase(uint[5] _invoice, uint32 vesting, bytes32 method, address methodToken, address token) internal {
         require(token != address(0));
+        require(_invoice[0] != 0);
+        require(_invoice[1] != 0);
 
-        if (_invoice[3] > 0 && method != METHOD_ETH()) {
+        if (method == METHOD_ETH()) {
+            require(msg.value >= _invoice[1]);
+        }
+
+        if (method != METHOD_ETH()) {
             require(methodToken != address(0));
+            require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1]);
+
+            require(ERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1]));
         }
 
         require(IWToken(token).vestingTransfer(msg.sender, _invoice[0], vesting));
@@ -169,8 +177,6 @@ library PurchaseProcessing {
         if (_invoice[3] > 0) {
             if (method == METHOD_ETH()) {
                 msg.sender.transfer(_invoice[3]);
-            } else {
-                require(ERC20(token).transfer(msg.sender, _invoice[3]));
             }
         }
     }

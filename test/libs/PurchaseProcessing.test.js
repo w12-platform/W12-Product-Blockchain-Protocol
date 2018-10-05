@@ -3,8 +3,14 @@ require('../../shared/tests/setup.js');
 const utils = require('../../shared/tests/utils.js');
 
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
+const Token = artifacts.require('WToken');
+const ten = new BigNumber(10);
 
-contract('PurchaseProcessing', () => {
+contract('PurchaseProcessing', (accounts) => {
+    const exchangerAddress = accounts[1];
+    const serviceWalletAddress = accounts[2];
+    const investor1Address = accounts[3];
+    const investor2Address = accounts[4];
     const ctx = {};
 
     beforeEach(async () => {
@@ -16,7 +22,7 @@ contract('PurchaseProcessing', () => {
         describe('correct arguments', () => {
 
             beforeEach(async () => {
-                ctx.Tx = ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 1, 0, 18, {value: 1});
+                ctx.Tx = ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 1, 0, 18);
             });
 
             it('should`t revert', async () => {
@@ -25,9 +31,7 @@ contract('PurchaseProcessing', () => {
             });
 
             it('should check result to be true', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.Tx;
 
                 actual.should.to.be.true;
             });
@@ -36,72 +40,55 @@ contract('PurchaseProcessing', () => {
         describe('incorrect arguments', () => {
 
             it('should to be false for `paymentAmount`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 0, 1, 1, 1, 0, 18, {value: 1});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 0, 1, 1, 1, 0, 18);
 
                 actual.should.to.be.false;
             });
 
             it('should to be false for `methodUSDRate`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 0, 1, 1, 0, 18, {value: 1});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 0, 1, 1, 0, 18);
 
                 actual.should.to.be.false;
             });
 
             it('should to be false for `tokenUSDRate`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 0, 1, 0, 18, {value: 1});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 0, 1, 0, 18);
 
                 actual.should.to.be.false;
             });
 
             it('should to be false for `currentBalanceInTokens`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 0, 0, 18, {value: 1});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
-
-                actual.should.to.be.false;
-            });
-
-            it('should to be false for `msg.value`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 1, 0, 18, {value: 0});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 0, 0, 18);
 
                 actual.should.to.be.false;
             });
 
             it('should to be false for `methodDecimal`', async () => {
-                await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 1, 0, 0, {value: 1});
-
-                const actual = await ctx.lib._checkInvoiceInputCallResult();
+                const actual = await ctx.lib.checkInvoiceInput(web3.fromUtf8('ETH'), 1, 1, 1, 1, 0, 0);
 
                 actual.should.to.be.false;
             });
         });
     });
 
-    // bytes32 method,
-    //         uint paymentAmount,
-    //         uint discount,
-    //         uint[] volumeBoundaries,
-    //         uint[] volumeBonuses,
-    //         uint methodUSDRate,
-    //         uint tokenUSDRate,
-    //         uint tokenDecimals,
-    //         uint methodDecimals,
-    //         uint currentBalanceInTokens
-    // [tokenAmount, cost, costUSD, change, actualTokenPriceUSD]
-    describe('invoice', () => {
+    describe('get bonus', () => {
+        beforeEach(async () => {
+            ctx.Tx = ctx.lib.getBonus(2, [1, 2, 3], [1, 2, 3]);
+        });
+
+        it('should return', async () => {
+            const actual = await ctx.Tx;
+
+            actual.should.bignumber.eq(2);
+        });
+    });
+
+    describe('prepare invoice', () => {
 
         describe('should work', () => {
 
             beforeEach(async () => {
-                ctx.Tx = ctx.lib.invoice(web3.fromUtf8('ETH'), 1, 0, [], [], web3.toWei(1, 'ether'), 1, 0, 18, 1, {value: 1});
+                ctx.Tx = ctx.lib.invoice(web3.fromUtf8('ETH'), 1, 0, [], [], web3.toWei(1, 'ether'), 1, 0, 18, 1);
             });
 
             it('should`t revert', async () => {
@@ -110,9 +97,7 @@ contract('PurchaseProcessing', () => {
             });
 
             it('should produce correct result', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.lib._invoiceCallResult();
+                const actual = await ctx.Tx;
 
                 actual[0].should.bignumber.eq(1);
                 actual[1].should.bignumber.eq(1);
@@ -123,7 +108,16 @@ contract('PurchaseProcessing', () => {
         });
 
         describe('calculation with different values', () => {
-            const ten = new BigNumber(10);
+            const getTitle = (index, expected, _argument) =>
+                `should work for case #${index}` +
+                `\n\t * token bought amount ${expected.tokenAmount.toString()} ` +
+                `\n\t * cost ${expected.cost.toString()} ` +
+                `\n\t * round loss ${utils.getPurchaseRoundLoss(
+                    expected.tokenAmount, expected.cost,
+                    _argument[5], _argument[6],
+                    _argument[7], _argument[8]
+                ).toString()} USD`
+            ;
             const _arguments = [
                 [
                     web3.fromUtf8('TT'), ten.pow(10),
@@ -139,32 +133,492 @@ contract('PurchaseProcessing', () => {
                     utils.toInternalUSD(1.19123), utils.toInternalUSD(1.12123),
                     10, 5, BigNumber.UINT_MAX.div(2)
                 ],
+                [
+                    web3.fromUtf8('TT'), 5,
+                    utils.toInternalPercent(32.12),
+                    [utils.toInternalUSD(1)], [utils.toInternalPercent(11.79)],
+                    utils.toInternalUSD(0.5), utils.toInternalUSD(0.01),
+                    2, 0, BigNumber.UINT_MAX.div(2)
+                ],
+                [
+                    web3.fromUtf8('TT'), ten.pow(75),
+                    utils.toInternalPercent(7.15),
+                    [utils.toInternalUSD(1)], [utils.toInternalPercent(19.79)],
+                    utils.toInternalUSD(3.9712), utils.toInternalUSD(0.019654),
+                    3, 75, BigNumber.UINT_MAX.div(2)
+                ],
+                [
+                    web3.fromUtf8('TT'), ten.pow(75),
+                    utils.toInternalPercent(1.15),
+                    [utils.toInternalUSD(1)], [utils.toInternalPercent(14.79)],
+                    utils.toInternalUSD(3.9712), utils.toInternalUSD(1.3713),
+                    65, 75, BigNumber.UINT_MAX
+                ],
+                [
+                    web3.fromUtf8('TT'), 5,
+                    utils.toInternalPercent(32.12),
+                    [utils.toInternalUSD(1)], [utils.toInternalPercent(11.79)],
+                    utils.toInternalUSD(0.5), utils.toInternalUSD(0.01),
+                    2, 0, 200
+                ],
             ];
 
             for (const index in _arguments) {
-                it(`should work for case #${index}`, async () => {
-                    const expected = utils.calculatePurchase(..._arguments[index]);
+                const expected = utils.calculatePurchase(..._arguments[index]);
 
-                    await ctx.lib.invoice(..._arguments[index]);
-
-                    const actual = await ctx.lib._invoiceCallResult();
+                it(getTitle(index, expected, _arguments[index]), async () => {
+                    const actual = await ctx.lib.invoice(..._arguments[index]);
 
                     actual[0].should.bignumber.eq(expected.tokenAmount);
                     actual[1].should.bignumber.eq(expected.cost);
                     actual[2].should.bignumber.eq(expected.costUSD);
                     actual[3].should.bignumber.eq(expected.change);
                     actual[4].should.bignumber.eq(expected.actualTokenPriceUSD);
-
-                    console.log(
-                        `round loss for set #${index} is `,
-                        utils.getPurchaseRoundLoss(
-                            actual[0], actual[1],
-                            _arguments[index][5], _arguments[index][6],
-                            _arguments[index][7], _arguments[index][8]
-                        ).toString(), ' USD'
-                    );
                 });
             }
+        });
+
+        describe('limits, security, checks', () => {
+            it('should revert if payment less then price amount of one token', async () => {
+                const _arguments = [
+                    web3.fromUtf8('TT'), ten.pow(10),
+                    utils.toInternalPercent(1.15),
+                    [utils.toInternalUSD(1)], [utils.toInternalPercent(14.79)],
+                    utils.toInternalUSD(0.012), utils.toInternalUSD(1.3713),
+                    10, 10, BigNumber.UINT_MAX.div(2)
+                ];
+
+                await ctx.lib.invoice(..._arguments)
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+        });
+    });
+
+    describe('fee calculation', () => {
+        beforeEach(async () => {
+            ctx.Tx = ctx.lib.fee(10, 10, utils.toInternalPercent(10), utils.toInternalPercent(10));
+        });
+
+        it('should`t revert', async () => {
+            await ctx.Tx
+                .should.to.be.fulfilled;
+        });
+
+        it('should return correct result', async () => {
+            const actual = await ctx.Tx;
+
+            actual[0].should.bignumber.eq(utils.percent(10, utils.toInternalPercent(10)));
+            actual[1].should.bignumber.eq(utils.percent(10, utils.toInternalPercent(10)));
+        });
+    });
+
+    describe('transferring fee', () => {
+        const oneToken = new BigNumber(10 ** 18);
+
+        beforeEach(async () => {
+            ctx.Token1 = await Token.new('1', '1', 18);
+            ctx.Token2 = await Token.new('2', '2', 18);
+            ctx.Token3 = await Token.new('3', '3', 18);
+        });
+
+        describe('pay with token', () => {
+            const mint = 1000;
+            const fee = [oneToken, oneToken];
+
+            beforeEach(async () => {
+                await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+                await ctx.Token3.mint(ctx.lib.address, oneToken.mul(mint), 0);
+
+                // approve to spend fee from exchanger
+                await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
+
+                ctx.Tx = ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('1'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    serviceWalletAddress
+                );
+            });
+
+            it('should`t revert', async () => {
+                await ctx.Tx
+                    .should.to.be.fulfilled;
+            });
+
+            it('should send fee to service wallet in project token', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token1.balanceOf(serviceWalletAddress);
+
+                actual.should.bignumber.eq(fee[0]);
+            });
+
+            it('should send fee from exchanger in project token', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token1.balanceOf(exchangerAddress);
+
+                actual.should.bignumber.eq(oneToken.mul(mint).minus(fee[0]));
+            });
+
+            it('should send wtoken to exchanger for maintaining balance', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token2.balanceOf(exchangerAddress);
+
+                actual.should.bignumber.eq(fee[0]);
+            });
+
+            it('should send fee to service wallet in payment token', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token3.balanceOf(serviceWalletAddress);
+
+                actual.should.bignumber.eq(fee[1]);
+            });
+
+            it('should send fee from contract in payment token', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token3.balanceOf(ctx.lib.address);
+
+                actual.should.bignumber.eq(oneToken.mul(mint).minus(fee[1]));
+            });
+        });
+
+        describe('pay with eth', () => {
+            const mint = 1000;
+            const fee = [10, 10];
+
+            beforeEach(async () => {
+                await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+
+                // approve to spend fee from exchanger
+                await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
+                await web3.eth.sendTransaction({ value: fee[1], from: accounts[0], to: ctx.lib.address });
+
+                ctx.Tx = ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('ETH'),
+                    0,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    serviceWalletAddress
+                );
+            });
+
+            it('should`t revert', async () => {
+                await ctx.Tx
+                    .should.to.be.fulfilled;
+            });
+
+            it('should send fee to service wallet in eth', async () => {
+                const before = await web3.eth.getBalance(serviceWalletAddress);
+                await ctx.Tx;
+
+                const actual = await web3.eth.getBalance(serviceWalletAddress);
+
+                actual.should.bignumber.eq(before.plus(fee[1]));
+            });
+
+            it('should send fee from contract in eth', async () => {
+                await ctx.Tx;
+
+                const actual = await web3.eth.getBalance(ctx.lib.address);
+
+                actual.should.bignumber.eq(0);
+            });
+        });
+
+        describe('security and checks', () => {
+            const mint = 1000;
+            const fee = [10, 10];
+
+            beforeEach(async () => {
+                await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+
+                // approve to spend fee from exchanger
+                await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
+                await web3.eth.sendTransaction({value: fee[1], from: accounts[0], to: ctx.lib.address});
+            });
+
+            it('should revert if method token address is zero', async () => {
+                await ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('TOK'),
+                    0,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    serviceWalletAddress
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if wtoken address is zero', async () => {
+                await ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    0,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    serviceWalletAddress
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if project token address is zero', async () => {
+                await ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    0,
+                    exchangerAddress,
+                    serviceWalletAddress
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if exchanger address is zero', async () => {
+                await ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    0,
+                    serviceWalletAddress
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if service wallet address is zero', async () => {
+                await ctx.lib.transferFee(
+                    fee,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    0
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should not send any assets if no fee', async () => {
+                await ctx.lib.transferFee(
+                    [0, 0],
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    ctx.Token1.address,
+                    exchangerAddress,
+                    serviceWalletAddress
+                );
+
+                (await ctx.Token1.balanceOf(exchangerAddress))
+                    .should.bignumber.eq(oneToken.mul(mint));
+
+                (await ctx.Token2.balanceOf(ctx.lib.address))
+                    .should.bignumber.eq(oneToken.mul(mint));
+
+                (await web3.eth.getBalance(ctx.lib.address))
+                    .should.bignumber.eq(10);
+            });
+        });
+    });
+
+    describe('transferring purchase', () => {
+        const oneToken = new BigNumber(10 ** 18);
+
+        beforeEach(async () => {
+            ctx.Token1 = await Token.new('1', '1', 18);
+            ctx.Token2 = await Token.new('2', '2', 18);
+            ctx.Token3 = await Token.new('3', '3', 18);
+        });
+
+        describe('pay with token', () => {
+            const mint = 1000;
+            const invoice = [oneToken, oneToken, 0, oneToken, 0];
+
+            beforeEach(async () => {
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+                await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
+
+                await ctx.Token3.approve(ctx.lib.address, invoice[1], {from: investor1Address});
+                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+
+                ctx.Tx = ctx.lib.transferPurchase(
+                    invoice,
+                    0,
+                    web3.fromUtf8('1'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    { from: investor1Address }
+                );
+            });
+
+            it('should`t revert', async () => {
+                await ctx.Tx
+                    .should.to.be.fulfilled;
+            });
+
+            it('should send wtoken from contract', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token2.balanceOf(ctx.lib.address);
+
+                actual.should.bignumber.eq(oneToken.mul(mint).minus(oneToken));
+            });
+
+            it('should send wtoken to investor balance', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token2.balanceOf(investor1Address);
+
+                actual.should.bignumber.eq(oneToken);
+            });
+
+            it('should send payment token minus change to contract balance', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token3.balanceOf(ctx.lib.address);
+
+                actual.should.bignumber.eq(oneToken);
+            });
+
+            it('should send payment token from investor balance and get change', async () => {
+                await ctx.Tx;
+
+                const actual = await ctx.Token3.balanceOf(investor1Address);
+
+                actual.should.bignumber.eq(oneToken.mul(mint).minus(oneToken));
+            });
+        });
+
+        describe('pay with eth', () => {
+            const mint = 1000;
+            const invoice = [oneToken, 10, 0, 10, 0];
+
+            beforeEach(async () => {
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+                await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
+
+                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+
+                ctx.Tx = ctx.lib.transferPurchase(
+                    invoice,
+                    0,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address, value: 20}
+                );
+            });
+
+            it('should`t revert', async () => {
+                await ctx.Tx
+                    .should.to.be.fulfilled;
+            });
+
+
+            it('should send eth minus change to contract balance', async () => {
+                await ctx.Tx;
+
+                const actual = await web3.eth.getBalance(ctx.lib.address);
+
+                actual.should.bignumber.eq(10);
+            });
+
+            it('should send payment token from investor balance and get change', async () => {
+                const before = await web3.eth.getBalance(investor1Address);
+                const cost = await utils.getTransactionCost(await ctx.Tx);
+
+                const actual = await web3.eth.getBalance(investor1Address);
+
+                actual.should.bignumber.eq(before.minus(cost).minus(20).plus(10));
+            });
+        });
+
+        describe('security and checks', () => {
+            const mint = 1000;
+            const invoice = [oneToken, 10, 0, 10, 0];
+
+            beforeEach(async () => {
+                await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
+                await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
+                await ctx.Token3.approve(ctx.lib.address, oneToken.mul(mint), { from: investor1Address });
+                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+            });
+
+            it('should if project token address is zero', async () => {
+                await ctx.lib.transferPurchase(
+                    invoice,
+                    0,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    0,
+                    {from: investor1Address, value: 20}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should if payment token address is zero', async () => {
+                await ctx.lib.transferPurchase(
+                    invoice,
+                    0,
+                    web3.fromUtf8('TOK'),
+                    0,
+                    ctx.Token2.address,
+                    {from: investor1Address}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should if token purchase amount is zero', async () => {
+                await ctx.lib.transferPurchase(
+                    [0, 20, 0, 0, 0],
+                    0,
+                    web3.fromUtf8('TOK'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should if cost amount is zero', async () => {
+                await ctx.lib.transferPurchase(
+                    [20, 0, 0, 0, 0],
+                    0,
+                    web3.fromUtf8('TOK'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should if eth not enough', async () => {
+                await ctx.lib.transferPurchase(
+                    [20, 20, 0, 0, 0],
+                    0,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address, value: 1}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
         });
     });
 });
