@@ -445,6 +445,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
         if (!found) return;
 
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            if (rates.getTokenAddress(method) == address(0)) {
+                return;
+            }
+        }
+
         return PurchaseProcessing.invoice(
             method,
             amount,
