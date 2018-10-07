@@ -503,16 +503,6 @@ contract('W12Crowdsale', async (accounts) => {
                     .should.be.fulfilled;
             });
 
-            it('should`t return current milestone index', async () => {
-                await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate);
-
-                const result = await sut.getCurrentMilestoneIndex()
-                    .should.be.fulfilled;
-
-                result[0].should.bignumber.equal(0);
-                result[1].should.be.equal(false);
-            });
-
             it('should return current milestone index in case when current date between first and last milestone', async () => {
                 let expectedIndex = 0;
 
@@ -529,19 +519,9 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
-            it('should return last milestone index in case when current date gt last milestone', async () => {
-                await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
-
-                const result = await sut.getCurrentMilestoneIndex()
-                    .should.be.fulfilled
-
-                result[0].should.bignumber.equal(expectedMilestones.length - 1);
-                result[1].should.be.equal(true);
-            });
-
             it('must check that the function returns the correct Milestone index for each date in the given array', async () => {
                 const controlArray = [{
-                    time: startDate + utils.time.duration.minutes(60) - utils.time.duration.minutes(1),
+                    time: utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate) - utils.time.duration.minutes(1),
                     index: 0,
                     found: false
                 }, {
