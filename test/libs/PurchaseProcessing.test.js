@@ -1,6 +1,8 @@
 require('../../shared/tests/setup.js');
 
 const utils = require('../../shared/tests/utils.js');
+const testFee = require('../parts/transferringFeeTests');
+const testPurchase = require('../parts/transferringPurchaseTests');
 
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
 const Token = artifacts.require('WToken');
@@ -224,8 +226,17 @@ contract('PurchaseProcessing', (accounts) => {
         describe('pay with token', () => {
             const mint = 1000;
             const fee = [oneToken, oneToken];
+            const subCtx = {};
 
             beforeEach(async () => {
+                subCtx.originToken = ctx.Token1;
+                subCtx.WToken = ctx.Token2;
+                subCtx.PaymentToken = ctx.Token3;
+                subCtx.contractAddress = ctx.lib.address;
+                subCtx.serviceWalletAddress = serviceWalletAddress;
+                subCtx.exchangerAddress = exchangerAddress;
+                subCtx.expectedFee = fee;
+
                 await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
                 await ctx.Token3.mint(ctx.lib.address, oneToken.mul(mint), 0);
@@ -233,7 +244,7 @@ contract('PurchaseProcessing', (accounts) => {
                 // approve to spend fee from exchanger
                 await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
 
-                ctx.Tx = ctx.lib.transferFee(
+                ctx.Tx = subCtx.Tx = () => ctx.lib.transferFee(
                     fee,
                     web3.fromUtf8('1'),
                     ctx.Token3.address,
@@ -244,57 +255,23 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            it('should`t revert', async () => {
-                await ctx.Tx
-                    .should.to.be.fulfilled;
-            });
-
-            it('should send fee to service wallet in project token', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token1.balanceOf(serviceWalletAddress);
-
-                actual.should.bignumber.eq(fee[0]);
-            });
-
-            it('should send fee from exchanger in project token', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token1.balanceOf(exchangerAddress);
-
-                actual.should.bignumber.eq(oneToken.mul(mint).minus(fee[0]));
-            });
-
-            it('should send wtoken to exchanger for maintaining balance', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token2.balanceOf(exchangerAddress);
-
-                actual.should.bignumber.eq(fee[0]);
-            });
-
-            it('should send fee to service wallet in payment token', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token3.balanceOf(serviceWalletAddress);
-
-                actual.should.bignumber.eq(fee[1]);
-            });
-
-            it('should send fee from contract in payment token', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token3.balanceOf(ctx.lib.address);
-
-                actual.should.bignumber.eq(oneToken.mul(mint).minus(fee[1]));
-            });
+            testFee.defaultFee(subCtx);
+            testFee.paymentFeeInToken(subCtx);
         });
 
         describe('pay with eth', () => {
             const mint = 1000;
             const fee = [10, 10];
+            const subCtx = {};
 
             beforeEach(async () => {
+                subCtx.originToken = ctx.Token1;
+                subCtx.WToken = ctx.Token2;
+                subCtx.contractAddress = ctx.lib.address;
+                subCtx.serviceWalletAddress = serviceWalletAddress;
+                subCtx.exchangerAddress = exchangerAddress;
+                subCtx.expectedFee = fee;
+
                 await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
 
@@ -302,7 +279,7 @@ contract('PurchaseProcessing', (accounts) => {
                 await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
                 await web3.eth.sendTransaction({ value: fee[1], from: accounts[0], to: ctx.lib.address });
 
-                ctx.Tx = ctx.lib.transferFee(
+                ctx.Tx = subCtx.Tx = () => ctx.lib.transferFee(
                     fee,
                     web3.fromUtf8('ETH'),
                     0,
@@ -313,27 +290,8 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            it('should`t revert', async () => {
-                await ctx.Tx
-                    .should.to.be.fulfilled;
-            });
-
-            it('should send fee to service wallet in eth', async () => {
-                const before = await web3.eth.getBalance(serviceWalletAddress);
-                await ctx.Tx;
-
-                const actual = await web3.eth.getBalance(serviceWalletAddress);
-
-                actual.should.bignumber.eq(before.plus(fee[1]));
-            });
-
-            it('should send fee from contract in eth', async () => {
-                await ctx.Tx;
-
-                const actual = await web3.eth.getBalance(ctx.lib.address);
-
-                actual.should.bignumber.eq(0);
-            });
+            testFee.defaultFee(subCtx);
+            testFee.paymentFeeInETH(subCtx);
         });
 
         describe('security and checks', () => {
@@ -449,15 +407,25 @@ contract('PurchaseProcessing', (accounts) => {
         describe('pay with token', () => {
             const mint = 1000;
             const invoice = [oneToken, oneToken, 0, oneToken, 0];
+            const subCtx = {};
 
             beforeEach(async () => {
+                subCtx.WToken = ctx.Token2;
+                subCtx.PaymentToken = ctx.Token3;
+                subCtx.contractAddress = ctx.lib.address;
+                subCtx.serviceWalletAddress = serviceWalletAddress;
+                subCtx.exchangerAddress = exchangerAddress;
+                subCtx.investorAddress = investor1Address;
+                subCtx.expectedWTokenAmount = invoice[0];
+                subCtx.expectedPaymentTokenAmount = invoice[1];
+
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
                 await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
 
                 await ctx.Token3.approve(ctx.lib.address, invoice[1], {from: investor1Address});
                 await ctx.Token2.addTrustedAccount(ctx.lib.address);
 
-                ctx.Tx = ctx.lib.transferPurchase(
+                ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
                     0,
                     web3.fromUtf8('1'),
@@ -467,55 +435,31 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            it('should`t revert', async () => {
-                await ctx.Tx
-                    .should.to.be.fulfilled;
-            });
-
-            it('should send wtoken from contract', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token2.balanceOf(ctx.lib.address);
-
-                actual.should.bignumber.eq(oneToken.mul(mint).minus(oneToken));
-            });
-
-            it('should send wtoken to investor balance', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token2.balanceOf(investor1Address);
-
-                actual.should.bignumber.eq(oneToken);
-            });
-
-            it('should send payment token minus change to contract balance', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token3.balanceOf(ctx.lib.address);
-
-                actual.should.bignumber.eq(oneToken);
-            });
-
-            it('should send payment token from investor balance and get change', async () => {
-                await ctx.Tx;
-
-                const actual = await ctx.Token3.balanceOf(investor1Address);
-
-                actual.should.bignumber.eq(oneToken.mul(mint).minus(oneToken));
-            });
+            testPurchase.purchaseTransfer(subCtx);
+            testPurchase.paymentInTokenTransfer(subCtx);
         });
 
         describe('pay with eth', () => {
             const mint = 1000;
             const invoice = [oneToken, 10, 0, 10, 0];
+            const subCtx = {};
 
             beforeEach(async () => {
+                subCtx.WToken = ctx.Token2;
+                subCtx.PaymentToken = ctx.Token3;
+                subCtx.contractAddress = ctx.lib.address;
+                subCtx.serviceWalletAddress = serviceWalletAddress;
+                subCtx.exchangerAddress = exchangerAddress;
+                subCtx.investorAddress = investor1Address;
+                subCtx.expectedWTokenAmount = invoice[0];
+                subCtx.expectedPaymentETHAmount = invoice[1];
+
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
                 await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
 
                 await ctx.Token2.addTrustedAccount(ctx.lib.address);
 
-                ctx.Tx = ctx.lib.transferPurchase(
+                ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
                     0,
                     web3.fromUtf8('ETH'),
@@ -525,28 +469,8 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            it('should`t revert', async () => {
-                await ctx.Tx
-                    .should.to.be.fulfilled;
-            });
-
-
-            it('should send eth minus change to contract balance', async () => {
-                await ctx.Tx;
-
-                const actual = await web3.eth.getBalance(ctx.lib.address);
-
-                actual.should.bignumber.eq(10);
-            });
-
-            it('should send payment token from investor balance and get change', async () => {
-                const before = await web3.eth.getBalance(investor1Address);
-                const cost = await utils.getTransactionCost(await ctx.Tx);
-
-                const actual = await web3.eth.getBalance(investor1Address);
-
-                actual.should.bignumber.eq(before.minus(cost).minus(20).plus(10));
-            });
+            testPurchase.purchaseTransfer(subCtx);
+            testPurchase.paymentInETHTransfer(subCtx);
         });
 
         describe('security and checks', () => {
