@@ -55,6 +55,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         bytes description;
     }
 
+    event Debug1(uint[2] _fee);
+    event Debug2(uint[5] _in);
     event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
     event StagesUpdated();
     event StageUpdated(uint index);
@@ -392,17 +394,17 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint[2] memory fee = getFee(invoice[0], invoice[1]);
 
         _transferFee(fee, method);
-        _transferPurchase(invoice, stages[index].vesting, method);
+        _transferPurchase(invoice, fee, stages[index].vesting, method);
         _recordPurchase(invoice, fee, method);
 
         emit TokenPurchase(msg.sender, invoice[0], invoice[1], invoice[3]);
     }
 
-    function _transferFee(uint[2] memory fee, bytes32 method) internal {
+    function _transferFee(uint[2] _fee, bytes32 method) internal {
         PurchaseProcessing.transferFee(
-            fee,
+            _fee,
             method,
-            rates.getTokenAddress(method),
+            rates.isToken(method) ? rates.getTokenAddress(method) : address(0),
             address(token),
             address(originToken),
             swap,
@@ -410,17 +412,18 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         );
     }
 
-    function _transferPurchase(uint[5] memory invoice, uint32 vesting, bytes32 method) internal {
+    function _transferPurchase(uint[5] _invoice, uint[2] _fee, uint32 vesting, bytes32 method) internal {
         PurchaseProcessing.transferPurchase(
-            invoice,
+            _invoice,
+            _fee,
             vesting,
             method,
-            rates.getTokenAddress(method),
+            rates.isToken(method) ? rates.getTokenAddress(method) : address(0),
             address(token)
         );
     }
 
-    function _recordPurchase(uint[5] memory invoice, uint[2] memory fee, bytes32 method) internal {
+    function _recordPurchase(uint[5] _invoice, uint[2] _fee, bytes32 method) internal {
         // fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
     }
 
@@ -468,7 +471,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
-        return PurchaseProcessing.fee(tokenAmount, cost, WTokenSaleFeePercent, serviceFee);
+        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, WTokenSaleFeePercent);
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {

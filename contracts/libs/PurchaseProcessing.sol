@@ -20,7 +20,7 @@ library PurchaseProcessing {
         uint currentBalanceInTokens,
         uint tokenDecimals,
         uint methodDecimals
-    ) internal view returns(bool result) {
+    ) internal pure returns(bool result) {
         result = paymentAmount > 0
             && methodUSDRate > 0
             && tokenUSDRate > 0
@@ -120,8 +120,9 @@ library PurchaseProcessing {
         );
 
         // reset if cost is zero
-        if (result[1] == 0) {
+        if (result[1] == 0 || result[0] == 0) {
             result[0] = 0;
+            result[1] = 0;
             result[2] = 0;
         }
 
@@ -129,13 +130,13 @@ library PurchaseProcessing {
         result[3] = paymentAmount.sub(result[1]);
     }
 
-    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal view returns(uint[2] result) {
+    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal pure returns(uint[2] result) {
         if (tokenFee > 0) result[0] = tokenAmount.percent(tokenFee);
         if (purchaseFee > 0) result[1] = cost.percent(purchaseFee);
     }
 
     function transferFee(
-        uint [2] _fee,
+        uint[2] _fee,
         bytes32 method,
         address methodToken,
         address token,
@@ -161,15 +162,25 @@ library PurchaseProcessing {
             if (method == METHOD_ETH()) {
                 serviceWallet.transfer(_fee[1]);
             } else {
-                require(ERC20(methodToken).transfer(serviceWallet, _fee[1]));
+                require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _fee[1]);
+                require(ERC20(methodToken).transferFrom(msg.sender, serviceWallet, _fee[1]));
             }
         }
     }
 
-    function transferPurchase(uint[5] _invoice, uint32 vesting, bytes32 method, address methodToken, address token) internal {
+    function transferPurchase(
+        uint[5] _invoice,
+        uint[2] _fee,
+        uint32 vesting,
+        bytes32 method,
+        address methodToken,
+        address token
+    ) internal {
         require(token != address(0));
         require(_invoice[0] != 0);
         require(_invoice[1] != 0);
+        require(_invoice[0] > _fee[0]);
+        require(_invoice[1] > _fee[1]);
 
         if (method == METHOD_ETH()) {
             require(msg.value >= _invoice[1]);
@@ -177,9 +188,8 @@ library PurchaseProcessing {
 
         if (method != METHOD_ETH()) {
             require(methodToken != address(0));
-            require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1]);
-
-            require(ERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1]));
+            require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1].sub(_fee[1]));
+            require(ERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1].sub(_fee[1])));
         }
 
         require(IWToken(token).vestingTransfer(msg.sender, _invoice[0], vesting));

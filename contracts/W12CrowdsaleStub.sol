@@ -34,6 +34,10 @@ contract W12CrowdsaleStub is W12Crowdsale {
         return token.transfer(to, amount);
     }
 
+    function _outEther(address to) external {
+        return to.transfer(address(this).balance);
+    }
+
     function _setState(uint _WTokenSaleFeePercent) external {
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
     }
