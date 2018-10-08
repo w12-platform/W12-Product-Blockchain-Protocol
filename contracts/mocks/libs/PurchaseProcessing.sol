@@ -81,9 +81,10 @@ contract PurchaseProcessingMock {
         );
     }
 
-    function transferPurchase(uint[5] _invoice, uint32 vesting, bytes32 method, address methodToken, address token) public payable {
+    function transferPurchase(uint[5] _invoice, uint[2] _fee, uint32 vesting, bytes32 method, address methodToken, address token) public payable {
         PurchaseProcessing.transferPurchase(
             _invoice,
+            _fee,
             vesting,
             method,
             methodToken,
