@@ -1,10 +1,11 @@
 const utils = require('../../shared/tests/utils.js');
 
-const purchaseTransfer = (
+const defaultProcess = (
     ctx
     // {
     //     Tx
     //     expectedWTokenAmount,
+    //     expectedFee,
     //     originToken,
     //     WToken,
     //     contractAddress,
@@ -14,11 +15,6 @@ const purchaseTransfer = (
     // }
 ) => {
 
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
-
     it('should send wtoken from contract', async () => {
         const before = await ctx.WToken.balanceOf(ctx.contractAddress);
 
@@ -26,7 +22,7 @@ const purchaseTransfer = (
 
         const actual = await ctx.WToken.balanceOf(ctx.contractAddress);
 
-        actual.should.bignumber.eq(before.minus(ctx.expectedWTokenAmount));
+        actual.should.bignumber.eq(before.minus(ctx.expectedWTokenAmount).minus(ctx.expectedFee[0]));
     });
 
     it('should send wtoken to investor balance', async () => {
@@ -40,11 +36,12 @@ const purchaseTransfer = (
     });
 }
 
-const paymentInTokenTransfer = (
+const whenPaymentWithToken = (
     ctx
     // {
     //     Tx
     //     expectedPaymentTokenAmount,
+    //     expectedFee,
     //     originToken,
     //     WToken,
     //     PaymentToken,
@@ -54,11 +51,6 @@ const paymentInTokenTransfer = (
     //     investorAddress
     // }
 ) => {
-
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
 
     it('should send payment token minus change to contract balance', async () => {
         const before = await ctx.PaymentToken.balanceOf(ctx.contractAddress);
@@ -77,15 +69,16 @@ const paymentInTokenTransfer = (
 
         const actual = await ctx.PaymentToken.balanceOf(ctx.investorAddress);
 
-        actual.should.bignumber.eq(before.minus(ctx.expectedPaymentTokenAmount));
+        actual.should.bignumber.eq(before.minus(ctx.expectedPaymentTokenAmount).minus(ctx.expectedFee[1]));
     });
 }
 
-const paymentInETHTransfer = (
+const whenPaymentWithETH = (
     ctx
     // {
     //     Tx
     //     expectedPaymentETHAmount,
+    //     expectedFee,
     //     originToken,
     //     WToken,
     //     contractAddress,
@@ -94,11 +87,6 @@ const paymentInETHTransfer = (
     //     investorAddress
     // }
 ) => {
-
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
 
     it('should send eth minus change to contract balance', async () => {
         const before = await web3.eth.getBalance(ctx.contractAddress);
@@ -117,12 +105,12 @@ const paymentInETHTransfer = (
 
         const actual = await web3.eth.getBalance(ctx.investorAddress);
 
-        actual.should.bignumber.eq(before.minus(cost).minus(ctx.expectedPaymentETHAmount));
+        actual.should.bignumber.eq(before.minus(cost).minus(ctx.expectedPaymentETHAmount).minus(ctx.expectedFee[1]));
     });
 }
 
 module.exports = {
-    purchaseTransfer,
-    paymentInTokenTransfer,
-    paymentInETHTransfer
+    defaultProcess,
+    whenPaymentWithToken,
+    whenPaymentWithETH
 }

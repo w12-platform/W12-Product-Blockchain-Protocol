@@ -1,4 +1,4 @@
-const defaultFee = (
+const defaultProcess = (
     ctx
     // {
     //     Tx
@@ -11,11 +11,6 @@ const defaultFee = (
     //     serviceWalletAddress
     // }
 ) => {
-
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
 
     it('should send fee to service wallet in project token', async () => {
         const before = await ctx.originToken.balanceOf(ctx.serviceWalletAddress);
@@ -48,7 +43,7 @@ const defaultFee = (
     });
 }
 
-const paymentFeeInToken = (
+const whenPaymentWithToken = (
     ctx
     // {
     //     Tx
@@ -62,11 +57,6 @@ const paymentFeeInToken = (
     // }
 ) => {
 
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
-
     it('should send fee to service wallet in payment token', async () => {
         const before = await ctx.PaymentToken.balanceOf(ctx.serviceWalletAddress);
 
@@ -76,19 +66,9 @@ const paymentFeeInToken = (
 
         actual.should.bignumber.eq(before.plus(ctx.expectedFee[1]));
     });
-
-    it('should send fee from contract in payment token', async () => {
-        const before = await ctx.PaymentToken.balanceOf(ctx.contractAddress);
-
-        await ctx.Tx();
-
-        const actual = await ctx.PaymentToken.balanceOf(ctx.contractAddress);
-
-        actual.should.bignumber.eq(before.minus(ctx.expectedFee[1]));
-    });
 }
 
-const paymentFeeInETH = (
+const whenPaymentWithETH = (
     ctx
     // {
     //     Tx
@@ -100,11 +80,6 @@ const paymentFeeInETH = (
     //     serviceWalletAddress
     // }
 ) => {
-
-    it('should`t revert', async () => {
-        await ctx.Tx()
-            .should.to.be.fulfilled;
-    });
 
     it('should send fee to service wallet in eth', async () => {
         const before = await web3.eth.getBalance(ctx.serviceWalletAddress);
@@ -123,12 +98,12 @@ const paymentFeeInETH = (
 
         const actual = await web3.eth.getBalance(ctx.contractAddress);
 
-        actual.should.bignumber.eq(before.minus(ctx.expectedFee[1]));
+        actual.should.bignumber.eq(before.plus(ctx.expectedPaymentETHAmount));
     });
 }
 
 module.exports = {
-    defaultFee,
-    paymentFeeInToken,
-    paymentFeeInETH
+    defaultProcess,
+    whenPaymentWithToken,
+    whenPaymentWithETH
 }

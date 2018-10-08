@@ -28,7 +28,8 @@ module.exports = {
         }
     },
     mocha: {
-        grep: ''
+        grep: '',
+        bail: true
     },
     solc: {
         optimizer: {

@@ -38,10 +38,15 @@ async function generateW12CrowdsaleStubWithDifferentToken(
         mint
     }, originTokens, wtokens, owner
 ) {
+    mint = new BigNumber(mint);
+
     const list = [];
+    const ten = new BigNumber(10);
 
     for (const tokenIdx in wtokens) {
+        const wtokenDecimals = wtokens[tokenIdx].decimal;
         const wtoken = wtokens[tokenIdx].token;
+        const originTokenDecimals = originTokens[tokenIdx].decimal;
         const originToken = originTokens[tokenIdx].token;
         const item = {
             wtoken,
@@ -63,7 +68,7 @@ async function generateW12CrowdsaleStubWithDifferentToken(
             0,
             originToken.address,
             wtoken.address,
-            price,
+            utils.toInternalUSD(price),
             serviceWallet,
             swap,
             utils.toInternalPercent(serviceFee),
@@ -73,11 +78,17 @@ async function generateW12CrowdsaleStubWithDifferentToken(
             {from: owner}
         );
         const wtokenOwner = await wtoken.owner();
+        const originTokenOwner = await originToken.owner();
 
         await wtoken.addTrustedAccount(crowdsale.address, { from: wtokenOwner });
-        await wtoken.mint(crowdsale.address, mint, 0, {from: wtokenOwner});
-        await originToken.mint(swap, mint, 0, {from: wtokenOwner});
-        await originToken.approve(crowdsale.address, mint.mul(saleFee / 100), {from: swap});
+        await wtoken.mint(crowdsale.address, ten.pow(wtokenDecimals).mul(mint), 0, {from: wtokenOwner});
+        await originToken.mint(swap, ten.pow(originTokenDecimals).mul(mint), 0, {from: originTokenOwner});
+        await originToken.approve(
+            crowdsale.address,
+            utils.percent(ten.pow(originTokenDecimals).mul(mint),
+            utils.toInternalPercent(saleFee)),
+            {from: swap}
+        );
         await fund.setCrowdsale(crowdsale.address, {from: owner});
 
         item.fund = fund;

@@ -1,6 +1,8 @@
 require('../shared/tests/setup.js');
 
 const utils = require('../shared/tests/utils.js');
+const testFee = require('./parts/transferringFeeTests');
+const testPurchase = require('./parts/transferringPurchaseTests');
 
 const Token = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
@@ -31,14 +33,16 @@ const milestonesDefaultFixture = (startDate) => defaultMilestonesGenerator({
 
 
 contract('W12Crowdsale', async (accounts) => {
+    const ten = new BigNumber(10);
     const swap = accounts[7];
     const serviceWallet = accounts[6];
     const owner = accounts[0];
-    const price = 100;
+    const WTokenPrice = 0.05; // USD
     const serviceFee = 10;
     const tranchePercent = 5;
     const saleFee = 10;
-    const mint = oneToken.mul(oneToken);
+    const mint = new BigNumber(100000);
+    const minted = [ten.pow(0).mul(mint), ten.pow(18).mul(mint), ten.pow(60).mul(mint)];
 
     let originTokens = [];
     let wtokens = [];
@@ -49,19 +53,20 @@ contract('W12Crowdsale', async (accounts) => {
 
     beforeEach(async () => {
         startDate = web3.eth.getBlock('latest').timestamp + 60;
-        wtokens = await helpers.generateWTokens([0, 18, 255], owner);
-        originTokens = await helpers.generateWTokens([0, 18, 255], owner);
+        wtokens = await helpers.generateWTokens([0, 18, 60], owner);
+        originTokens = await helpers.generateWTokens([0, 18, 60], owner);
         crowdsales = await helpers.generateW12CrowdsaleStubWithDifferentToken(
             {
                 serviceWallet,
                 swap,
-                price,
+                price: WTokenPrice,
                 tranchePercent,
                 serviceFee,
                 saleFee,
                 mint
             }, originTokens, wtokens, owner
         );
+        startDate = web3.eth.getBlock('latest').timestamp + 60;
     });
 
     describe('constructor', async () => {
@@ -72,7 +77,7 @@ contract('W12Crowdsale', async (accounts) => {
 
             (await sut.token()).should.be.equal(wtoken.address);
             (await sut.originToken()).should.be.equal(originToken.address);
-            (await sut.price()).should.bignumber.equal(price);
+            (await sut.price()).should.bignumber.equal(utils.toInternalUSD(WTokenPrice));
             (await sut.serviceFee()).should.bignumber.equal(utils.toInternalPercent(serviceFee));
             (await sut.WTokenSaleFeePercent()).should.bignumber.equal(utils.toInternalPercent(saleFee));
             (await sut.serviceWallet()).should.be.equal(serviceWallet);
@@ -591,9 +596,14 @@ contract('W12Crowdsale', async (accounts) => {
         });
     });
 
-    describe('token purchase', async () => {
+    describe('token purchase process', async () => {
         const buyer = accounts[8];
         const notBuyer = accounts[7];
+        const paymentMethods = [
+            'ETH',
+            'TTT',
+        ];
+        const paymentMethodsBytes32List = paymentMethods.map(m => web3.fromUtf8(m));
         let firstCrowdsale;
         let firstCrowdsaleFund;
         let firstCrowdsaleRates;
@@ -602,6 +612,12 @@ contract('W12Crowdsale', async (accounts) => {
         let discountStages;
         let oneWToken;
         let oneOriginToken;
+
+        const paymentTokenPrice = 1.5; // USD
+        const paymentETHPrice = 2.5; // USD
+        const paymentTokenDecimals = 20;
+        const paymentTokenMinted = ten.pow(paymentTokenDecimals).mul(1000000);
+        let paymentToken;
 
         beforeEach(async () => {
             firstCrowdsale = crowdsales[0].crowdsale;
@@ -614,6 +630,211 @@ contract('W12Crowdsale', async (accounts) => {
         });
 
         describe('buy', async () => {
+
+            beforeEach(async () => {
+                paymentToken = await Token.new(paymentMethods[1], paymentMethods[1], paymentTokenDecimals);
+                discountStages = defaultStagesGenerator([
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ]
+                    },
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(210),
+                        discount: utils.toInternalPercent(5),
+                        volumeBoundaries: [utils.toInternalUSD(1)],
+                        volumeBonuses: [utils.toInternalPercent(13)],
+                    },
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(180),
+                        discount: utils.toInternalPercent(10),
+                        volumeBoundaries: [utils.toInternalUSD(1)],
+                        volumeBonuses: [utils.toInternalPercent(23)],
+                    }
+                ]);
+
+                await paymentToken.mint(buyer, paymentTokenMinted, 0);
+
+                for (const item of crowdsales) {
+                    const { crowdsale, rates } = item;
+                    const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
+                    await rates.addSymbol(paymentMethodsBytes32List[0]);
+                    await rates.addSymbolWithTokenAddress(paymentMethodsBytes32List[1], paymentToken.address);
+                    await rates.set(paymentMethodsBytes32List[0], utils.toInternalUSD(paymentETHPrice));
+                    await rates.set(paymentMethodsBytes32List[1], utils.toInternalUSD(paymentTokenPrice));
+                    await crowdsale.setup(...params, {from: owner});
+                }
+            });
+
+            describe('payment with token', () => {
+                const paymentAmount = ten.pow(paymentTokenDecimals);
+
+                for(const stageIndex of [0, 1, 2]) {
+
+                    describe(`in stage #${stageIndex}`, () => {
+                        let stage;
+
+                        beforeEach(async () => {
+                            stage = discountStages[stageIndex];
+
+                            await utils.time.increaseTimeTo(stage.dates[0]);
+                        });
+
+                        for (const crowdsaleIndex of [0, 1, 2]) {
+
+                            describe(`in crowdsale #${crowdsaleIndex}`, () => {
+                                const ctx = {};
+
+                                let crowdsale;
+
+                                beforeEach(async () => {
+                                    crowdsale = crowdsales[crowdsaleIndex];
+                                    ctx.invoice = utils.calculatePurchase(
+                                        paymentMethods[1],
+                                        paymentAmount,
+                                        stage.discount,
+                                        stage.volumeBoundaries,
+                                        stage.volumeBonuses,
+                                        utils.toInternalUSD(paymentTokenPrice),
+                                        utils.toInternalUSD(crowdsale.args.price),
+                                        wtokens[crowdsaleIndex].decimal,
+                                        paymentTokenDecimals,
+                                        minted[crowdsaleIndex]
+                                    );
+                                    ctx.expectedFee = [
+                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
+                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
+                                    ];
+                                    ctx.expectedPaymentTokenAmount = ctx.invoice.cost.minus(ctx.expectedFee[1]);
+                                    ctx.expectedWTokenAmount = ctx.invoice.tokenAmount;
+                                    ctx.WToken = crowdsale.wtoken;
+                                    ctx.originToken = crowdsale.originToken;
+                                    ctx.PaymentToken = paymentToken;
+                                    ctx.contractAddress = crowdsale.crowdsale.address;
+                                    ctx.serviceWalletAddress = serviceWallet;
+                                    ctx.exchangerAddress = swap;
+                                    ctx.investorAddress = buyer;
+
+                                    await ctx.PaymentToken
+                                        .approve(
+                                            crowdsale.crowdsale.address,
+                                            ctx.invoice.cost,
+                                            { from: ctx.investorAddress }
+                                        );
+                                    ctx.Tx = () => crowdsale.crowdsale
+                                        .buyTokens(paymentMethodsBytes32List[1], paymentAmount, { from: buyer });
+                                });
+
+                                describe('transferring fee', () => {
+                                    testFee.defaultProcess(ctx);
+                                    testFee.whenPaymentWithToken(ctx);
+                                });
+
+                                describe('transferring purchase', () => {
+                                    testPurchase.defaultProcess(ctx);
+                                    testPurchase.whenPaymentWithToken(ctx);
+                                });
+                            });
+                        }
+                    });
+                }
+            });
+
+            describe('payment with eth', () => {
+                const paymentAmount = ten.pow(18); // 1 eth
+
+                for (const stageIndex of [0, 1, 2]) {
+
+                    describe(`in stage #${stageIndex}`, () => {
+                        let stage;
+
+                        beforeEach(async () => {
+                            stage = discountStages[stageIndex];
+
+                            await utils.time.increaseTimeTo(stage.dates[0]);
+                        });
+
+                        for (const crowdsaleIndex of [0, 1, 2]) {
+
+                            describe(`in crowdsale #${crowdsaleIndex}`, () => {
+                                const ctx = {};
+
+                                let crowdsale;
+
+                                beforeEach(async () => {
+                                    crowdsale = crowdsales[crowdsaleIndex];
+                                    ctx.invoice = utils.calculatePurchase(
+                                        paymentMethods[0],
+                                        paymentAmount,
+                                        stage.discount,
+                                        stage.volumeBoundaries,
+                                        stage.volumeBonuses,
+                                        utils.toInternalUSD(paymentETHPrice),
+                                        utils.toInternalUSD(crowdsale.args.price),
+                                        wtokens[crowdsaleIndex].decimal,
+                                        18,
+                                        minted[crowdsaleIndex]
+                                    );
+                                    ctx.expectedFee = [
+                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
+                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
+                                    ];
+                                    ctx.expectedPaymentETHAmount = ctx.invoice.cost.minus(ctx.expectedFee[1]);
+                                    ctx.expectedWTokenAmount = ctx.invoice.tokenAmount;
+                                    ctx.WToken = crowdsale.wtoken;
+                                    ctx.originToken = crowdsale.originToken;
+                                    ctx.contractAddress = crowdsale.crowdsale.address;
+                                    ctx.serviceWalletAddress = serviceWallet;
+                                    ctx.exchangerAddress = swap;
+                                    ctx.investorAddress = buyer;
+
+                                    ctx.Tx = () => crowdsale.crowdsale
+                                        .buyTokens(paymentMethodsBytes32List[0], paymentAmount, {from: buyer, value: paymentAmount});
+                                });
+
+                                afterEach(async () => {
+                                    await crowdsale.crowdsale._outEther(buyer);
+                                });
+
+                                describe('transferring fee', () => {
+                                    testFee.defaultProcess(ctx);
+                                    testFee.whenPaymentWithETH(ctx);
+                                });
+
+                                describe('transferring purchase', () => {
+                                    testPurchase.defaultProcess(ctx);
+                                    testPurchase.whenPaymentWithETH(ctx);
+                                });
+                            });
+                        }
+                    });
+                }
+            });
+
+            it('should not sell some tokens if sale is not active', async () => {
+                const someStage1 = discountStages[1];
+                const someStage2 = discountStages[2];
+                const someDate = someStage1.dates[1] + Math.floor((someStage2.dates[0] - someStage1.dates[1]) / 2);
+
+                await utils.time.increaseTimeTo(someDate);
+
+                await firstCrowdsale.buyTokens(paymentMethodsBytes32List[0], ten.pow(18), {value: ten.pow(18), from: buyer})
+                    .should.be.rejectedWith(utils.EVMRevert);
+            });
+        });
+
+        describe('unsold tokens', async () => {
+            let discountStages;
+
             beforeEach(async () => {
                 discountStages = defaultStagesGenerator([
                     {
@@ -628,7 +849,9 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(90),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(210),
-                        discount: utils.toInternalPercent(5)
+                        discount: utils.toInternalPercent(5),
+                        volumeBoundaries: [utils.toInternalUSD(1)],
+                        volumeBonuses: [utils.toInternalPercent(13)],
                     },
                     {
                         dates: [
@@ -636,89 +859,59 @@ contract('W12Crowdsale', async (accounts) => {
                             startDate + utils.time.duration.minutes(120),
                         ],
                         vestingTime: startDate + utils.time.duration.minutes(180),
-                        discount: utils.toInternalPercent(10)
+                        discount: utils.toInternalPercent(10),
+                        volumeBoundaries: [utils.toInternalUSD(1)],
+                        volumeBonuses: [utils.toInternalPercent(23)],
                     }
                 ]);
 
-                for (const item of crowdsales) {
-                    const { crowdsale } = item;
-                    const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate));
-                    await crowdsale.setup(...params, {from: owner});
-                }
+                const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
+
+                await firstCrowdsaleRates.addSymbol(paymentMethodsBytes32List[0]);
+                await firstCrowdsaleRates.addSymbolWithTokenAddress(paymentMethodsBytes32List[1], utils.generateRandomAddress());
+                await firstCrowdsale.setup(...params, {from: owner});
+
                 endDate = discountStages[2].dates[1];
             });
 
-            it('should not sell some tokens if sale is not active', async () => {
-                const someStage1 = discountStages[1];
-                const someStage2 = discountStages[2];
-                const someDate = someStage1.dates[1] + Math.floor((someStage2.dates[0] - someStage1.dates[1]) / 2);
+            it('shouldn\'t return unsold tokens before the end', async () => {
+                (await firstCrowdsale.isEnded()).should.be.equal(false);
 
-                await utils.time.increaseTimeTo(someDate);
-
-                await firstCrowdsale.buyTokens({value: 1000000, from: buyer})
+                await firstCrowdsale.claimRemainingTokens({from: owner})
                     .should.be.rejectedWith(utils.EVMRevert);
             });
 
-            it('should sell tokens from each stage', async () => {
-                for (const stage of discountStages) {
-                    const balanceBefore = await firstCrowdsaleWToken.balanceOf(buyer);
+            describe('return unsold tokens after the end', async () => {
+                let txReceipt;
+                let logs;
+                let crowdsaleBalanceBefore;
+                let ownerBalanceBefore;
 
-                    await utils.time.increaseTimeTo(stage.dates[1] - 30);
+                beforeEach(async () => {
+                    await utils.time.increaseTimeTo(endDate + 10);
 
-                    await firstCrowdsale.buyTokens({value: oneToken, from: buyer}).should.be.fulfilled;
+                    crowdsaleBalanceBefore = await firstCrowdsaleWToken.balanceOf(firstCrowdsale.address);
+                    ownerBalanceBefore = await firstCrowdsaleWToken.balanceOf(owner);
 
-                    const balanceAfter = await firstCrowdsaleWToken.balanceOf(buyer);
-                    const expected = utils.calculatePurchase(
-                        oneToken,
-                        price,
-                        stage.discount,
-                        BigNumber.Zero,
-                        await firstCrowdsaleWToken.decimals()
-                    );
+                    txReceipt = await firstCrowdsale.claimRemainingTokens({from: owner})
+                        .should.be.fulfilled;
 
-                    balanceAfter.minus(balanceBefore)
-                        .should.bignumber.equal(expected);
-                }
-            });
-
-            describe('unsold tokens', async () => {
-                describe('return unsold tokens after the end', async () => {
-                    let txReceipt;
-                    let logs;
-                    let crowdsaleBalanceBefore;
-                    let ownerBalanceBefore;
-
-                    beforeEach(async () => {
-                        await utils.time.increaseTimeTo(endDate + 10);
-
-                        crowdsaleBalanceBefore = await firstCrowdsaleWToken.balanceOf(firstCrowdsale.address);
-                        ownerBalanceBefore = await firstCrowdsaleWToken.balanceOf(owner);
-
-                        txReceipt = await firstCrowdsale.claimRemainingTokens({from: owner})
-                            .should.be.fulfilled;
-
-                        logs = txReceipt.logs;
-                    });
-
-                    it('should return', async () => {
-                        const crowdsaleBalanceAfter = await firstCrowdsaleWToken.balanceOf(firstCrowdsale.address);
-                        const ownerBalanceAfter = await firstCrowdsaleWToken.balanceOf(owner);
-
-                        crowdsaleBalanceAfter.should.bignumber.equal(0);
-                        ownerBalanceAfter.should.bignumber.equal(crowdsaleBalanceBefore.plus(ownerBalanceBefore));
-                    });
-
-                    it('should emit on return', async () => {
-                        const event = await utils.expectEvent.inLogs(logs, 'UnsoldTokenReturned');
-
-                        event.args.owner.should.eq(owner);
-                        event.args.amount.should.be.bignumber.equal(crowdsaleBalanceBefore);
-                    });
+                    logs = txReceipt.logs;
                 });
 
-                it('shouldn\'t return unsold tokens before the end', async () => {
-                    (await firstCrowdsale.isEnded()).should.be.equal(false);
-                    await firstCrowdsale.claimRemainingTokens({from: owner}).should.be.rejectedWith(utils.EVMRevert);
+                it('should return', async () => {
+                    const crowdsaleBalanceAfter = await firstCrowdsaleWToken.balanceOf(firstCrowdsale.address);
+                    const ownerBalanceAfter = await firstCrowdsaleWToken.balanceOf(owner);
+
+                    crowdsaleBalanceAfter.should.bignumber.equal(0);
+                    ownerBalanceAfter.should.bignumber.equal(crowdsaleBalanceBefore.plus(ownerBalanceBefore));
+                });
+
+                it('should emit on return', async () => {
+                    const event = await utils.expectEvent.inLogs(logs, 'UnsoldTokenReturned');
+
+                    event.args.owner.should.eq(owner);
+                    event.args.amount.should.be.bignumber.equal(crowdsaleBalanceBefore);
                 });
             });
         });

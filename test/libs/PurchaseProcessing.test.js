@@ -114,6 +114,7 @@ contract('PurchaseProcessing', (accounts) => {
                 `should work for case #${index}` +
                 `\n\t * token bought amount ${expected.tokenAmount.toString()} ` +
                 `\n\t * cost ${expected.cost.toString()} ` +
+                `\n\t * change ${expected.change.toString()} ` +
                 `\n\t * round loss ${utils.getPurchaseRoundLoss(
                     expected.tokenAmount, expected.cost,
                     _argument[5], _argument[6],
@@ -162,6 +163,13 @@ contract('PurchaseProcessing', (accounts) => {
                     [utils.toInternalUSD(1)], [utils.toInternalPercent(11.79)],
                     utils.toInternalUSD(0.5), utils.toInternalUSD(0.01),
                     2, 0, 200
+                ],
+                [
+                    web3.fromUtf8('TT'), 10,
+                    utils.toInternalPercent(0),
+                    [], [],
+                    utils.toInternalUSD(1), utils.toInternalUSD(1),
+                    0, 0, 5
                 ],
             ];
 
@@ -216,6 +224,7 @@ contract('PurchaseProcessing', (accounts) => {
 
     describe('transferring fee', () => {
         const oneToken = new BigNumber(10 ** 18);
+        const sender = accounts[0];
 
         beforeEach(async () => {
             ctx.Token1 = await Token.new('1', '1', 18);
@@ -239,10 +248,11 @@ contract('PurchaseProcessing', (accounts) => {
 
                 await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
-                await ctx.Token3.mint(ctx.lib.address, oneToken.mul(mint), 0);
+                await ctx.Token3.mint(sender, oneToken.mul(mint), 0);
 
                 // approve to spend fee from exchanger
                 await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
+                await ctx.Token3.approve(ctx.lib.address, fee[1], {from: sender});
 
                 ctx.Tx = subCtx.Tx = () => ctx.lib.transferFee(
                     fee,
@@ -251,12 +261,13 @@ contract('PurchaseProcessing', (accounts) => {
                     ctx.Token2.address,
                     ctx.Token1.address,
                     exchangerAddress,
-                    serviceWalletAddress
+                    serviceWalletAddress,
+                    { from: sender }
                 );
             });
 
-            testFee.defaultFee(subCtx);
-            testFee.paymentFeeInToken(subCtx);
+            testFee.defaultProcess(subCtx);
+            testFee.whenPaymentWithToken(subCtx);
         });
 
         describe('pay with eth', () => {
@@ -270,6 +281,7 @@ contract('PurchaseProcessing', (accounts) => {
                 subCtx.contractAddress = ctx.lib.address;
                 subCtx.serviceWalletAddress = serviceWalletAddress;
                 subCtx.exchangerAddress = exchangerAddress;
+                subCtx.expectedPaymentETHAmount = 0;
                 subCtx.expectedFee = fee;
 
                 await ctx.Token1.mint(exchangerAddress, oneToken.mul(mint), 0);
@@ -277,21 +289,29 @@ contract('PurchaseProcessing', (accounts) => {
 
                 // approve to spend fee from exchanger
                 await ctx.Token1.approve(ctx.lib.address, oneToken.mul(mint), {from: exchangerAddress});
-                await web3.eth.sendTransaction({ value: fee[1], from: accounts[0], to: ctx.lib.address });
 
-                ctx.Tx = subCtx.Tx = () => ctx.lib.transferFee(
-                    fee,
-                    web3.fromUtf8('ETH'),
-                    0,
-                    ctx.Token2.address,
-                    ctx.Token1.address,
-                    exchangerAddress,
-                    serviceWalletAddress
-                );
+
+                ctx.Tx = subCtx.Tx = async () => {
+                    await web3.eth.sendTransaction({
+                        value: fee[1],
+                        from: accounts[0],
+                        to: ctx.lib.address
+                    });
+
+                    return await ctx.lib.transferFee(
+                        fee,
+                        web3.fromUtf8('ETH'),
+                        0,
+                        ctx.Token2.address,
+                        ctx.Token1.address,
+                        exchangerAddress,
+                        serviceWalletAddress
+                    );
+                }
             });
 
-            testFee.defaultFee(subCtx);
-            testFee.paymentFeeInETH(subCtx);
+            testFee.defaultProcess(subCtx);
+            testFee.whenPaymentWithETH(subCtx);
         });
 
         describe('security and checks', () => {
@@ -417,6 +437,7 @@ contract('PurchaseProcessing', (accounts) => {
                 subCtx.exchangerAddress = exchangerAddress;
                 subCtx.investorAddress = investor1Address;
                 subCtx.expectedWTokenAmount = invoice[0];
+                subCtx.expectedFee = [0, 0];
                 subCtx.expectedPaymentTokenAmount = invoice[1];
 
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
@@ -427,6 +448,7 @@ contract('PurchaseProcessing', (accounts) => {
 
                 ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
+                    [0, 0],
                     0,
                     web3.fromUtf8('1'),
                     ctx.Token3.address,
@@ -435,8 +457,8 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            testPurchase.purchaseTransfer(subCtx);
-            testPurchase.paymentInTokenTransfer(subCtx);
+            testPurchase.defaultProcess(subCtx);
+            testPurchase.whenPaymentWithToken(subCtx);
         });
 
         describe('pay with eth', () => {
@@ -452,6 +474,7 @@ contract('PurchaseProcessing', (accounts) => {
                 subCtx.exchangerAddress = exchangerAddress;
                 subCtx.investorAddress = investor1Address;
                 subCtx.expectedWTokenAmount = invoice[0];
+                subCtx.expectedFee = [0, 0];
                 subCtx.expectedPaymentETHAmount = invoice[1];
 
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
@@ -461,6 +484,7 @@ contract('PurchaseProcessing', (accounts) => {
 
                 ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
+                    [0, 0],
                     0,
                     web3.fromUtf8('ETH'),
                     ctx.Token3.address,
@@ -469,8 +493,8 @@ contract('PurchaseProcessing', (accounts) => {
                 );
             });
 
-            testPurchase.purchaseTransfer(subCtx);
-            testPurchase.paymentInETHTransfer(subCtx);
+            testPurchase.defaultProcess(subCtx);
+            testPurchase.whenPaymentWithETH(subCtx);
         });
 
         describe('security and checks', () => {
@@ -484,9 +508,10 @@ contract('PurchaseProcessing', (accounts) => {
                 await ctx.Token2.addTrustedAccount(ctx.lib.address);
             });
 
-            it('should if project token address is zero', async () => {
+            it('should revert if project token address is zero', async () => {
                 await ctx.lib.transferPurchase(
                     invoice,
+                    [0, 0],
                     0,
                     web3.fromUtf8('ETH'),
                     ctx.Token3.address,
@@ -496,9 +521,10 @@ contract('PurchaseProcessing', (accounts) => {
                     .should.to.be.rejectedWith(utils.EVMRevert);
             });
 
-            it('should if payment token address is zero', async () => {
+            it('should revert if payment token address is zero', async () => {
                 await ctx.lib.transferPurchase(
                     invoice,
+                    [0, 0],
                     0,
                     web3.fromUtf8('TOK'),
                     0,
@@ -508,21 +534,10 @@ contract('PurchaseProcessing', (accounts) => {
                     .should.to.be.rejectedWith(utils.EVMRevert);
             });
 
-            it('should if token purchase amount is zero', async () => {
+            it('should revert if token purchase amount is zero', async () => {
                 await ctx.lib.transferPurchase(
-                    [0, 20, 0, 0, 0],
-                    0,
-                    web3.fromUtf8('TOK'),
-                    ctx.Token3.address,
-                    ctx.Token2.address,
-                    {from: investor1Address}
-                )
-                    .should.to.be.rejectedWith(utils.EVMRevert);
-            });
-
-            it('should if cost amount is zero', async () => {
-                await ctx.lib.transferPurchase(
-                    [20, 0, 0, 0, 0],
+                    [0, 10, 1, 0, 1],
+                    [0, 0],
                     0,
                     web3.fromUtf8('TOK'),
                     ctx.Token3.address,
@@ -532,15 +547,55 @@ contract('PurchaseProcessing', (accounts) => {
                     .should.to.be.rejectedWith(utils.EVMRevert);
             });
 
-            it('should if eth not enough', async () => {
+            it('should revert if cost amount is zero', async () => {
                 await ctx.lib.transferPurchase(
-                    [20, 20, 0, 0, 0],
+                    [10, 0, 1, 0, 1],
+                    [0, 0],
+                    0,
+                    web3.fromUtf8('TOK'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address}
+                )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if eth not enough', async () => {
+                await ctx.lib.transferPurchase(
+                    invoice,
+                    [0, 0],
                     0,
                     web3.fromUtf8('ETH'),
                     ctx.Token3.address,
                     ctx.Token2.address,
                     {from: investor1Address, value: 1}
                 )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if fee greater or equal then token amount', async () => {
+                await ctx.lib.transferPurchase(
+                    invoice,
+                    [invoice[0].plus(1), 0],
+                    0,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address, value: 1}
+                    )
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if fee greater or equal then cost amount', async () => {
+                await ctx.lib.transferPurchase(
+                    invoice,
+                    [0, invoice[1] + 1],
+                    0,
+                    web3.fromUtf8('ETH'),
+                    ctx.Token3.address,
+                    ctx.Token2.address,
+                    {from: investor1Address, value: 1}
+                    )
                     .should.to.be.rejectedWith(utils.EVMRevert);
             });
         });

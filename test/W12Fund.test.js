@@ -60,7 +60,7 @@ contract('W12Fund', async (accounts) => {
     const buyer2 = accounts[4];
     const trancheFeePercent = new BigNumber(utils.toInternalPercent(5));
 
-    describe('initialization methods', async () => {
+    describe.skip('initialization methods', async () => {
         beforeEach(async () => {
             sut = await W12Fund.new(0, trancheFeePercent, { from: sutOwner });
         });
@@ -70,7 +70,7 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe('stubbed fund', async () => {
+    describe.skip('stubbed fund', async () => {
         beforeEach(async () => {
             tokenFixture = await TokenFixture.createToken(tokenOwner);
             sut = await W12FundStub.new(
@@ -148,7 +148,7 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe('refund', async () => {
+    describe.skip('refund', async () => {
         let crowdsaleMock, encodedMilestoneFixture, startData;
 
         const crowdsaleOwner = accounts[0];
@@ -420,7 +420,7 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe('tranche', async () => {
+    describe.skip('tranche', async () => {
         let crowdsaleMock, encodedMilestoneFixture, startData;
 
         const swapAddress = accounts[1];
