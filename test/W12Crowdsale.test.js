@@ -503,16 +503,6 @@ contract('W12Crowdsale', async (accounts) => {
                     .should.be.fulfilled;
             });
 
-            it('should`t return current milestone index', async () => {
-                await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate);
-
-                const result = await sut.getCurrentMilestoneIndex()
-                    .should.be.fulfilled;
-
-                result[0].should.bignumber.equal(0);
-                result[1].should.be.equal(false);
-            });
-
             it('should return current milestone index in case when current date between first and last milestone', async () => {
                 let expectedIndex = 0;
 
@@ -529,14 +519,54 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
-            it('should return last milestone index in case when current date gt last milestone', async () => {
-                await utils.time.increaseTimeTo(expectedMilestones[expectedMilestones.length - 1].endDate + utils.time.duration.minutes(1));
+            it('must check that the function returns the correct Milestone index for each date in the given array', async () => {
+                const controlArray = [{
+                    time: await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: false
+                }, {
+                    time: startDate + utils.time.duration.days(15),
+                    index: 0,
+                    found: true
+                }, {
+                    time: startDate + utils.time.duration.days(20) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: true
+                },{
+                    time: startDate + utils.time.duration.days(20) - utils.time.duration.minutes(1),
+                    index: 0,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(20) - 1,
+                    index: 0,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(20) + utils.time.duration.minutes(1),
+                    index: 1,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(30) + utils.time.duration.minutes(1),
+                    index: 2,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(40) - 1,
+                    index: 2,
+                    found: true,
+                },{
+                    time: startDate + utils.time.duration.days(40) + utils.time.duration.minutes(1),
+                    index: 2,
+                    found: true,
+                }];
 
-                const result = await sut.getCurrentMilestoneIndex()
-                    .should.be.fulfilled
+                for (const elem of controlArray) {
+                    await utils.time.increaseTimeTo(elem.time);
 
-                result[0].should.bignumber.equal(expectedMilestones.length - 1);
-                result[1].should.be.equal(true);
+                    const result = await sut.getCurrentMilestoneIndex()
+                        .should.be.fulfilled;
+
+                    result[0].should.bignumber.equal(elem.index);
+                    result[1].should.be.equal(elem.found);
+                }
             });
         });
     });
