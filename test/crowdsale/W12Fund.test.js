@@ -7,6 +7,8 @@ const TokenFixture = require('../fixtures/tokens.js');
 const FundFixture = require('../fixtures/fund.js');
 
 const W12Fund = artifacts.require('W12Fund');
+const Rates = artifacts.require('Rates');
+const Token = artifacts.require('WToken');
 const W12FundStub = artifacts.require('W12FundStub');
 const W12FundCrowdsaleStub = artifacts.require('W12FundCrowdsaleStub');
 const oneToken = new BigNumber(10).pow(18);
@@ -60,13 +62,254 @@ contract('W12Fund', async (accounts) => {
     const buyer2 = accounts[4];
     const trancheFeePercent = new BigNumber(utils.toInternalPercent(5));
 
-    describe.skip('initialization methods', async () => {
-        beforeEach(async () => {
-            sut = await W12Fund.new(0, trancheFeePercent, { from: sutOwner });
+    describe('creation and initialisation', async () => {
+        const ctx = {};
+        const ratesAddress = utils.generateRandomAddress();
+
+        it('should create', async () => {
+            W12Fund.new(0, utils.toInternalPercent(10), ratesAddress)
+                .should.to.be.fulfilled;
         });
 
-        it('should set owner', async () => {
-            (await sut.owner().should.be.fulfilled).should.be.equal(sutOwner);
+        describe('should initialise', () => {
+
+            beforeEach(async () => {
+                ctx.contract = await W12Fund.new(0, utils.toInternalPercent(10), ratesAddress);
+            });
+
+            it('rates address', async () => {
+                const actual = await ctx.contract.rates();
+
+                actual.should.to.be.eq(ratesAddress);
+            });
+
+            it('crowdsale address with zero', async () => {
+                const actual = await ctx.contract.crowdsale();
+
+                actual.should.to.be.eq(utils.ZERO_ADDRESS);
+            });
+
+            it('wToken address with zero', async () => {
+                const actual = await ctx.contract.wToken();
+
+                actual.should.to.be.eq(utils.ZERO_ADDRESS);
+            });
+
+            it('swap address with zero', async () => {
+                const actual = await ctx.contract.swap();
+
+                actual.should.to.be.eq(utils.ZERO_ADDRESS);
+            });
+
+            it('serviceWallet address with zero', async () => {
+                const actual = await ctx.contract.serviceWallet();
+
+                actual.should.to.be.eq(utils.ZERO_ADDRESS);
+            });
+
+            it('tranche fee percent', async () => {
+                const actual = await ctx.contract.trancheFeePercent();
+
+                actual.should.bignumber.eq(utils.toInternalPercent(10));
+            });
+
+            it('total tranche percent released with zero', async () => {
+                const actual = await ctx.contract.totalTranchePercentReleased();
+
+                actual.should.bignumber.eq(0);
+            });
+
+            it('total token bought with zero', async () => {
+                const actual = await ctx.contract.totalTokenBought();
+
+                actual.should.bignumber.eq(0);
+            });
+
+            it('total token refunded with zero', async () => {
+                const actual = await ctx.contract.totalTokenRefunded();
+
+                actual.should.bignumber.eq(0);
+            });
+
+            it('total funded assets list with empty list', async () => {
+                const actual = await ctx.contract.getTotalFundedAssetsSymbols();
+
+                actual.should.to.be.a('array');
+                actual.length.should.to.be.eq(0);
+            });
+        });
+
+        describe('should not initialise', () => {
+
+            it('if tranche fee percent too big', async () => {
+                await W12Fund.new(0, utils.toInternalPercent(100), ratesAddress)
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('if rates address is zero', async () => {
+                await W12Fund.new(0, utils.toInternalPercent(99), utils.ZERO_ADDRESS)
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+        });
+
+        describe('setting', () => {
+
+            beforeEach(async () => {
+                ctx.contract = await W12Fund.new(0, utils.toInternalPercent(10), ratesAddress);
+            });
+
+            describe('crowdsale', () => {
+                const tokenAddress = utils.generateRandomAddress();
+
+                describe('should successful set', () => {
+                    beforeEach(async () => {
+                        ctx.crowdsale = await W12FundCrowdsaleStub.new(0);
+
+                        await ctx.crowdsale._getWTokenMockData(tokenAddress);
+
+                        ctx.Tx = ctx.contract.setCrowdsale(ctx.crowdsale.address);
+                    });
+
+                    it('crowdsale address', async () => {
+                        await ctx.Tx;
+
+                        const actual = await ctx.contract.crowdsale();
+
+                        actual.should.to.be.eq(ctx.crowdsale.address);
+                    });
+
+                    it('wtoken address from crowdsale', async () => {
+                        await ctx.Tx;
+
+                        const actual = await ctx.contract.wToken();
+
+                        actual.should.to.be.eq(tokenAddress);
+                    });
+                });
+
+                describe('should revert when', () => {
+                    it('crowdsale address is zero', async () => {
+                        await ctx.contract.setCrowdsale(utils.ZERO_ADDRESS)
+                            .should.to.be.rejectedWith(utils.EVMRevert);
+                    });
+
+                    it('wtoken address is zero', async () => {
+                        ctx.crowdsale = await W12FundCrowdsaleStub.new(0);
+
+                        await ctx.contract.setCrowdsale(ctx.crowdsale.address)
+                            .should.to.be.rejectedWith(utils.EVMRevert);
+                    });
+                });
+            });
+
+            describe('swap', () => {
+                const swapAddress = utils.generateRandomAddress();
+
+                describe('should successful set', () => {
+
+                    beforeEach(async () => {
+                        ctx.Tx = ctx.contract.setSwap(swapAddress);
+                    });
+
+                    it('swap address', async () => {
+                        await ctx.Tx;
+
+                        const actual = await ctx.contract.swap();
+
+                        actual.should.to.be.eq(swapAddress);
+                    });
+                });
+
+                describe('should revert when', () => {
+
+                    it('swap address is zero', async () => {
+                        await ctx.contract.setSwap(utils.ZERO_ADDRESS)
+                            .should.to.be.rejectedWith(utils.EVMRevert);
+                    });
+                });
+            });
+
+            describe('service wallet', () => {
+                const serviceWallet = utils.generateRandomAddress();
+
+                describe('should successful set', () => {
+
+                    beforeEach(async () => {
+                        ctx.Tx = ctx.contract.setServiceWallet(serviceWallet);
+                    });
+
+                    it('service wallet address', async () => {
+                        await ctx.Tx;
+
+                        const actual = await ctx.contract.serviceWallet();
+
+                        actual.should.to.be.eq(serviceWallet);
+                    });
+                });
+
+                describe('should revert when', () => {
+
+                    it('service wallet address is zero', async () => {
+                        await ctx.contract.setServiceWallet(utils.ZERO_ADDRESS)
+                            .should.to.be.rejectedWith(utils.EVMRevert);
+                    });
+                });
+            });
+        });
+    });
+
+    describe.skip('recording purchases', async () => {
+        //function recordPurchase(
+        //         address investor,
+        //         uint tokenAmount,
+        //         bytes32 symbol,
+        //         uint cost,
+        //         uint costUSD
+        //     )
+        describe('token symbol', () => {
+            const TokenSymbol = 'TTT';
+            const TokenSymbolBytes32 = web3.fromUtf8(TokenSymbol);
+            const ctx = {};
+
+            beforeEach(async () => {
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new(TokenSymbol, TokenSymbol, 18);
+
+                await ctx.rates.addSymbolWithToken(TokenSymbolBytes32, );
+
+                W12Fund.new(0, utils.toInternalPercent(10), ratesAddress);
+            });
+        });
+
+
+        it('should record purchases', async () => {
+            const expectedAmount = web3.toWei(1, 'ether');
+            const expectedBuyer = utils.generateRandomAddress();
+            const expectedTokenAmount = oneToken.mul(1000);
+
+            const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, {
+                value: expectedAmount,
+                from: crowdsale
+            }).should.be.fulfilled;
+
+            receipt.logs[0].event.should.be.equal('FundsReceived');
+            receipt.logs[0].args.buyer.should.be.equal(expectedBuyer);
+            receipt.logs[0].args.weiAmount.should.bignumber.equal(expectedAmount);
+            receipt.logs[0].args.tokenAmount.should.bignumber.equal(expectedTokenAmount);
+        });
+
+        it('should reject record purchases when called not from crowdsale address', async () => {
+            const expectedAmount = web3.toWei(1, 'ether');
+            const expectedBuyer = utils.generateRandomAddress();
+
+            await sut.recordPurchase(expectedBuyer, expectedAmount, {from: utils.generateRandomAddress()}).should.be.rejected;
+        });
+
+        it('should return zeros if there was no prior investment records', async () => {
+            const actualResult = await sut.getInvestmentsInfo(utils.generateRandomAddress()).should.be.fulfilled;
+
+            actualResult[0].should.bignumber.equal(BigNumber.Zero);
+            actualResult[1].should.bignumber.equal(BigNumber.Zero);
         });
     });
 
@@ -109,42 +352,6 @@ contract('W12Fund', async (accounts) => {
 
             actualResult[0].should.bignumber.equal(BigNumber.Zero);
             actualResult[1].should.bignumber.equal(BigNumber.Zero);
-        });
-
-        it('should record average price of token purchase', async () => {
-            const buyer = accounts[2];
-            const purchases = [
-                {
-                    amount: web3.toWei(0.5, 'ether'),
-                    tokens: oneToken.mul(5)
-                },
-                {
-                    amount: web3.toWei(0.7, 'ether'),
-                    tokens: oneToken.mul(15)
-                },
-                {
-                    amount: web3.toWei(0.15, 'ether'),
-                    tokens: oneToken.mul(105)
-                },
-                {
-                    amount: web3.toWei(1, 'ether'),
-                    tokens: oneToken.mul(200)
-                }
-            ];
-            let totalPaid = BigNumber.Zero;
-            let totalTokensBought = BigNumber.Zero;
-
-            for (const purchase of purchases) {
-                await sut.recordPurchase(buyer, purchase.tokens, { from: crowdsale, value: purchase.amount }).should.be.fulfilled;
-
-                totalPaid = totalPaid.plus(purchase.amount);
-                totalTokensBought = totalTokensBought.plus(purchase.tokens);
-            }
-
-            const actualResult = await sut.getInvestmentsInfo(buyer).should.be.fulfilled;
-
-            actualResult[0].should.bignumber.equal(totalTokensBought);
-            actualResult[1].should.bignumber.equal(utils.round(totalPaid.mul(oneToken).div(totalTokensBought)));
         });
     });
 

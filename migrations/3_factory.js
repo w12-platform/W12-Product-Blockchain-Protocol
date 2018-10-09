@@ -2,9 +2,12 @@ const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const Percent = artifacts.require('Percent');
 const Utils = artifacts.require('Utils');
+const FundAccount = artifacts.require('FundAccount');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
 const W12FundFactory = artifacts.require('W12FundFactory');
+const W12Fund = artifacts.require('W12Fund');
+const W12FundStub = artifacts.require('W12FundStub');
 const version = require('../package').version;
 const semint = require('@redtea/semint');
 const utils = require('../shared/utils');
@@ -13,6 +16,7 @@ module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
         await utils.deploy(network, deployer, Percent);
         await utils.deploy(network, deployer, Utils);
+        await utils.deploy(network, deployer, FundAccount);
 
         if (network === 'test' || network === 'mainnet') {
             utils.migrateLog.addAddress(Percent.contractName, Percent.address);
@@ -24,8 +28,11 @@ module.exports = function (deployer, network, accounts) {
         W12Crowdsale.link(Utils);
         W12CrowdsaleFactory.link(Percent);
         W12CrowdsaleFactory.link(Utils);
+        W12FundFactory.link(FundAccount);
+        W12Fund.link(FundAccount);
 
         if (network === 'development') {
+            W12FundStub.link(FundAccount);
             PurchaseProcessingMock.link(Percent);
             PurchaseProcessingMock.link(Utils);
         }
