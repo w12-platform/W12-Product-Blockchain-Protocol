@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "./W12Fund.sol";
-import "./interfaces/IW12FundFactory.sol";
-import "./versioning/Versionable.sol";
+import "./IW12FundFactory.sol";
+import "../W12Fund.sol";
+import "../../versioning/Versionable.sol";
 
 contract W12FundFactory is Versionable, IW12FundFactory {
     event FundCreated(address indexed fund);

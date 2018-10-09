@@ -1,12 +1,12 @@
-require('../shared/tests/setup.js');
+require('../../shared/tests/setup.js');
 
-const utils = require('../shared/tests/utils.js');
-const testFee = require('./parts/transferringFeeTests');
-const testPurchase = require('./parts/transferringPurchaseTests');
+const utils = require('../../shared/tests/utils.js');
+const testFee = require('../parts/transferringFeeTests');
+const testPurchase = require('../parts/transferringPurchaseTests');
 
 const Token = artifacts.require('WToken');
 const oneToken = new BigNumber(10).pow(18);
-const helpers = require('./fixtures/W12Crowdsale');
+const helpers = require('../fixtures/W12Crowdsale');
 const defaultStagesGenerator = utils.createStagesGenerator();
 const defaultMilestonesGenerator = utils.createMilestonesGenerator();
 const stagesDefaultFixture = (startDate) => defaultStagesGenerator({

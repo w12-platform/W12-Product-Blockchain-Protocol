@@ -1,10 +1,10 @@
-require('../shared/tests/setup.js');
+require('../../shared/tests/setup.js');
 
-const utils = require('../shared/tests/utils.js');
+const utils = require('../../shared/tests/utils.js');
 
-const CrowdsaleFixture = require('./fixtures/crowdsale.js');
-const TokenFixture = require('./fixtures/tokens.js');
-const FundFixture = require('./fixtures/fund.js');
+const CrowdsaleFixture = require('../fixtures/crowdsale.js');
+const TokenFixture = require('../fixtures/tokens.js');
+const FundFixture = require('../fixtures/fund.js');
 
 const W12Fund = artifacts.require('W12Fund');
 const W12FundStub = artifacts.require('W12FundStub');

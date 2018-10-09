@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "./W12Crowdsale.sol";
-import "./rates/IRates.sol";
+import "../../rates/IRates.sol";
+import "../../crowdsale/W12Crowdsale.sol";
 
 contract W12CrowdsaleStub is W12Crowdsale {
     constructor (

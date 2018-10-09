@@ -3,12 +3,13 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IW12Crowdsale.sol";
-import "./interfaces/IW12Fund.sol";
-import "./libs/Percent.sol";
-import "./versioning/Versionable.sol";
+import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "../../crowdsale/IW12Crowdsale.sol";
+import "../../crowdsale/IW12Fund.sol";
+import "../../token/IWToken.sol";
+import "../../libs/Percent.sol";
+import "../../versioning/Versionable.sol";
 
 contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     uint _currentMilestoneIndex;
@@ -16,7 +17,7 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, Reentrancy
     uint _lastMilestoneIndex;
     bool _lastMilestoneIndexFound;
     mapping (uint => Milestone) _currentMilestones;
-    WToken _wtoken;
+    IWToken _wtoken;
 
     struct Milestone {
         uint32 endDate;
@@ -39,11 +40,11 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, Reentrancy
         bytes nameAndDescriptionsOfMilestones
     ) external {}
 
-    function getWToken() external view returns (WToken) {
+    function getWToken() external view returns (IWToken) {
         return _wtoken;
     }
 
-    function _getWTokenMockData(WToken a) external {
+    function _getWTokenMockData(IWToken a) external {
         _wtoken = a;
     }
 

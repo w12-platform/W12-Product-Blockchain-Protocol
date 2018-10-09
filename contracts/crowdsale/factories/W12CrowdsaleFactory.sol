@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
-import "./interfaces/IW12CrowdsaleFactory.sol";
-import "./interfaces/IW12FundFactory.sol";
-import "./W12Crowdsale.sol";
-import "./versioning/Versionable.sol";
-import "./rates/IRates.sol";
+import "./IW12CrowdsaleFactory.sol";
+import "./IW12FundFactory.sol";
+import "../../rates/IRates.sol";
+import "../../versioning/Versionable.sol";
+import "../W12Crowdsale.sol";
 
 contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;

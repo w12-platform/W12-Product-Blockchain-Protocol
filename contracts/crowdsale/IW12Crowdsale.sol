@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../token/WToken.sol";
+import "../token/IWToken.sol";
 
 
 interface IW12Crowdsale {
@@ -17,7 +17,7 @@ interface IW12Crowdsale {
         bytes32[] paymentMethodsList
     ) external;
 
-    function getWToken() external view returns(WToken);
+    function getWToken() external view returns(IWToken);
 
     function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes);
 

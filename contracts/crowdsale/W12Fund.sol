@@ -3,22 +3,22 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./token/WToken.sol";
-import "./interfaces/IW12Crowdsale.sol";
-import "./interfaces/IW12Fund.sol";
-import "./libs/Percent.sol";
-import "./versioning/Versionable.sol";
+import "./IW12Crowdsale.sol";
+import "./IW12Fund.sol";
+import "../libs/Percent.sol";
+import "../versioning/Versionable.sol";
+import "../token/IWToken.sol";
 
 contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
     IW12Crowdsale public crowdsale;
+    IWToken public wToken;
     address public swap;
     address public serviceWallet;
-    WToken public wToken;
     uint public tokenDecimals; // TODO: refactor this
-    mapping (address=>TokenPriceInfo) public buyers;
+    mapping (address => TokenPriceInfo) public buyers;
     mapping (uint => bool) public completedTranches; // TODO: refactor this
     uint public totalFunded;
     uint public totalRefunded;
@@ -45,7 +45,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         require(_crowdsale != address(0));
 
         crowdsale = _crowdsale;
-        wToken = _crowdsale.getWToken();
+        wToken = IWToken(_crowdsale.getWToken());
         tokenDecimals = wToken.decimals();
     }
 
