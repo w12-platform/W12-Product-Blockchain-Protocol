@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./Utils.sol";
 
 library Percent {
     using SafeMath for uint;
@@ -12,6 +13,10 @@ library Percent {
 
     function percent(uint _a, uint _b) internal pure returns (uint) {
         return _a.mul(_b).div(MAX());
+    }
+
+    function savePercent(uint _a, uint _b) internal pure returns (uint) {
+        return Utils.saveMulDiv(_a, _b, MAX());
     }
 
     function isPercent(uint _a) internal pure returns (bool) {

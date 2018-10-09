@@ -37,7 +37,8 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, Reentrancy
         uint[] bonusConditionsOfStages,
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
-        bytes nameAndDescriptionsOfMilestones
+        bytes nameAndDescriptionsOfMilestones,
+        bytes32[] paymentMethodsList
     ) external {}
 
     function getWToken() external view returns (IWToken) {
@@ -102,5 +103,5 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, Reentrancy
 
     function() payable external {}
 
-    function buyTokens() payable external {}
+    function buyTokens(bytes32 method, uint amount) payable external {}
 }
