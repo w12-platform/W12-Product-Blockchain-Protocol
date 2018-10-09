@@ -6,14 +6,14 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
-import "./interfaces/IW12Crowdsale.sol";
-import "./interfaces/IW12Fund.sol";
-import "./libs/Percent.sol";
-import "./versioning/Versionable.sol";
-import "./token/WToken.sol";
-import "./libs/PaymentMethods.sol";
-import "./libs/PurchaseProcessing.sol";
-import "./rates/IRates.sol";
+import "./IW12Crowdsale.sol";
+import "./IW12Fund.sol";
+import "../rates/IRates.sol";
+import "../libs/Percent.sol";
+import "../libs/PaymentMethods.sol";
+import "../libs/PurchaseProcessing.sol";
+import "../versioning/Versionable.sol";
+import "../token/IWToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
@@ -21,7 +21,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using BytesLib for bytes;
     using PaymentMethods for PaymentMethods.Methods;
 
-    WToken public token;
+    IWToken public token;
     ERC20 public originToken;
     IW12Fund public fund;
     IRates public rates;
@@ -87,7 +87,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
         __setParameters(_price, _serviceWallet);
 
-        token = WToken(_token);
+        token = IWToken(_token);
         originToken = ERC20(_originToken);
         serviceFee = _serviceFee;
         swap = _swap;
@@ -427,7 +427,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         // fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
     }
 
-    function getWToken() external view returns(WToken) {
+    function getWToken() external view returns(IWToken) {
         return token;
     }
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "./W12Fund.sol";
-import "./token/WToken.sol";
+import "../../crowdsale/W12Fund.sol";
+import "../../token/IWToken.sol";
 
 
 contract W12FundStub is W12Fund {
@@ -17,7 +17,7 @@ contract W12FundStub is W12Fund {
     {
         crowdsale = IW12Crowdsale(crowdsaleAddress);
         swap = swapAddress;
-        wToken = WToken(wTokenAddress);
+        wToken = IWToken(wTokenAddress);
         tokenDecimals = wToken.decimals();
         trancheFeePercent = _trancheFeePercent;
         serviceWallet = _serviceWallet;

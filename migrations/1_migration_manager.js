@@ -1,5 +1,5 @@
-const Migrations = artifacts.require("./Migrations.sol");
-const Versions = artifacts.require("./versioning/VersionsLedger.sol");
+const Migrations = artifacts.require("Migrations");
+const Versions = artifacts.require("VersionsLedger");
 const version = require('../package').version;
 const semint = require('@redtea/semint');
 const semver = require('semver');

@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IW12CrowdsaleFactory.sol";
+import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
