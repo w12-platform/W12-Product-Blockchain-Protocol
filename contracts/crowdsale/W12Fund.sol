@@ -243,7 +243,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
         while(ln != 0) {
             bytes32 symbol = totalFunded.symbolsList()[--ln];
-            uint amount = totalFunded.amountOf(symbol).sub(totalFundedRealised[symbol]);
+            uint amount = totalFunded.amountOf(symbol);
 
             if (amount == 0) continue;
 
