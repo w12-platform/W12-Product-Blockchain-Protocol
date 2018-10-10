@@ -185,15 +185,13 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     function getTrancheInvoice() public view returns (uint[3] result) {
         if (!trancheTransferAllowed()) return;
 
-        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+        (uint index, /*bool found*/) = crowdsale.getCurrentMilestoneIndex();
+        (uint lastIndex, /*bool found*/) = crowdsale.getLastMilestoneIndex();
 
-        if (!found) return;
-
-        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
         (,,, uint32 lastWithdrawalWindow,,) = crowdsale.getMilestone(lastIndex);
 
         // get percent from prev milestone
-        index = index == 0 || now >= lastWithdrawalWindow ? index : index - 1;
+        index = index == 0 || lastIndex == index ? index : index - 1;
 
         ( , uint tranchePercent, , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
 
@@ -318,15 +316,20 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
     function trancheTransferAllowed() public view returns (bool) {
         (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
-        (uint lastIndex, ) = crowdsale.getLastMilestoneIndex();
 
         if(!found) return;
-        if(index == 0) return true;
 
-        (uint32 endDate, , , , , ) = crowdsale.getMilestone(index);
-        (, , ,uint32 lastWithdrawalWindow, , ) = crowdsale.getMilestone(lastIndex);
+        return index == 0 || isWithdrawalWindowActive();
+    }
 
-        return endDate > now || lastWithdrawalWindow <= now;
+    function isWithdrawalWindowActive() public view returns (bool) {
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+
+        if(index == 0 || !found) return;
+
+        (uint32 endDate, , ,uint32 lastWithdrawalWindow, , ) = crowdsale.getMilestone(index);
+
+        return endDate > now || now >= lastWithdrawalWindow;
     }
 
     modifier onlyFrom(address sender) {
