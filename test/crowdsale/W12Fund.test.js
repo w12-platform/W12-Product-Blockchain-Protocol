@@ -6,6 +6,8 @@ const CrowdsaleFixture = require('../fixtures/crowdsale.js');
 const TokenFixture = require('../fixtures/tokens.js');
 const FundFixture = require('../fixtures/fund.js');
 
+const testRecordingPurchaseToTheFund = require('../parts/recordingPurchaseToTheFund');
+const testTrancheRelease = require('../parts/trancheRelease');
 const W12Fund = artifacts.require('W12Fund');
 const Rates = artifacts.require('Rates');
 const Token = artifacts.require('WToken');
@@ -44,14 +46,31 @@ const milestonesDefaultFixture = (startDate) => defaultMilestonesGenerator([
         endDate: startDate + utils.time.duration.days(21),
         voteEndDate: startDate + utils.time.duration.days(27),
         withdrawalWindow: startDate + utils.time.duration.days(30)
-    },
-    {
-        endDate: startDate + utils.time.duration.days(31),
-        voteEndDate: startDate + utils.time.duration.days(37),
-        withdrawalWindow: startDate + utils.time.duration.days(40)
     }
 ]);
-
+const setupMilestoneMockData = async (index, milestones, crowdsale) => {
+    milestones = milestones.map(m => utils.encodeMilestoneParameters(
+        m.name,
+        m.description,
+        m.tranchePercent,
+        m.endDate,
+        m.voteEndDate,
+        m.withdrawalWindow
+    ));
+    await crowdsale._getCurrentMilestoneIndexMockData(index, true);
+    await crowdsale._getLastMilestoneIndexMockData(milestones.length - 1, true);
+    for (const milestoneIndex in milestones) {
+        await crowdsale._getMilestoneMockData(
+            milestoneIndex,
+            milestones[milestoneIndex].dates[0],
+            milestones[milestoneIndex].tranchePercent,
+            milestones[milestoneIndex].dates[1],
+            milestones[milestoneIndex].dates[2],
+            milestones[milestoneIndex].nameHex,
+            milestones[milestoneIndex].descriptionHex
+        );
+    }
+};
 
 contract('W12Fund', async (accounts) => {
     let sut, swap, crowdsale;
@@ -62,7 +81,7 @@ contract('W12Fund', async (accounts) => {
     const buyer2 = accounts[4];
     const trancheFeePercent = new BigNumber(utils.toInternalPercent(5));
 
-    describe('creation and initialisation', async () => {
+    describe.skip('creation and initialisation', async () => {
         const ctx = {};
         const ratesAddress = utils.generateRandomAddress();
 
@@ -259,99 +278,412 @@ contract('W12Fund', async (accounts) => {
     });
 
     describe.skip('recording purchases', async () => {
-        //function recordPurchase(
-        //         address investor,
-        //         uint tokenAmount,
-        //         bytes32 symbol,
-        //         uint cost,
-        //         uint costUSD
-        //     )
-        describe('token symbol', () => {
+
+        describe('for payment with token', () => {
             const TokenSymbol = 'TTT';
             const TokenSymbolBytes32 = web3.fromUtf8(TokenSymbol);
+            const investor = accounts[7];
+            const crowdsale = accounts[6];
+            const oneToken = BigNumber.TEN.pow(18);
+            const mint = oneToken.mul(1000);
+            const costUSD = oneToken.mul(1001);
             const ctx = {};
 
             beforeEach(async () => {
                 ctx.rates = await Rates.new();
                 ctx.token = await Token.new(TokenSymbol, TokenSymbol, 18);
+            });
 
-                await ctx.rates.addSymbolWithToken(TokenSymbolBytes32, );
+            describe('should successful', () => {
+                const tokenAmount = new BigNumber(1000);
 
-                W12Fund.new(0, utils.toInternalPercent(10), ratesAddress);
+                beforeEach(async () => {
+                    ctx.contract = await W12FundStub.new(
+                        0, crowdsale, utils.generateRandomAddress(), utils.generateRandomAddress(),
+                        utils.generateRandomAddress(), utils.toInternalPercent(0),
+                        ctx.rates.address
+                    );
+
+                    await ctx.rates.addSymbolWithTokenAddress(TokenSymbolBytes32, ctx.token.address);
+                    await ctx.token.mint(ctx.contract.address, mint, 0);
+
+                    ctx.Tx = ctx.contract.recordPurchase(
+                        investor, tokenAmount, TokenSymbolBytes32, mint, costUSD, {from: crowdsale}
+                    );
+
+                    ctx.expectedTotalBoughtTokenAmount = tokenAmount
+                    ctx.expectedTotalFundedAmount = mint;
+                    ctx.expectedTotalFundedUSDAmount = costUSD;
+                    ctx.expectedInvestorTokenBoughtAmount = tokenAmount;
+                    ctx.expectedInvestorTotalTokenBoughtAmount = tokenAmount;
+                    ctx.expectedCostAmount = mint;
+                    ctx.expectedFundedAmount = mint;
+                    ctx.expectedFundedUSDAmount = costUSD;
+                    ctx.expectedTotalFundedAssetsSymbols = ['USD', TokenSymbol];
+                    ctx.expectedFundedAssetsSymbols = ['USD', TokenSymbol];
+                    ctx.investorAddress = investor
+                    ctx.Symbol = TokenSymbol;
+                });
+
+                testRecordingPurchaseToTheFund(ctx);
+
+                describe('record another purchase and', () => {
+
+                    beforeEach(async () => {
+                        await ctx.token.mint(ctx.contract.address, mint, 0);
+
+                        ctx.Tx = ctx.contract.recordPurchase(
+                            investor, tokenAmount, TokenSymbolBytes32, mint, costUSD, {from: crowdsale}
+                        );
+
+                        ctx.expectedTotalBoughtTokenAmount= tokenAmount.add(tokenAmount);
+                        ctx.expectedTotalFundedAmount = mint.add(mint);
+                        ctx.expectedTotalFundedUSDAmount = costUSD.add(costUSD);
+                        ctx.expectedInvestorTokenBoughtAmount = tokenAmount;
+                        ctx.expectedInvestorTotalTokenBoughtAmount = tokenAmount.add(tokenAmount);
+                        ctx.expectedCostAmount = mint;
+                        ctx.expectedFundedAmount = mint.add(mint);
+                        ctx.expectedFundedUSDAmount = costUSD.add(costUSD);
+                    });
+
+                    testRecordingPurchaseToTheFund(ctx);
+                });
             });
         });
 
+        describe('for payment with eth', () => {
+            const ETHSymbol = 'ETH';
+            const ETHSymbolBytes32 = web3.fromUtf8(ETHSymbol);
+            const investor = accounts[7];
+            const crowdsale = accounts[6];
+            const cost = new BigNumber(1000);
+            const costUSD = cost.mul(1.5);
+            const ctx = {};
 
-        it('should record purchases', async () => {
-            const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = utils.generateRandomAddress();
-            const expectedTokenAmount = oneToken.mul(1000);
+            beforeEach(async () => {
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new(ETHSymbol, ETHSymbol, 18);
+            });
 
-            const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, {
-                value: expectedAmount,
-                from: crowdsale
-            }).should.be.fulfilled;
+            describe('should successful', () => {
+                const tokenAmount = new BigNumber(1000);
 
-            receipt.logs[0].event.should.be.equal('FundsReceived');
-            receipt.logs[0].args.buyer.should.be.equal(expectedBuyer);
-            receipt.logs[0].args.weiAmount.should.bignumber.equal(expectedAmount);
-            receipt.logs[0].args.tokenAmount.should.bignumber.equal(expectedTokenAmount);
+                beforeEach(async () => {
+                    await ctx.rates.addSymbol(ETHSymbolBytes32);
+
+                    ctx.contract = await W12FundStub.new(
+                        0, crowdsale, utils.generateRandomAddress(), utils.generateRandomAddress(),
+                        utils.generateRandomAddress(), utils.toInternalPercent(0),
+                        ctx.rates.address
+                    );
+
+                    ctx.Tx = ctx.contract.recordPurchase(
+                        investor, tokenAmount, ETHSymbolBytes32, cost, costUSD, {from: crowdsale, value: cost}
+                    );
+
+                    ctx.expectedTotalBoughtTokenAmount = tokenAmount
+                    ctx.expectedTotalFundedAmount = cost;
+                    ctx.expectedTotalFundedUSDAmount = costUSD;
+                    ctx.expectedInvestorTokenBoughtAmount = tokenAmount;
+                    ctx.expectedInvestorTotalTokenBoughtAmount = tokenAmount;
+                    ctx.expectedCostAmount = cost;
+                    ctx.expectedFundedAmount = cost;
+                    ctx.expectedFundedUSDAmount = costUSD;
+                    ctx.expectedTotalFundedAssetsSymbols = ['USD', ETHSymbol];
+                    ctx.expectedFundedAssetsSymbols = ['USD', ETHSymbol];
+                    ctx.investorAddress = investor
+                    ctx.Symbol = ETHSymbol;
+                });
+
+                testRecordingPurchaseToTheFund(ctx);
+
+                describe('record another purchase and', () => {
+
+                    beforeEach(async () => {
+                        ctx.Tx = ctx.contract.recordPurchase(
+                            investor, tokenAmount, ETHSymbolBytes32, cost, costUSD, {from: crowdsale, value: cost}
+                        );
+
+                        ctx.expectedTotalBoughtTokenAmount = tokenAmount.add(tokenAmount);
+                        ctx.expectedTotalFundedAmount = cost.add(cost);
+                        ctx.expectedTotalFundedUSDAmount = costUSD.add(costUSD);
+                        ctx.expectedInvestorTokenBoughtAmount = tokenAmount;
+                        ctx.expectedInvestorTotalTokenBoughtAmount = tokenAmount.add(tokenAmount);
+                        ctx.expectedCostAmount = cost;
+                        ctx.expectedFundedAmount = cost.add(cost);
+                        ctx.expectedFundedUSDAmount = costUSD.add(costUSD);
+                    });
+
+                    testRecordingPurchaseToTheFund(ctx);
+                });
+            });
         });
 
-        it('should reject record purchases when called not from crowdsale address', async () => {
-            const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = utils.generateRandomAddress();
+        describe('should revert when', () => {
+            const investor = accounts[7];
+            const crowdsale = accounts[6];
+            const notCrowdsale = accounts[5];
+            const ctx = {};
 
-            await sut.recordPurchase(expectedBuyer, expectedAmount, {from: utils.generateRandomAddress()}).should.be.rejected;
-        });
+            beforeEach(async () => {
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new('TTT', 'TTT', 18);
+                ctx.contract = await W12FundStub.new(
+                    0, crowdsale, utils.generateRandomAddress(), utils.generateRandomAddress(),
+                    utils.generateRandomAddress(), utils.toInternalPercent(0),
+                    ctx.rates.address
+                );
 
-        it('should return zeros if there was no prior investment records', async () => {
-            const actualResult = await sut.getInvestmentsInfo(utils.generateRandomAddress()).should.be.fulfilled;
+                await ctx.rates.addSymbol(web3.fromUtf8('ETH'));
+                await ctx.rates.addSymbolWithTokenAddress(web3.fromUtf8('TTT'), ctx.token.address);
+            });
 
-            actualResult[0].should.bignumber.equal(BigNumber.Zero);
-            actualResult[1].should.bignumber.equal(BigNumber.Zero);
+            it('token amount is zero', async () => {
+                await ctx.contract.recordPurchase(investor, 0, web3.fromUtf8('ETH'), 1, 1, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('cost amount is zero', async () => {
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('ETH'), 0, 1, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('cost usd amount is zero', async () => {
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('ETH'), 1, 0, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('investor address is zero', async () => {
+                await ctx.contract.recordPurchase(0, 1, web3.fromUtf8('ETH'), 1, 1, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('unknown symbol', async () => {
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('AAA'), 1, 1, {from: crowdsale})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('msg.value less then cost', async () => {
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('ETH'), 2, 1, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('symbol is not a token', async () => {
+                await ctx.rates.addSymbol(web3.fromUtf8('TT2'));
+
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('TT2'), 1, 1, {from: crowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('fund balance was not filled with payment token', async () => {
+                await ctx.contract.recordPurchase(investor, 1, web3.fromUtf8('TTT'), 1, 1, {from: crowdsale})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('call from a not crowdsale address', async () => {
+                const contract = await W12Fund.new(0, utils.toInternalPercent(0), ctx.rates.address);
+                const crowdsale = await W12FundCrowdsaleStub.new(0);
+
+                await crowdsale._getWTokenMockData(utils.generateRandomAddress());
+                await contract.setCrowdsale(crowdsale.address);
+
+                await contract.recordPurchase(investor, 1, web3.fromUtf8('ETH'), 1, 1, {from: notCrowdsale, value: 1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
         });
     });
 
-    describe.skip('stubbed fund', async () => {
-        beforeEach(async () => {
-            tokenFixture = await TokenFixture.createToken(tokenOwner);
-            sut = await W12FundStub.new(
-                0,
-                crowdsale = accounts[1],
-                swap = utils.generateRandomAddress(),
-                tokenFixture.token.address,
-                utils.generateRandomAddress(),
-                trancheFeePercent,
-                { from: sutOwner }
-            );
+    describe.skip('realising tranche', () => {
+        const swapAddress = accounts[1];
+        const crowdsaleOwner = accounts[2];
+        const serviceWalletAddress = accounts[3];
+        const fundOwner = accounts[4];
+
+        describe('should successful', () => {
+            const oneToken = BigNumber.TEN.pow(18);
+            const fundedInToken = oneToken.mul(999);
+            const fundedInETH = new BigNumber(777);
+            const fundedInUSD = new BigNumber(888);
+            const investor1 = utils.generateRandomAddress();
+            const investor2 = utils.generateRandomAddress();
+            const totalTokenBoughtAmount = oneToken.mul(1001);
+            const ctx = {
+                expectedTrancheFeePercent: utils.toInternalPercent(10)
+            };
+
+            beforeEach(async () => {
+                ctx.nowDate = web3.eth.getBlock('latest').timestamp;
+                ctx.milestones = milestonesDefaultFixture(ctx.nowDate);
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new('TTT', 'TTT', 18);
+                ctx.crowdsale = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
+                ctx.contract = await W12FundStub.new(
+                    0,
+                    ctx.crowdsale.address,
+                    swapAddress,
+                    utils.generateRandomAddress(),
+                    serviceWalletAddress,
+                    ctx.expectedTrancheFeePercent,
+                    ctx.rates.address,
+                    { from: fundOwner }
+                );
+
+                await ctx.rates.addSymbol(web3.fromUtf8('ETH'));
+                await ctx.rates.addSymbolWithTokenAddress(web3.fromUtf8('TTT'), ctx.token.address);
+                await ctx.token.mint(ctx.contract.address, fundedInToken, 0);
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.div(2),
+                    web3.fromUtf8('ETH'), fundedInETH,
+                    fundedInUSD.div(2),
+                    { value: fundedInETH }
+                );
+                await ctx.contract.recordPurchase(
+                    investor2, totalTokenBoughtAmount.div(2),
+                    web3.fromUtf8('TTT'), fundedInToken,
+                    fundedInUSD.div(2)
+                );
+            });
+
+            describe('release in milestone 1/2 and', () => {
+
+                beforeEach(async () => {
+                    await setupMilestoneMockData(0, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[0].endDate + 1);
+
+                    ctx.Tx = () => ctx.contract.tranche({ from: fundOwner });
+                    ctx.milestoneIndex = 0;
+                    ctx.expectedTranchePercent = utils.toInternalPercent(50);
+                    ctx.expectedTotalTranchePercentReleased = utils.toInternalPercent(50);
+                    ctx.serviceWalletAddress = serviceWalletAddress;
+                    ctx.fundOwner = fundOwner;
+                });
+
+                testTrancheRelease(ctx);
+            });
+
+            describe('release in milestone 2/2 and', () => {
+
+                beforeEach(async () => {
+                    await setupMilestoneMockData(0, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[0].endDate + 1);
+                    await ctx.contract.tranche({from: fundOwner});
+
+                    await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[1].withdrawalWindow + utils.time.duration.minutes(10));
+
+                    ctx.Tx = () => ctx.contract.tranche({from: fundOwner});
+                    ctx.milestoneIndex = 1;
+                    ctx.expectedTranchePercent = utils.toInternalPercent(50);
+                    ctx.expectedTotalTranchePercentReleased = utils.toInternalPercent(100);
+                    ctx.serviceWalletAddress = serviceWalletAddress;
+                    ctx.fundOwner = fundOwner;
+                });
+
+                testTrancheRelease(ctx);
+            });
+
+            describe('release not released tranche from milestone 1/2 in milestone 2/2 and', () => {
+
+                beforeEach(async () => {
+                    await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[1].withdrawalWindow + utils.time.duration.minutes(10));
+
+                    ctx.Tx = () => ctx.contract.tranche({from: fundOwner});
+                    ctx.milestoneIndex = 1;
+                    ctx.expectedTranchePercent = utils.toInternalPercent(100);
+                    ctx.expectedTotalTranchePercentReleased = utils.toInternalPercent(100);
+                    ctx.serviceWalletAddress = serviceWalletAddress;
+                    ctx.fundOwner = fundOwner;
+                });
+
+                testTrancheRelease(ctx);
+            });
         });
 
-        it('should record purchases', async () => {
-            const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = utils.generateRandomAddress();
-            const expectedTokenAmount = oneToken.mul(1000);
+        describe('should revert', () => {
+            const oneToken = BigNumber.TEN.pow(18);
+            const fundedInToken = oneToken.mul(999);
+            const fundedInETH = new BigNumber(777);
+            const fundedInUSD = new BigNumber(888);
+            const investor1 = utils.generateRandomAddress();
+            const investor2 = utils.generateRandomAddress();
+            const totalTokenBoughtAmount = oneToken.mul(1001);
+            const ctx = {
+                expectedTrancheFeePercent: utils.toInternalPercent(10)
+            };
 
-            const receipt = await sut.recordPurchase(expectedBuyer, expectedTokenAmount, { value: expectedAmount, from: crowdsale }).should.be.fulfilled;
+            beforeEach(async () => {
+                ctx.nowDate = web3.eth.getBlock('latest').timestamp;
+                ctx.milestones = milestonesDefaultFixture(ctx.nowDate);
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new('TTT', 'TTT', 18);
+                ctx.crowdsale = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
+                ctx.contract = await W12FundStub.new(
+                    0,
+                    ctx.crowdsale.address,
+                    swapAddress,
+                    utils.generateRandomAddress(),
+                    serviceWalletAddress,
+                    ctx.expectedTrancheFeePercent,
+                    ctx.rates.address,
+                    {from: fundOwner}
+                );
 
-            receipt.logs[0].event.should.be.equal('FundsReceived');
-            receipt.logs[0].args.buyer.should.be.equal(expectedBuyer);
-            receipt.logs[0].args.weiAmount.should.bignumber.equal(expectedAmount);
-            receipt.logs[0].args.tokenAmount.should.bignumber.equal(expectedTokenAmount);
-        });
+                await ctx.rates.addSymbol(web3.fromUtf8('ETH'));
+                await ctx.rates.addSymbolWithTokenAddress(web3.fromUtf8('TTT'), ctx.token.address);
+                await ctx.token.mint(ctx.contract.address, fundedInToken, 0);
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.div(2),
+                    web3.fromUtf8('ETH'), fundedInETH,
+                    fundedInUSD.div(2),
+                    {value: fundedInETH}
+                );
+                await ctx.contract.recordPurchase(
+                    investor2, totalTokenBoughtAmount.div(2),
+                    web3.fromUtf8('TTT'), fundedInToken,
+                    fundedInUSD.div(2)
+                );
+            });
 
-        it('should reject record purchases when called not from crowdsale address', async () => {
-            const expectedAmount = web3.toWei(1, 'ether');
-            const expectedBuyer = utils.generateRandomAddress();
+            it('if crowdsale was not end', async() => {
+                await ctx.contract.tranche({from: fundOwner})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-            await sut.recordPurchase(expectedBuyer, expectedAmount, { from: utils.generateRandomAddress() }).should.be.rejected;
-        });
+            it('if withdrawal window is not active', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate + 1);
 
-        it('should return zeros if there was no prior investment records', async () => {
-            const actualResult = await sut.getInvestmentsInfo(utils.generateRandomAddress()).should.be.fulfilled;
+                await ctx.contract.tranche({from: fundOwner})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-            actualResult[0].should.bignumber.equal(BigNumber.Zero);
-            actualResult[1].should.bignumber.equal(BigNumber.Zero);
+            it('if already released', async () => {
+                await setupMilestoneMockData(0, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[0].endDate);
+                await ctx.contract.tranche({from: fundOwner})
+
+                await ctx.contract.tranche({from: fundOwner})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('if the fund is empty', async () => {
+                const contract = await W12FundStub.new(
+                    0,
+                    ctx.crowdsale.address,
+                    swapAddress,
+                    utils.generateRandomAddress(),
+                    serviceWalletAddress,
+                    ctx.expectedTrancheFeePercent,
+                    ctx.rates.address,
+                    {from: fundOwner}
+                );
+                await setupMilestoneMockData(0, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[0].endDate);
+
+                await contract.tranche({from: fundOwner})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
         });
     });
 
@@ -624,379 +956,6 @@ contract('W12Fund', async (accounts) => {
             await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow + 60);
 
             await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
-        });
-    });
-
-    describe.skip('tranche', async () => {
-        let crowdsaleMock, encodedMilestoneFixture, startData;
-
-        const swapAddress = accounts[1];
-        const serviceWalletAddress = accounts[4];
-        const crowdsaleOwner = accounts[0];
-        const mintAmount = oneToken.mul(10000);
-        const tokenPrice = new BigNumber(1000);
-        const setupMilestoneMockData = async (index) => {
-            await crowdsaleMock._getCurrentMilestoneIndexMockData(index, true);
-            await crowdsaleMock._getLastMilestoneIndexMockData(encodedMilestoneFixture.length - 1, true);
-            for (const milestoneIndex in  encodedMilestoneFixture) {
-                await crowdsaleMock._getMilestoneMockData(
-                    milestoneIndex,
-                    encodedMilestoneFixture[milestoneIndex].dates[0],
-                    encodedMilestoneFixture[milestoneIndex].tranchePercent,
-                    encodedMilestoneFixture[milestoneIndex].dates[1],
-                    encodedMilestoneFixture[milestoneIndex].dates[2],
-                    encodedMilestoneFixture[milestoneIndex].nameHex,
-                    encodedMilestoneFixture[milestoneIndex].descriptionHex
-                );
-            }
-        };
-
-        beforeEach(async () => {
-            startData = web3.eth.getBlock('latest').timestamp;
-            tokenFixture = await TokenFixture.createToken(tokenOwner);
-            originTokenFixture = await TokenFixture.createToken(tokenOwner);
-            milestonesFixture = milestonesDefaultFixture(startData);
-            encodedMilestoneFixture = milestonesFixture
-                .map(m =>
-                    utils.encodeMilestoneParameters(
-                        m.name,
-                        m.description,
-                        m.tranchePercent,
-                        m.endDate,
-                        m.voteEndDate,
-                        m.withdrawalWindow
-                    )
-                )
-            crowdsaleMock = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
-            sut = await W12FundStub.new(
-                0,
-                crowdsaleMock.address,
-                swapAddress,
-                tokenFixture.token.address,
-                serviceWalletAddress,
-                trancheFeePercent,
-                {from: sutOwner}
-            );
-
-            await tokenFixture.token.mint(buyer1, mintAmount, 0, {from: tokenOwner});
-            await tokenFixture.token.mint(buyer2, mintAmount, 0, {from: tokenOwner});
-            await tokenFixture.token.approve(sut.address, mintAmount, {from: buyer1});
-            await tokenFixture.token.approve(sut.address, mintAmount, {from: buyer2});
-        });
-
-        describe('getTrancheAmount', async () => {
-
-            it('should return zero if crowdsale was not started yet', async () => {
-                const totalFundedAmount = new BigNumber(100); // 100 wei
-                const account = accounts[0];
-                const expected = 0;
-
-                await sut.sendTransaction({value: totalFundedAmount, from: account})
-                    .should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account})
-                    .should.be.fulfilled;
-
-                const result = await sut.getTrancheAmount({from: account})
-                    .should.be.fulfilled;
-
-                result.should.bignumber.eq(expected);
-            });
-
-            // TODO: windows always open
-
-            // it('should return zero if withdrawal window was not open yet', async () => {
-            //     const firstMilestone = milestonesFixture.milestones[0];
-            //     const firstMilestoneEnd = firstMilestone.endDate;
-            //     const totalFundedAmount = new BigNumber(100); // 100 wei
-            //     const account = accounts[0];
-            //     const expected = 0;
-
-            //     await utils.time.increaseTimeTo(firstMilestoneEnd - 60);
-
-            //     await sut.sendTransaction({value: totalFundedAmount, from: account})
-            //         .should.be.fulfilled;
-            //     await sut._setTotalFunded(totalFundedAmount, {from: account})
-            //         .should.be.fulfilled;
-
-            //     const result = await sut.getTrancheAmount({from: account})
-            //         .should.be.fulfilled;
-
-            //     result.should.bignumber.eq(expected);
-            // });
-
-            it('should return zero if balance is empty', async () => {
-                await setupMilestoneMockData(0, 2);
-
-                const firstMilestone = milestonesFixture[0];
-                const withdrawalWindow = firstMilestone.withdrawalWindow;
-                const account = accounts[0];
-                const expected = 0;
-
-                await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                const result = await sut.getTrancheAmount({from: account})
-                    .should.be.fulfilled;
-
-                result.should.bignumber.eq(expected);
-            });
-
-            it('should return non zero if balance is filled', async () => {
-                await setupMilestoneMockData(0, 2);
-
-                const firstMilestone = milestonesFixture[0];
-                const withdrawalWindow = firstMilestone.withdrawalWindow;
-                const percent = firstMilestone.tranchePercent;
-                const totalFundedAmount = new BigNumber(100); // 100 wei
-                const account = accounts[0];
-                const expected = utils.percent(totalFundedAmount, percent);
-
-                await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                await sut.sendTransaction({value: totalFundedAmount, from: account})
-                    .should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account})
-                    .should.be.fulfilled;
-
-                const result = await sut.getTrancheAmount({from: account})
-                    .should.be.fulfilled;
-
-                result.should.bignumber.eq(expected);
-            });
-
-            it('should return non zero in case, where balance is filled and there is refunded resources', async () => {
-                await setupMilestoneMockData(0, 2);
-
-                const firstMilestone = milestonesFixture[0];
-                const withdrawalWindow = firstMilestone.withdrawalWindow;
-                const percent = firstMilestone.tranchePercent;
-                const totalFundedAmount = new BigNumber(100); // 100 wei
-                const totalRefundedAmount = totalFundedAmount.mul(0.1) // 10 wei
-                const diff = totalFundedAmount.minus(totalRefundedAmount);
-                const account = accounts[0];
-                const expected = utils.round(diff.mul(percent).div(utils.toInternalPercent(100)));
-
-                await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                await sut.sendTransaction({value: diff, from: account})
-                    .should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account})
-                    .should.be.fulfilled;
-                await sut._setTotalRefunded(totalRefundedAmount, {from: account})
-                    .should.be.fulfilled;
-
-                const result = await sut.getTrancheAmount({from: account})
-                    .should.be.fulfilled;
-
-                result.should.bignumber.eq(expected);
-            });
-
-            // TODO: now it`s not work. it should work?
-
-            // it('should return non zero in case, where balance is filled and last milestone was end', async () => {
-            //     const lastMilestone = milestonesFixture.milestones[2];
-            //     const withdrawalWindow = lastMilestone.withdrawalWindow;
-            //     const percent = lastMilestone.tranchePercent;
-            //     const totalFundedAmount = new BigNumber(100); // 100 wei
-            //     const account = accounts[0];
-            //     const expected = utils.round(totalFundedAmount.mul(percent).div(100));
-
-            //     await utils.time.increaseTimeTo(withdrawalWindow + 60);
-
-            //     await sut.sendTransaction({value: totalFundedAmount, from: account})
-            //         .should.be.fulfilled;
-            //     await sut._setTotalFunded(totalFundedAmount, {from: account})
-            //         .should.be.fulfilled;
-
-            //     const result = await sut.getTrancheAmount({from: account})
-            //         .should.be.fulfilled;
-
-            //     result.should.bignumber.eq(expected);
-            // });
-        });
-
-        it('should revert if sender is not a owner', async () => {
-            await setupMilestoneMockData(0, 2);
-
-            const firstMilestone = milestonesFixture[0];
-            const withdrawalWindow = firstMilestone.withdrawalWindow;
-            const totalFundedAmount = new BigNumber(100); // 100 wei
-            const account = accounts[5];
-
-            await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-            await sut.sendTransaction({value: totalFundedAmount, from: account})
-                .should.be.fulfilled;
-            await sut._setTotalFunded(totalFundedAmount, {from: account})
-                .should.be.fulfilled;
-
-            await sut.tranche({from: account}).should.be.rejectedWith(utils.EVMRevert);
-        });
-
-        it('should revert if tranche amount is zero', async () => {
-            const account = await sut.owner();
-
-            await sut.tranche({from: account})
-                .should.be.rejectedWith(utils.EVMRevert);
-        });
-
-        describe('release tranche', async () => {
-            const totalFundedAmount = new BigNumber(100); // 100 wei
-
-            let milestones;
-            const indexes = [0, 1, 2];
-            let account;
-            let total = BigNumber.Zero;
-
-            beforeEach(async () => {
-                milestones = milestonesFixture;
-                account = await sut.owner();
-
-                await sut.sendTransaction({value: totalFundedAmount, from: account})
-                    .should.be.fulfilled;
-                await sut._setTotalFunded(totalFundedAmount, {from: account})
-                    .should.be.fulfilled;
-            });
-
-            describe(`release some tranche`, async () => {
-                const index = 0;
-                const anotherIndex = 2;
-                const trancheMilestoneIndex = anotherIndex - 1;
-
-                let txReceipt;
-                let logs;
-                let accountBalanceBefore;
-                let milestone;
-                let anotherMilestone;
-                let withdrawalWindow, tranchePercent;
-                let expected;
-                let fee;
-                let expectedWithoutFee;
-                let expectedServiceWalletBalance;
-                let expectedFundBalance;
-                let trancheMilestone;
-
-
-                beforeEach(async () => {
-                    milestones = milestonesFixture;
-                    milestone = milestones[index];
-                    anotherMilestone = milestones[anotherIndex];
-                    trancheMilestone = milestones[trancheMilestoneIndex];
-                    account = await sut.owner();
-                    accountBalanceBefore = await web3.eth.getBalance(account);
-                    withdrawalWindow = milestone.withdrawalWindow;
-                    tranchePercent = milestone.tranchePercent;
-                    expected = utils.round(totalFundedAmount.mul(tranchePercent).div(utils.toInternalPercent(100)));
-                    fee = utils.round(expected.mul(trancheFeePercent).div(utils.toInternalPercent(100)));
-                    expectedWithoutFee = expected.sub(fee);
-                    expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress)).plus(fee);
-                    expectedFundBalance = totalFundedAmount.minus(expected);
-
-                    await setupMilestoneMockData(index, 2);
-                    await utils.time.increaseTimeTo(withdrawalWindow - 60);
-
-                    txReceipt = await sut.tranche({from: account});
-
-                    logs = txReceipt.logs;
-                });
-
-                it(`should release`, async () => {
-                    txReceipt.should.be;
-
-                    const cost = await utils.getTransactionCost(txReceipt);
-                    const expectedAccountBalance = accountBalanceBefore
-                        .plus(expected.minus(fee)).minus(cost);
-                    const fundBalance = await web3.eth.getBalance(sut.address);
-                    const accountBalance = await web3.eth.getBalance(account);
-                    const serviceWalletBalance = await web3.eth.getBalance(serviceWalletAddress);
-
-                    fundBalance.should.bignumber.eq(expectedFundBalance);
-                    accountBalance.should.bignumber.eq(expectedAccountBalance);
-                    serviceWalletBalance.should.bignumber.eq(expectedServiceWalletBalance);
-
-                    (await sut.completedTranches(index)).should.be.equal(true);
-                    (await sut.getTrancheAmount()).should.bignumber.eq(0);
-                });
-
-                it(`should release another`, async () => {
-                    await setupMilestoneMockData(anotherIndex, 2);
-
-                    const {endDate, withdrawalWindow} = anotherMilestone;
-                    const {tranchePercent} = trancheMilestone;
-                    const expectedAnother = utils.round(totalFundedAmount.mul(tranchePercent).div(utils.toInternalPercent(100)));
-                    const fee = utils.round(expectedAnother.mul(trancheFeePercent).div(utils.toInternalPercent(100)));
-                    const expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress))
-                        .plus(fee);
-                    const expectedFundBalance = totalFundedAmount.minus(expected.plus(expectedAnother));
-                    const accountBalanceBefore = await web3.eth.getBalance(account);
-
-                    await utils.time.increaseTimeTo(endDate - 60);
-
-                    const txReceipt = await sut.tranche({from: account})
-                        .should.be.fulfilled;
-
-                    const cost = await utils.getTransactionCost(txReceipt);
-                    const expectedAccountBalance = accountBalanceBefore
-                        .plus(expectedAnother.minus(fee)).minus(cost);
-                    const fundBalance = await web3.eth.getBalance(sut.address);
-                    const accountBalance = await web3.eth.getBalance(account);
-                    const serviceWalletBalance = await web3.eth.getBalance(serviceWalletAddress);
-
-                    fundBalance.should.bignumber.eq(expectedFundBalance);
-                    accountBalance.should.bignumber.eq(expectedAccountBalance);
-                    serviceWalletBalance.should.bignumber.eq(expectedServiceWalletBalance);
-
-                    (await sut.completedTranches(trancheMilestoneIndex)).should.be.equal(true);
-                    (await sut.getTrancheAmount()).should.bignumber.eq(0);
-                });
-
-                it('should`t release', async () => {
-                    await sut.tranche({from: account})
-                        .should.be.rejectedWith(utils.EVMRevert);
-                });
-
-                it('should emmit event', async () => {
-                    const event = await utils.expectEvent.inLogs(logs, 'TrancheReleased');
-
-                    event.args.receiver.should.eq(account);
-                    event.args.amount.should.be.bignumber.equal(expectedWithoutFee);
-                });
-            });
-
-            // TODO: rework it in the future
-            // describe('should release current and all previous not released tranches', async () => {
-            //     for (let index of indexes) {
-            //         it(`milestone #${index}`, async () => {
-            //             const milestone = milestones[index];
-            //             const {endDate, withdrawalWindow, tranchePercent: percent} = milestone;
-            //             total = total.plus(percent);
-            //             const expected = utils.round(totalFundedAmount.mul(total).div(100));
-            //             const fee = utils.round(expected.mul(trancheFeePercent).div(100 * 100));
-            //             const expectedServiceWalletBalance = (await web3.eth.getBalance(serviceWalletAddress))
-            //                 .plus(fee);
-            //             const expectedFundBalance = totalFundedAmount.minus(expected);
-            //             const accountBalanceBefore = await web3.eth.getBalance(account);
-            //
-            //             await utils.time.increaseTimeTo(endDate - 60);
-            //
-            //             const tx = await sut.tranche({from: account})
-            //                 .should.be.fulfilled;
-            //
-            //             const cost = await utils.getTransactionCost(tx);
-            //             const expectedAccountBalance = accountBalanceBefore
-            //                 .plus(expected.minus(fee)).minus(cost);
-            //             const fundBalance = await web3.eth.getBalance(sut.address);
-            //             const accountBalance = await web3.eth.getBalance(account);
-            //             const serviceWalletBalance = await web3.eth.getBalance(serviceWalletAddress);
-            //
-            //             fundBalance.should.bignumber.eq(expectedFundBalance);
-            //             accountBalance.should.bignumber.eq(expectedAccountBalance);
-            //             serviceWalletBalance.should.bignumber.eq(expectedServiceWalletBalance);
-            //
-            //             (await sut.completedTranches(withdrawalWindow)).should.be.equal(true);
-            //             (await sut.getTrancheAmount()).should.bignumber.eq(0);
-            //         });
-            //     }
-            // });
         });
     });
 });
