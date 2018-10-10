@@ -30,7 +30,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     // total percent of realised project tranche
     uint public totalTranchePercentReleased;
     // maps of completed tranches periods
-    mapping (uint => bool) completedTranches;
+    mapping (uint => bool) public completedTranches;
 
     // total funded assets
     FundAccount.Account totalFunded;
@@ -141,6 +141,10 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
     function getTotalFundedAssetsSymbols() public view returns (bytes32[]) {
         return totalFunded.symbolsList();
+    }
+
+    function getTotalFundedReleased(bytes32 _symbol) public view returns (uint) {
+        return totalFundedRealised[_symbol];
     }
 
     /**
