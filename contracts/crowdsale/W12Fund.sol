@@ -107,7 +107,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             require(msg.value >= cost);
         } else {
             require(rates.isToken(symbol));
-            require(totalFunded.amountOf(symbol).add(cost) >= ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)));
+            require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= totalFunded.amountOf(symbol).add(cost));
         }
 
         // write to investor account
