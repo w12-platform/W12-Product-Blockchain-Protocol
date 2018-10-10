@@ -47,7 +47,8 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     mapping (address => FundAccount.Account) fundedPerInvestor;
 
     event FundsReceived(address indexed investor, uint tokenAmount, bytes32 symbol, uint cost);
-    event FundsRefunded(address indexed buyer, uint weiAmount, uint tokenAmount);
+    event AssetRefunded(address indexed buyer, bytes32 symbol, uint amount);
+    event TokenRefunded(address indexed buyer, uint tokenAmount);
     event TrancheTransferred(address indexed receiver, bytes32 symbol, uint amount);
     event TrancheReleased(address indexed receiver, uint percent);
 
@@ -148,40 +149,6 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     /**
-        a = address(this).balance
-        b = totalFunded
-        c = buyers[buyer].totalFunded
-        d = buyers[buyer].totalBought
-        e = wtokensToRefund
-
-        ( ( c * (a / b) ) / d ) * e = (refund amount)
-    */
-//    function getRefundAmount(uint wtokensToRefund) public view returns (uint result) {
-//        uint exp = tokenDecimals < tokenDecimals.add(8) ? tokenDecimals.add(8) : tokenDecimals;
-//
-//        require(uint(- 1) / 10 >= exp);
-//
-//        uint max = uint(-1) / 10 ** exp;
-//        address buyer = msg.sender;
-//
-//        if(wtokensToRefund == 0
-//            || buyers[buyer].totalBought == 0
-//            || address(this).balance == 0
-//            || wToken.balanceOf(buyer) < wtokensToRefund
-//            || buyers[buyer].totalBought < wtokensToRefund
-//        ) return;
-//
-//        uint allowedFund = buyers[buyer].totalFunded.mul(totalFunded).div(address(this).balance);
-//        uint precisionComponent = allowedFund >= max ? 1 : 10 ** exp;
-//
-//        result = allowedFund
-//            .mul(precisionComponent)
-//            .div(buyers[buyer].totalBought)
-//            .mul(wtokensToRefund)
-//            .div(precisionComponent);
-//    }
-
-    /**
      * @notice Get tranche invoice
      * @return uint[3] result:
      * [tranchePercent, totalTranchePercentBefore, milestoneIndex]
@@ -280,43 +247,74 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         }
     }
 
-//    function refund(uint wtokensToRefund) external nonReentrant {
-//        address buyer = msg.sender;
-//
-//        require(refundAllowed());
-//        require(wtokensToRefund > 0);
-//        require(buyers[buyer].totalBought >= wtokensToRefund);
-//        require(wToken.balanceOf(buyer) >= wtokensToRefund);
-//        require(wToken.allowance(msg.sender, address(this)) >= wtokensToRefund);
-//
-//        uint transferAmount = getRefundAmount(wtokensToRefund);
-//
-//        require(transferAmount > 0);
-//
-//        buyers[buyer].totalBought = buyers[buyer].totalBought
-//            .sub(wtokensToRefund);
-//        buyers[buyer].totalFunded = buyers[buyer].totalFunded
-//            .sub(wtokensToRefund.mul(buyers[buyer].averagePrice).div(10 ** tokenDecimals));
-//
-//        // update total refunded amount counter
-//        totalRefunded = totalRefunded.add(transferAmount);
-//
-//        require(wToken.transferFrom(buyer, swap, wtokensToRefund));
-//        buyer.transfer(transferAmount);
-//
-//        emit FundsRefunded(buyer, transferAmount, wtokensToRefund);
-//    }
-//
-//    function refundAllowed() public view returns (bool) {
-//        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
-//
-//        // first milestone is reserved for the project to claim initial amount of payments. No refund allowed at this stage.
-//        if(index == 0) return;
-//
-//        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
-//
-//        return endDate <= now && now < withdrawalWindow;
-//    }
+    /**
+     * @notice Refund bought tokens
+     */
+    function refund(uint tokenAmount) external nonReentrant {
+        require(tokenRefundAllowed());
+        require(tokenAmount != 0);
+        require(tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
+        require(totalTokenBought.sub(totalTokenRefunded) >= tokenAmount);
+        require(totalTranchePercentReleased.fromPercent() != 100);
+        require(wToken.balanceOf(msg.sender) >= tokenAmount);
+        require(wToken.allowance(msg.sender, address(this)) >= tokenAmount);
+
+        _refundAssets(tokenAmount);
+
+        require(wToken.transferFrom(msg.sender, swap, tokenAmount));
+
+        emit TokenRefunded(msg.sender, tokenAmount);
+    }
+
+    function _refundAssets(uint tokenAmount) internal {
+        uint ln = fundedPerInvestor[msg.sender].symbolsList().length;
+
+        while (ln != 0) {
+            bytes32 symbol = fundedPerInvestor[msg.sender].symbolsList()[--ln];
+            uint amount = fundedPerInvestor[msg.sender].amountOf(symbol);
+
+            if (amount == 0) continue;
+
+            amount = Utils.saveMulDiv(tokenAmount, amount, tokenBoughtPerInvestor[msg.sender]);
+
+            require(amount > 0);
+
+            amount = Utils.saveMulDiv(totalFunded.amountOf(symbol).sub(totalFundedRealised[symbol]), amount, totalFunded.amountOf(symbol));
+
+            require(amount > 0);
+
+            totalTokenRefunded = totalTokenRefunded.sub(tokenAmount);
+            tokenBoughtPerInvestor[msg.sender] = tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
+            totalFundedRealised[symbol] = totalFundedRealised[symbol].sub(amount);
+            fundedPerInvestor[msg.sender].withdrawal(symbol, amount);
+
+            if (symbol == METHOD_USD) continue;
+
+            if (symbol != METHOD_ETH) {
+                require(rates.isToken(symbol));
+                require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
+            }
+
+            if (symbol == METHOD_ETH) {
+                msg.sender.transfer(amount);
+            } else {
+                ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount);
+            }
+
+            emit AssetRefunded(msg.sender, symbol, amount);
+        }
+    }
+
+    function tokenRefundAllowed() public view returns (bool) {
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+
+        // first milestone is reserved for the project to claim initial amount of payments. No refund allowed at this stage.
+        if(index == 0) return;
+
+        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
+
+        return endDate <= now && now < withdrawalWindow;
+    }
 
     function trancheTransferAllowed() public view returns (bool) {
         (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
