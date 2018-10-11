@@ -7,6 +7,7 @@ const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
 const W12FundFactory = artifacts.require('W12FundFactory');
 const W12Fund = artifacts.require('W12Fund');
+const Rates = artifacts.require('Rates');
 const W12FundStub = artifacts.require('W12FundStub');
 const version = require('../package').version;
 const semint = require('@redtea/semint');
@@ -40,11 +41,11 @@ module.exports = function (deployer, network, accounts) {
 
     if(network === 'test' || network === 'mainnet') {
     	deployer.then(async () => {
-            await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4));
+            await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4), Rates.address);
 
             utils.migrateLog.addAddress(W12FundFactory.contractName, W12FundFactory.address);
 
-            await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address);
+            await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address, Rates.address);
 
             utils.migrateLog.addAddress(W12CrowdsaleFactory.contractName, W12CrowdsaleFactory.address);
         });

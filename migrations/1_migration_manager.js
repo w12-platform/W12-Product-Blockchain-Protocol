@@ -24,7 +24,7 @@ module.exports = function(deployer, network, accounts) {
             const versions = (await (await Versions.deployed()).getVersions())
                 .map(v => semint.decode(v.toNumber(), 4));
 
-            console.log('deployed versions: ', versions.join(', '));
+            console.log('deployed versions: ', versions.length ? versions.join(', ') : 'no');
 
             const exists = versions.length ? semver.satisfies(version, versions.join('||')) : false;
 
