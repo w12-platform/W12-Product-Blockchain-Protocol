@@ -30,11 +30,15 @@ library Utils {
     function saveMulDiv(uint a, uint b, uint c) internal pure returns(uint result) {
         uint fractionsSum;
 
+        assert(c != 0);
+        
+        if(a == 0 || b == 0) return;
+        
         require(a <= MAX_UINT);
         require(b <= MAX_UINT);
         require(c <= MAX_UINT);
 
-        uint maxA = MAX_UINT / b;
+        uint maxA = MAX_UINT.div(b);
 
         if (a <= maxA) return a.mul(b).div(c);
 

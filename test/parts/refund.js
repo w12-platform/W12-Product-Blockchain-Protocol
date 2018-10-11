@@ -1,5 +1,14 @@
 const utils = require('../../shared/tests/utils.js');
 const Token = artifacts.require('WToken');
+const getSourceAmount = (amount, tokenToRefundAmount, tokenBoughtAmount) => {
+    return utils.round(amount.mul(tokenToRefundAmount).div(tokenBoughtAmount));
+};
+const getAmount = (sourceAmount, totalFundedAmount, trancheReleasedPercent) => {
+    return totalFundedAmount
+        .sub(utils.percent(totalFundedAmount, trancheReleasedPercent))
+        .mul(sourceAmount)
+        .div(totalFundedAmount);
+};
 // ctx =>
 // contract - fund contract
 // Tx - () => Promise
@@ -28,6 +37,7 @@ module.exports = (ctx) => {
 
     it('decrease total funded released amount', async () => {
         const bought = await ctx.contract.getInvestorTokenBoughtAmount(ctx.investorAddress);
+        const trancheReleasedPercent = await ctx.contract.totalTranchePercentReleased();
         const list = await Promise.all(
             (await ctx.contract.getInvestorFundedAssetsSymbols(ctx.investorAddress))
                 .map(async (s) => ({
@@ -41,11 +51,10 @@ module.exports = (ctx) => {
 
         for (const item of list) {
             const actual = await ctx.contract.getTotalFundedReleased(item.symbol);
-            const refunded = utils.round(
-                ctx
-                    .expectedTokenRefundedAmount.mul(item.funded.sub(item.released))
-                    .div(bought.mul(item.funded))
-                    .mul(item.fundedByInvestor)
+            const refunded = getAmount(
+                getSourceAmount(item.fundedByInvestor, ctx.expectedTokenRefundedAmount, bought),
+                item.funded,
+                trancheReleasedPercent
             );
 
             actual.should.bignumber.eq(item.released.add(refunded));
@@ -54,6 +63,7 @@ module.exports = (ctx) => {
 
     it('decrease funded per investor amount for investor', async () => {
         const bought = await ctx.contract.getInvestorTokenBoughtAmount(ctx.investorAddress);
+        const trancheReleasedPercent = await ctx.contract.totalTranchePercentReleased();
         const list = await Promise.all(
             (await ctx.contract.getInvestorFundedAssetsSymbols(ctx.investorAddress))
                 .map(async (s) => ({
@@ -67,19 +77,15 @@ module.exports = (ctx) => {
 
         for (const item of list) {
             const actual = await ctx.contract.getInvestorFundedAmount(ctx.investorAddress, item.symbol);
-            const refunded = utils.round(
-                ctx
-                    .expectedTokenRefundedAmount.mul(item.funded.sub(item.released))
-                    .div(bought.mul(item.funded))
-                    .mul(item.fundedByInvestor)
-            );
+            const sourceRefunded = getSourceAmount(item.fundedByInvestor, ctx.expectedTokenRefundedAmount, bought);
 
-            actual.should.bignumber.eq(item.fundedByInvestor.sub(refunded));
+            actual.should.bignumber.eq(item.fundedByInvestor.sub(sourceRefunded));
         }
     });
 
     it('refund assets', async () => {
         const bought = await ctx.contract.getInvestorTokenBoughtAmount(ctx.investorAddress);
+        const trancheReleasedPercent = await ctx.contract.totalTranchePercentReleased();
         const list = await Promise.all(
             (await ctx.contract.getInvestorFundedAssetsSymbols(ctx.investorAddress))
                 .filter(s => web3.toUtf8(s) !== 'USD')
@@ -100,11 +106,10 @@ module.exports = (ctx) => {
             const actual = item.isETH
                 ? (await web3.eth.getBalance(ctx.investorAddress)).add(cost)
                 : await (await Token.at(await ctx.rates.getTokenAddress(item.symbol))).balanceOf(ctx.investorAddress);
-            const refunded = utils.round(
-                ctx
-                    .expectedTokenRefundedAmount.mul(item.funded.sub(item.released))
-                    .div(bought.mul(item.funded))
-                    .mul(item.fundedByInvestor)
+            const refunded = getAmount(
+                getSourceAmount(item.fundedByInvestor, ctx.expectedTokenRefundedAmount, bought),
+                item.funded,
+                trancheReleasedPercent
             );
 
             actual.should.bignumber.eq(item.before.add(refunded));
@@ -113,6 +118,7 @@ module.exports = (ctx) => {
 
     it('emit events', async () => {
         const bought = await ctx.contract.getInvestorTokenBoughtAmount(ctx.investorAddress);
+        const trancheReleasedPercent = await ctx.contract.totalTranchePercentReleased();
         const list = await Promise.all(
             (await ctx.contract.getInvestorFundedAssetsSymbols(ctx.investorAddress))
                 .filter(s => web3.toUtf8(s) !== 'USD')
@@ -130,12 +136,12 @@ module.exports = (ctx) => {
                 e.event === 'AssetRefunded'
                 && web3.toUtf8(e.args.symbol) === web3.toUtf8(item.symbol)
             );
-            const refunded = utils.round(
-                ctx
-                    .expectedTokenRefundedAmount.mul(item.funded.sub(item.released))
-                    .div(bought.mul(item.funded))
-                    .mul(item.fundedByInvestor)
+            const refunded = getAmount(
+                getSourceAmount(item.fundedByInvestor, ctx.expectedTokenRefundedAmount, bought),
+                item.funded,
+                trancheReleasedPercent
             );
+
 
             should.exist(actual);
             actual.args.investor.should.to.be.eq(ctx.investorAddress);
