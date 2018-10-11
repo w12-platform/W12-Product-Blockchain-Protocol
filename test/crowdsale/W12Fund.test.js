@@ -8,34 +8,13 @@ const FundFixture = require('../fixtures/fund.js');
 
 const testRecordingPurchaseToTheFund = require('../parts/recordingPurchaseToTheFund');
 const testTrancheRelease = require('../parts/trancheRelease');
+const testRefund = require('../parts/refund');
 const W12Fund = artifacts.require('W12Fund');
 const Rates = artifacts.require('Rates');
 const Token = artifacts.require('WToken');
 const W12FundStub = artifacts.require('W12FundStub');
 const W12FundCrowdsaleStub = artifacts.require('W12FundCrowdsaleStub');
-const oneToken = new BigNumber(10).pow(18);
-const defaultStagesGenerator = utils.createStagesGenerator();
 const defaultMilestonesGenerator = utils.createMilestonesGenerator();
-const stagesDefaultFixture = (startDate) => defaultStagesGenerator([
-    {
-        dates: [
-            startDate + utils.time.duration.minutes(40),
-            startDate + utils.time.duration.minutes(60),
-        ]
-    },
-    {
-        dates: [
-            startDate + utils.time.duration.minutes(80),
-            startDate + utils.time.duration.minutes(100),
-        ]
-    },
-    {
-        dates: [
-            startDate + utils.time.duration.minutes(120),
-            startDate + utils.time.duration.minutes(140),
-        ]
-    }
-]);
 const milestonesDefaultFixture = (startDate) => defaultMilestonesGenerator([
     {
         endDate: startDate + utils.time.duration.days(10),
@@ -73,15 +52,8 @@ const setupMilestoneMockData = async (index, milestones, crowdsale) => {
 };
 
 contract('W12Fund', async (accounts) => {
-    let sut, swap, crowdsale;
-    let crowdsaleFixture, milestonesFixture, tokenFixture, originTokenFixture, stagesFixture;
-    const sutOwner = accounts[7];
-    const tokenOwner = accounts[1];
-    const buyer1 = accounts[3];
-    const buyer2 = accounts[4];
-    const trancheFeePercent = new BigNumber(utils.toInternalPercent(5));
 
-    describe.skip('creation and initialisation', async () => {
+    describe('creation and initialisation', async () => {
         const ctx = {};
         const ratesAddress = utils.generateRandomAddress();
 
@@ -277,7 +249,7 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe.skip('recording purchases', async () => {
+    describe('recording purchases', async () => {
 
         describe('for payment with token', () => {
             const TokenSymbol = 'TTT';
@@ -493,7 +465,7 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe.skip('realising tranche', () => {
+    describe('realising tranche', () => {
         const swapAddress = accounts[1];
         const crowdsaleOwner = accounts[2];
         const serviceWalletAddress = accounts[3];
@@ -687,275 +659,208 @@ contract('W12Fund', async (accounts) => {
         });
     });
 
-    describe.skip('refund', async () => {
-        let crowdsaleMock, encodedMilestoneFixture, startData;
+    describe('refund', () => {
+        const swapAddress = accounts[1];
+        const crowdsaleOwner = accounts[2];
+        const serviceWalletAddress = accounts[3];
+        const fundOwner = accounts[4];
 
-        const crowdsaleOwner = accounts[0];
-        const mintAmount = oneToken.mul(10000);
-        const tokenPrice = new BigNumber(1000);
-        const setupMilestoneMockData = async (index) => {
-            await crowdsaleMock._getCurrentMilestoneIndexMockData(index, true);
-            await crowdsaleMock._getMilestoneMockData(
-                index,
-                encodedMilestoneFixture[index].dates[0],
-                encodedMilestoneFixture[index].tranchePercent,
-                encodedMilestoneFixture[index].dates[1],
-                encodedMilestoneFixture[index].dates[2],
-                encodedMilestoneFixture[index].nameHex,
-                encodedMilestoneFixture[index].descriptionHex
-            );
-        };
+        describe('should successful', () => {
+            const oneToken = BigNumber.TEN.pow(18);
+            const fundedInToken = oneToken.mul(1000);
+            const fundedInETH = new BigNumber(1000);
+            const fundedInUSD = new BigNumber(1000);
+            const investor1 = accounts[5];
+            const investor2 = accounts[6];
+            const totalTokenBoughtAmount = oneToken.mul(1000);
+            const ctx = {
+                expectedTrancheFeePercent: utils.toInternalPercent(10)
+            };
 
-        beforeEach(async () => {
-            startData = web3.eth.getBlock('latest').timestamp;
-            tokenFixture = await TokenFixture.createToken(tokenOwner);
-            originTokenFixture = await TokenFixture.createToken(tokenOwner);
-            milestonesFixture = milestonesDefaultFixture(startData);
-            encodedMilestoneFixture = milestonesFixture
-                .map(m =>
-                    utils.encodeMilestoneParameters(
-                        m.name,
-                        m.description,
-                        m.tranchePercent,
-                        m.endDate,
-                        m.voteEndDate,
-                        m.withdrawalWindow
-                    )
-                )
-            crowdsaleMock = await W12FundCrowdsaleStub.new(0, { crowdsaleOwner });
-            sut = await W12FundStub.new(
-                0,
-                crowdsaleMock.address,
-                utils.generateRandomAddress(),
-                tokenFixture.token.address,
-                utils.generateRandomAddress(),
-                trancheFeePercent,
-                {from: sutOwner}
-            );
+            beforeEach(async () => {
+                ctx.nowDate = web3.eth.getBlock('latest').timestamp;
+                ctx.milestones = milestonesDefaultFixture(ctx.nowDate);
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new('TTT', 'TTT', 18);
+                ctx.wtoken = await Token.new('WWW', 'WWW', 18);
+                ctx.crowdsale = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
+                ctx.contract = await W12FundStub.new(
+                    0,
+                    ctx.crowdsale.address,
+                    swapAddress,
+                    ctx.wtoken.address,
+                    serviceWalletAddress,
+                    ctx.expectedTrancheFeePercent,
+                    ctx.rates.address,
+                    {from: fundOwner}
+                );
 
-            await setupMilestoneMockData(0);
-            await tokenFixture.token.mint(buyer1, mintAmount, 0, {from: tokenOwner});
-            await tokenFixture.token.mint(buyer2, mintAmount, 0, {from: tokenOwner});
-            await tokenFixture.token.approve(sut.address, mintAmount, {from: buyer1});
-            await tokenFixture.token.approve(sut.address, mintAmount, {from: buyer2});
-        });
+                await ctx.rates.addSymbol(web3.fromUtf8('ETH'));
+                await ctx.rates.addSymbolWithTokenAddress(web3.fromUtf8('TTT'), ctx.token.address);
+                await ctx.token.mint(ctx.contract.address, fundedInToken, 0);
+                await ctx.wtoken.mint(investor1, totalTokenBoughtAmount.mul(1/2), 0);
+                await ctx.wtoken.mint(investor2, totalTokenBoughtAmount.mul(1/2), 0);
+                await ctx.wtoken.approve(ctx.contract.address, totalTokenBoughtAmount.mul(1/2), { from: investor1 });
+                await ctx.wtoken.approve(ctx.contract.address, totalTokenBoughtAmount.mul(1/2), { from: investor2 });
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.mul(1/4),
+                    web3.fromUtf8('ETH'), fundedInETH,
+                    fundedInUSD.mul(1/4),
+                    {value: fundedInETH}
+                );
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.mul(1/4),
+                    web3.fromUtf8('TTT'), fundedInToken.mul(1/2),
+                    fundedInUSD.mul(1/4)
+                );
+                await ctx.contract.recordPurchase(
+                    investor2, totalTokenBoughtAmount.mul(2/4),
+                    web3.fromUtf8('TTT'), fundedInToken.mul(1/2),
+                    fundedInUSD.mul(2/4)
+                );
+            });
 
-        describe('getRefundAmount', async () => {
+            describe('full refund in milestone 2/2 and', () => {
 
-            for (const milestoneIndex of [1,2]) {
-                it(`should calculate full refund amount after milestone #${milestoneIndex} in case with one investor`, async () => {
-                    await setupMilestoneMockData(milestoneIndex);
+                beforeEach(async () => {
+                    await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[1].endDate);
 
-                    const withdrawalEndDate = milestonesFixture[milestoneIndex].withdrawalWindow;
-                    const purchaseTokens = new BigNumber(20);
-                    const purchaseTokensRecord = oneToken.mul(20);
-                    const purchaseCost = purchaseTokens.mul(tokenPrice);
-                    const tokenDecimals = tokenFixture.args.decimals;
-
-                    await utils.time.increaseTimeTo(withdrawalEndDate - 60);
-
-                    await sut.recordPurchase(buyer1, purchaseTokensRecord, {
-                        from: crowdsaleOwner,
-                        value: purchaseCost
-                    }).should.be.fulfilled;
-
-                    const tokensToReturn = purchaseTokensRecord;
-                    const expectedRefundAmount = utils.calculateRefundAmount(
-                        purchaseCost,
-                        purchaseCost,
-                        purchaseCost,
-                        purchaseTokensRecord,
-                        tokensToReturn,
-                        tokenDecimals
-                    );
-
-                    const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: buyer1}).should.be.fulfilled;
-
-                    refundAmount.should.bignumber.eq(expectedRefundAmount);
+                    ctx.Tx = () => ctx.contract.refund(totalTokenBoughtAmount.mul(2/4), {from: investor1});
+                    ctx.expectedTokenRefundedAmount = totalTokenBoughtAmount.mul(2/4);
+                    ctx.investorAddress = investor1;
                 });
-            }
 
-            it('partial refund in case with two investors', async () => {
-                const withdrawalEndDate = milestonesFixture[0].withdrawalWindow;
-                const records = [
-                    {
-                        buyer: buyer1,
-                        tokens: new BigNumber(20),
-                    },
-                    {
-                        buyer: buyer2,
-                        tokens: new BigNumber(30),
-                    }
-                ];
+                testRefund(ctx);
+            });
 
-                const tokenDecimals = tokenFixture.args.decimals;
+            describe('partial refund in milestone 2/2 and', () => {
 
-                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
+                beforeEach(async () => {
+                    await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                    await utils.time.increaseTimeTo(ctx.milestones[1].endDate);
 
-                const recordsResult = await FundFixture.setPurchaseRecords(
-                    sut,
-                    records,
-                    tokenPrice,
-                    tokenDecimals,
-                    crowdsaleOwner
-                ).should.be.fulfilled;
+                    ctx.Tx = () => ctx.contract.refund(totalTokenBoughtAmount.mul(2/4).mul(1/2), {from: investor1});
+                    ctx.expectedTokenRefundedAmount = totalTokenBoughtAmount.mul(2/4).mul(1/2);
+                    ctx.investorAddress = investor1;
+                });
 
-                const tokensToReturn = recordsResult.args[1].boughtTokens.div(2); // 15 * 10 ** 18
-                const expectedRefundAmount = utils.calculateRefundAmount(
-                    recordsResult.totalCost,
-                    recordsResult.totalCost,
-                    recordsResult.args[1].cost,
-                    recordsResult.args[1].boughtTokens,
-                    tokensToReturn,
-                    tokenDecimals
+                testRefund(ctx);
+            });
+        });
+
+        describe('should revert', () => {
+            const oneToken = BigNumber.TEN.pow(18);
+            const fundedInToken = oneToken.mul(1000);
+            const fundedInETH = new BigNumber(1000);
+            const fundedInUSD = new BigNumber(1000);
+            const investor1 = accounts[5];
+            const investor2 = accounts[6];
+            const totalTokenBoughtAmount = oneToken.mul(1000);
+            const ctx = {
+                expectedTrancheFeePercent: utils.toInternalPercent(10)
+            };
+
+            beforeEach(async () => {
+                ctx.nowDate = web3.eth.getBlock('latest').timestamp;
+                ctx.milestones = milestonesDefaultFixture(ctx.nowDate);
+                ctx.rates = await Rates.new();
+                ctx.token = await Token.new('TTT', 'TTT', 18);
+                ctx.wtoken = await Token.new('WWW', 'WWW', 18);
+                ctx.crowdsale = await W12FundCrowdsaleStub.new(0, {crowdsaleOwner});
+                ctx.contract = await W12FundStub.new(
+                    0,
+                    ctx.crowdsale.address,
+                    swapAddress,
+                    ctx.wtoken.address,
+                    serviceWalletAddress,
+                    ctx.expectedTrancheFeePercent,
+                    ctx.rates.address,
+                    {from: fundOwner}
                 );
 
-                const refundAmount2 = await sut.getRefundAmount(tokensToReturn, {from: buyer2}).should.be.fulfilled;
-
-                refundAmount2.should.bignumber.eq(expectedRefundAmount);
-            });
-
-            it('should not refund on non investor address', async () => {
-                const withdrawalEndDate = milestonesFixture[0].withdrawalWindow;
-                const records = [
-                    {
-                        buyer: buyer1,
-                        tokens: new BigNumber(20),
-                    },
-                    {
-                        buyer: buyer2,
-                        tokens: new BigNumber(30),
-                    }
-                ];
-
-                const tokenDecimals = tokenFixture.args.decimals;
-
-                await utils.time.increaseTimeTo(withdrawalEndDate - 60);
-
-                const recordsResult = await FundFixture.setPurchaseRecords(
-                    sut,
-                    records,
-                    tokenPrice,
-                    tokenDecimals,
-                    crowdsaleOwner
-                ).should.be.fulfilled;
-
-                const tokensToReturn = recordsResult.args[0].boughtTokens;
-                const refundAmount = await sut.getRefundAmount(tokensToReturn, {from: accounts[2]}).should.be.fulfilled;
-
-                refundAmount.should.bignumber.eq(BigNumber.Zero);
-            });
-        });
-
-        for (const milestoneIndex of [1, 2]) {
-            it(`should refund buyer after milestone #${milestoneIndex} ended`, async () => {
-                await setupMilestoneMockData(milestoneIndex);
-                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].withdrawalWindow - 60);
-
-                const funds = new BigNumber(web3.toWei(0.1, 'ether'));
-                const tokens = oneToken.mul(20);
-                const tokensToReturn = oneToken.mul(20);
-                const tokenDecimals = tokenFixture.args.decimals;
-
-                await sut.recordPurchase(buyer1, tokens, {
-                    from: crowdsaleOwner,
-                    value: funds
-                }).should.be.fulfilled;
-
-                const expectedRefundAmount = utils.calculateRefundAmount(
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    web3.toWei(0.1, 'ether'),
-                    tokens,
-                    tokensToReturn,
-                    tokenDecimals
+                await ctx.rates.addSymbol(web3.fromUtf8('ETH'));
+                await ctx.rates.addSymbolWithTokenAddress(web3.fromUtf8('TTT'), ctx.token.address);
+                await ctx.token.mint(ctx.contract.address, fundedInToken, 0);
+                await ctx.wtoken.mint(investor1, totalTokenBoughtAmount.mul(1 / 2), 0);
+                await ctx.wtoken.mint(investor2, totalTokenBoughtAmount.mul(1 / 2), 0);
+                await ctx.wtoken.approve(ctx.contract.address, totalTokenBoughtAmount.mul(1 / 2), {from: investor1});
+                await ctx.wtoken.approve(ctx.contract.address, totalTokenBoughtAmount.mul(1 / 2), {from: investor2});
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.mul(1 / 4),
+                    web3.fromUtf8('ETH'), fundedInETH,
+                    fundedInUSD.mul(1 / 4),
+                    {value: fundedInETH}
                 );
-
-                const buyer1BalanceBefore = web3.eth.getBalance(buyer1);
-
-                (await sut.totalRefunded()).should.bignumber.eq(0);
-
-                const refundReceipt = await sut.refund(tokensToReturn, {from: buyer1})
-                    .should.be.fulfilled;
-
-                (await sut.totalRefunded()).should.bignumber.eq(expectedRefundAmount);
-
-                const logs = refundReceipt.logs;
-                const operationCost = await utils.getTransactionCost(refundReceipt);
-                const investmentsInfoAfter = await sut.getInvestmentsInfo(buyer1).should.be.fulfilled;
-
-                web3.eth.getBalance(sut.address).should.bignumber.eq(funds.minus(expectedRefundAmount));
-                web3.eth.getBalance(buyer1).should.bignumber.eq(buyer1BalanceBefore.plus(expectedRefundAmount).minus(operationCost));
-
-                investmentsInfoAfter[0].should.bignumber.equal(0);
-
-                logs.length.should.be.equal(1);
-                logs[0].event.should.be.equal('FundsRefunded');
-                logs[0].args.buyer.should.be.equal(buyer1);
-                logs[0].args.weiAmount.should.bignumber.eq(expectedRefundAmount);
-                logs[0].args.tokenAmount.should.bignumber.eq(tokens);
+                await ctx.contract.recordPurchase(
+                    investor1, totalTokenBoughtAmount.mul(1 / 4),
+                    web3.fromUtf8('TTT'), fundedInToken.mul(1 / 2),
+                    fundedInUSD.mul(1 / 4)
+                );
+                await ctx.contract.recordPurchase(
+                    investor2, totalTokenBoughtAmount.mul(2 / 4),
+                    web3.fromUtf8('TTT'), fundedInToken.mul(1 / 2),
+                    fundedInUSD.mul(2 / 4)
+                );
             });
 
-            it(`should allow refund between milestone ${milestoneIndex} end date and the end of withdrawal window`, async () => {
-                await setupMilestoneMockData(milestoneIndex);
-                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].endDate + 5);
-                (await sut.refundAllowed()).should.be.true;
+            it('when milestone #0 is active', async () => {
+                await setupMilestoneMockData(0, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[0].endDate);
 
-                await utils.time.increaseTimeTo(milestonesFixture[milestoneIndex].withdrawalWindow - 5);
-                (await sut.refundAllowed()).should.be.true;
+                ctx.contract.refund(totalTokenBoughtAmount.mul(2 / 4), {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
             });
-        }
 
-        it('should reject refund if provide zero tokens', async () => {
-            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow - 60);
+            it('when current date before refund window', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate - utils.time.duration.minutes(10));
 
-            const funds = new BigNumber(web3.toWei(0.1, 'ether'));
-            const tokens = oneToken.mul(20);
+                ctx.contract.refund(totalTokenBoughtAmount.mul(2 / 4), {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-            await sut.recordPurchase(buyer1, tokens, {
-                from: crowdsaleOwner,
-                value: funds
-            }).should.be.fulfilled;
+            it('when current date after refund window', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].withdrawalWindow + utils.time.duration.minutes(10));
 
-            await sut.refund(0, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
-        });
+                ctx.contract.refund(totalTokenBoughtAmount.mul(2 / 4), {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-        it('should reject refund if provided tokens amount gte investment number', async () => {
-            await utils.time.increaseTimeTo(milestonesFixture[0].voteEndDate - 60);
+            it('if token amount is zero', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate + utils.time.duration.minutes(10));
 
-            const funds = new BigNumber(web3.toWei(0.1, 'ether'));
-            const tokens = oneToken.mul(20);
+                ctx.contract.refund(0, {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-            await sut.recordPurchase(buyer1, tokens, {
-                from: crowdsaleOwner,
-                value: funds
-            }).should.be.fulfilled;
+            it('if wtoken balance is not enough', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate + utils.time.duration.minutes(10));
+                await ctx.wtoken.burn(fundedInToken.mul(1/4), { from: investor1 });
 
-            await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
-        });
+                ctx.contract.refund(totalTokenBoughtAmount.mul(3/4), {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-        it('should reject refund if address is not an investor address', async () => {
-            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow - 60);
+            it('if refunded asset amount is to small', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate + utils.time.duration.minutes(10));
 
-            await sut.refund(1, {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
-        });
+                ctx.contract.refund(1, {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
 
-        it('should reject refund if current time not in withdrawal window', async () => {
-            const funds = new BigNumber(web3.toWei(0.1, 'ether'));
-            const tokens = oneToken.mul(20);
+            it('if the fund balance is not enough', async () => {
+                await setupMilestoneMockData(1, ctx.milestones, ctx.crowdsale);
+                await utils.time.increaseTimeTo(ctx.milestones[1].endDate + utils.time.duration.minutes(10));
+                await ctx.contract._outFunds(web3.fromUtf8('TTT'), fundedInToken.mul(3/4), {from: investor1});
 
-            await sut.recordPurchase(buyer1, tokens, {
-                from: crowdsaleOwner,
-                value: funds
-            }).should.be.fulfilled;
-
-            await utils.time.increaseTimeTo(milestonesFixture[0].endDate - 60);
-
-            await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
-
-            await utils.time.increaseTimeTo(milestonesFixture[0].withdrawalWindow + 60);
-
-            await sut.refund(tokens.plus(oneToken), {from: buyer1}).should.be.rejectedWith(utils.EVMRevert);
+                ctx.contract.refund(totalTokenBoughtAmount.mul(1/2), {from: investor1})
+                    .should.to.be.rejectedWith(utils.EVMRevert);
+            });
         });
     });
 });
