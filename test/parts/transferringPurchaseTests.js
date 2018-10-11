@@ -49,6 +49,7 @@ const whenPaymentWithToken = (
     //     exchangerAddress,
     //     serviceWalletAddress,
     //     investorAddress
+    //     paymentDestinationAddress
     // }
 ) => {
 
@@ -78,6 +79,7 @@ const whenPaymentWithETH = (
     // {
     //     Tx
     //     expectedPaymentETHAmount,
+    //     paymentDestinationAddress,
     //     expectedFee,
     //     originToken,
     //     WToken,
