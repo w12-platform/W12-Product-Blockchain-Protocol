@@ -544,7 +544,7 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
 
-            it('must check that the function returns the correct Milestone index for each date in the given array', async () => {
+            it.skip('must check that the function returns the correct Milestone index for each date in the given array', async () => {
                 const controlArray = [{
                     time: await utils.time.increaseTimeTo(discountStages[discountStages.length - 1].endDate) - utils.time.duration.minutes(1),
                     index: 0,
