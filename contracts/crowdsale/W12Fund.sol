@@ -276,16 +276,31 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             if (amount == 0) continue;
 
-            amount = Utils.saveMulDiv(tokenAmount, amount, tokenBoughtPerInvestor[msg.sender]);
+            // get source amount
+            uint sourceAmount = Utils.saveMulDiv(
+                tokenAmount,
+                amount,
+                tokenBoughtPerInvestor[msg.sender]
+            );
 
-            require(amount > 0);
+            require(sourceAmount > 0);
 
-            amount = Utils.saveMulDiv(totalFunded.amountOf(symbol).sub(totalFundedReleased[symbol]), amount, totalFunded.amountOf(symbol));
+            // get released tranche amount in current currency
+            uint releasedTranche = totalFunded
+                .amountOf(symbol)
+                .savePercent(totalTranchePercentReleased);
+
+            // get amount minus released tranche
+            amount = Utils.saveMulDiv(
+                totalFunded.amountOf(symbol).sub(releasedTranche),
+                sourceAmount,
+                totalFunded.amountOf(symbol)
+            );
 
             require(amount > 0);
 
             totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
-            fundedPerInvestor[msg.sender].withdrawal(symbol, amount);
+            fundedPerInvestor[msg.sender].withdrawal(symbol, sourceAmount);
 
             if (symbol == METHOD_USD) continue;
 
