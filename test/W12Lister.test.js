@@ -5,6 +5,7 @@ const utils = require('../shared/tests/utils.js');
 const W12Lister = artifacts.require('W12Lister');
 const TokenExchanger = artifacts.require('TokenExchanger');
 const W12FundFactory = artifacts.require('W12FundFactory');
+const Rates = artifacts.require('Rates');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
 
@@ -14,13 +15,15 @@ contract('W12Lister', async (accounts) => {
     let factory;
     let fundFactory;
     let exchanger;
+    let rates;
     const wallet = accounts[9];
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
+        rates = await Rates.new();
         exchanger = await TokenExchanger.new(0);
-        fundFactory = await W12FundFactory.new(0);
-        factory = await W12CrowdsaleFactory.new(0, fundFactory.address);
+        fundFactory = await W12FundFactory.new(0, rates.address);
+        factory = await W12CrowdsaleFactory.new(0, fundFactory.address, rates.address);
         sut = await W12Lister.new(0, wallet, factory.address, exchanger.address);
 
         await exchanger.transferOwnership(sut.address);

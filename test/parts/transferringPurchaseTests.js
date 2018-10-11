@@ -52,12 +52,12 @@ const whenPaymentWithToken = (
     // }
 ) => {
 
-    it('should send payment token minus change to contract balance', async () => {
-        const before = await ctx.PaymentToken.balanceOf(ctx.contractAddress);
+    it('should send payment token minus change to destination address', async () => {
+        const before = await ctx.PaymentToken.balanceOf(ctx.paymentDestinationAddress);
 
         await ctx.Tx();
 
-        const actual = await ctx.PaymentToken.balanceOf(ctx.contractAddress);
+        const actual = await ctx.PaymentToken.balanceOf(ctx.paymentDestinationAddress);
 
         actual.should.bignumber.eq(before.plus(ctx.expectedPaymentTokenAmount));
     });
@@ -88,12 +88,12 @@ const whenPaymentWithETH = (
     // }
 ) => {
 
-    it('should send eth minus change to contract balance', async () => {
-        const before = await web3.eth.getBalance(ctx.contractAddress);
+    it('should send eth minus change to destination balance', async () => {
+        const before = await web3.eth.getBalance(ctx.paymentDestinationAddress);
 
         await ctx.Tx();
 
-        const actual = await web3.eth.getBalance(ctx.contractAddress);
+        const actual = await web3.eth.getBalance(ctx.paymentDestinationAddress);
 
         actual.should.bignumber.eq(before.plus(ctx.expectedPaymentETHAmount));
     });

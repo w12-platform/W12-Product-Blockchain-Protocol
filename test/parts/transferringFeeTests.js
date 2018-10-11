@@ -90,16 +90,6 @@ const whenPaymentWithETH = (
 
         actual.should.bignumber.eq(before.plus(ctx.expectedFee[1]));
     });
-
-    it('should send fee from contract in eth', async () => {
-        const before = await web3.eth.getBalance(ctx.contractAddress);
-
-        await ctx.Tx();
-
-        const actual = await web3.eth.getBalance(ctx.contractAddress);
-
-        actual.should.bignumber.eq(before.plus(ctx.expectedPaymentETHAmount));
-    });
 }
 
 module.exports = {
