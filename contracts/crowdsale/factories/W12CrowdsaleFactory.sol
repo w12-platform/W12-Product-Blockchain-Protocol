@@ -17,7 +17,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
         require(_rates != address(0));
 
         fundFactory = _fundFactory;
-        rates = rates;
+        rates = _rates;
     }
 
     function createCrowdsale(

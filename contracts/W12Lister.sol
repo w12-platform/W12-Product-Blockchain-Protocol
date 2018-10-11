@@ -187,7 +187,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
             getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
             getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
-            exchanger,
+            address(exchanger),
             msg.sender
         );
 
