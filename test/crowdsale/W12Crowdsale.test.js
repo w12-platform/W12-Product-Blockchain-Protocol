@@ -710,6 +710,7 @@ contract('W12Crowdsale', async (accounts) => {
                                         paymentTokenDecimals,
                                         minted[crowdsaleIndex]
                                     );
+                                    ctx.fund = crowdsale.fund;
                                     ctx.expectedFee = [
                                         utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
                                         utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
@@ -720,6 +721,7 @@ contract('W12Crowdsale', async (accounts) => {
                                     ctx.originToken = crowdsale.originToken;
                                     ctx.PaymentToken = paymentToken;
                                     ctx.contractAddress = crowdsale.crowdsale.address;
+                                    ctx.paymentDestinationAddress = crowdsale.fund.address;
                                     ctx.serviceWalletAddress = serviceWallet;
                                     ctx.exchangerAddress = swap;
                                     ctx.investorAddress = buyer;
@@ -742,6 +744,23 @@ contract('W12Crowdsale', async (accounts) => {
                                 describe('transferring purchase', () => {
                                     testPurchase.defaultProcess(ctx);
                                     testPurchase.whenPaymentWithToken(ctx);
+                                });
+
+                                describe('additionally', () => {
+                                    it('call record purchase on the fund', async () => {
+                                        await ctx.Tx();
+
+                                        const actual = await ctx.fund._getRecordPurchaseCallResult();
+                                        const actualBalance = await ctx.PaymentToken.balanceOf(ctx.fund.address);
+
+                                        actualBalance.should.bignumber.gte(ctx.expectedPaymentTokenAmount);
+                                        actual[0].should.to.be.eq(ctx.investorAddress);
+                                        actual[1].should.bignumber.eq(ctx.expectedWTokenAmount);
+                                        web3.toUtf8(actual[2]).should.to.be.eq(paymentMethods[1]);
+                                        actual[3].should.bignumber.eq(ctx.expectedPaymentTokenAmount);
+                                        actual[4].should.bignumber.eq(ctx.invoice.costUSD);
+                                        actual[5].should.bignumber.eq(0);
+                                    });
                                 });
                             });
                         }
@@ -784,6 +803,7 @@ contract('W12Crowdsale', async (accounts) => {
                                         18,
                                         minted[crowdsaleIndex]
                                     );
+                                    ctx.fund = crowdsale.fund;
                                     ctx.expectedFee = [
                                         utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
                                         utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
@@ -793,6 +813,7 @@ contract('W12Crowdsale', async (accounts) => {
                                     ctx.WToken = crowdsale.wtoken;
                                     ctx.originToken = crowdsale.originToken;
                                     ctx.contractAddress = crowdsale.crowdsale.address;
+                                    ctx.paymentDestinationAddress = crowdsale.fund.address;
                                     ctx.serviceWalletAddress = serviceWallet;
                                     ctx.exchangerAddress = swap;
                                     ctx.investorAddress = buyer;
@@ -802,7 +823,7 @@ contract('W12Crowdsale', async (accounts) => {
                                 });
 
                                 afterEach(async () => {
-                                    await crowdsale.crowdsale._outEther(buyer);
+                                    await crowdsale.fund._outEther(buyer);
                                 });
 
                                 describe('transferring fee', () => {
@@ -813,6 +834,23 @@ contract('W12Crowdsale', async (accounts) => {
                                 describe('transferring purchase', () => {
                                     testPurchase.defaultProcess(ctx);
                                     testPurchase.whenPaymentWithETH(ctx);
+                                });
+
+                                describe('additionally', () => {
+                                    it('call record purchase on the fund', async () => {
+                                        await ctx.Tx();
+
+                                        const actual = await ctx.fund._getRecordPurchaseCallResult();
+                                        const actualBalance = await web3.eth.getBalance(ctx.fund.address);
+
+                                        actualBalance.should.bignumber.gte(ctx.expectedPaymentETHAmount);
+                                        actual[0].should.to.be.eq(ctx.investorAddress);
+                                        actual[1].should.bignumber.eq(ctx.expectedWTokenAmount);
+                                        web3.toUtf8(actual[2]).should.to.be.eq(paymentMethods[0]);
+                                        actual[3].should.bignumber.eq(ctx.expectedPaymentETHAmount);
+                                        actual[4].should.bignumber.eq(ctx.invoice.costUSD);
+                                        actual[5].should.bignumber.eq(ctx.expectedPaymentETHAmount);
+                                    });
                                 });
                             });
                         }
