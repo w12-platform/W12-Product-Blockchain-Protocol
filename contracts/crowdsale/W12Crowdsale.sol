@@ -424,7 +424,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     function _recordPurchase(uint[5] _invoice, uint[2] _fee, bytes32 method) internal {
-        // fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
+        if (method == PurchaseProcessing.METHOD_ETH()) {
+            fund.recordPurchase.value(_invoice[1].sub(_fee[1]))(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
+        } else {
+            require(ERC20(rates.getTokenAddress(method)).transfer(address(fund), _invoice[1].sub(_fee[1])));
+            fund.recordPurchase(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
+        }
     }
 
     function getWToken() external view returns(IWToken) {
