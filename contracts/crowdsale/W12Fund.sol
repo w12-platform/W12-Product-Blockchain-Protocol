@@ -36,7 +36,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     FundAccount.Account totalFunded;
     // total realised funded assets bt currency symbol
     // updated when tranche was realised or investor assets was refunded
-    mapping(bytes32 => uint) totalFundedRealised;
+    mapping(bytes32 => uint) totalFundedReleased;
     // total amount of bought token
     uint public totalTokenBought;
     // total amount of refunded token
@@ -47,8 +47,8 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     mapping (address => FundAccount.Account) fundedPerInvestor;
 
     event FundsReceived(address indexed investor, uint tokenAmount, bytes32 symbol, uint cost);
-    event AssetRefunded(address indexed buyer, bytes32 symbol, uint amount);
-    event TokenRefunded(address indexed buyer, uint tokenAmount);
+    event AssetRefunded(address indexed investor, bytes32 symbol, uint amount);
+    event TokenRefunded(address indexed investor, uint tokenAmount);
     event TrancheTransferred(address indexed receiver, bytes32 symbol, uint amount);
     event TrancheReleased(address indexed receiver, uint percent);
 
@@ -145,7 +145,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function getTotalFundedReleased(bytes32 _symbol) public view returns (uint) {
-        return totalFundedRealised[_symbol];
+        return totalFundedReleased[_symbol];
     }
 
     /**
@@ -220,7 +220,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             require(amount > 0);
 
-            totalFundedRealised[symbol] = totalFundedRealised[symbol].add(amount);
+            totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
 
             if (symbol == METHOD_USD)  continue;
 
@@ -254,12 +254,13 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         require(tokenRefundAllowed());
         require(tokenAmount != 0);
         require(tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
-        require(totalTokenBought.sub(totalTokenRefunded) >= tokenAmount);
-        require(totalTranchePercentReleased.fromPercent() != 100);
         require(wToken.balanceOf(msg.sender) >= tokenAmount);
         require(wToken.allowance(msg.sender, address(this)) >= tokenAmount);
 
         _refundAssets(tokenAmount);
+
+        totalTokenRefunded = totalTokenRefunded.add(tokenAmount);
+        tokenBoughtPerInvestor[msg.sender] = tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
 
         require(wToken.transferFrom(msg.sender, swap, tokenAmount));
 
@@ -279,13 +280,11 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             require(amount > 0);
 
-            amount = Utils.saveMulDiv(totalFunded.amountOf(symbol).sub(totalFundedRealised[symbol]), amount, totalFunded.amountOf(symbol));
+            amount = Utils.saveMulDiv(totalFunded.amountOf(symbol).sub(totalFundedReleased[symbol]), amount, totalFunded.amountOf(symbol));
 
             require(amount > 0);
 
-            totalTokenRefunded = totalTokenRefunded.sub(tokenAmount);
-            tokenBoughtPerInvestor[msg.sender] = tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
-            totalFundedRealised[symbol] = totalFundedRealised[symbol].sub(amount);
+            totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
             fundedPerInvestor[msg.sender].withdrawal(symbol, amount);
 
             if (symbol == METHOD_USD) continue;
@@ -293,6 +292,8 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             if (symbol != METHOD_ETH) {
                 require(rates.isToken(symbol));
                 require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
+            } else {
+                require(address(this).balance >= amount);
             }
 
             if (symbol == METHOD_ETH) {
