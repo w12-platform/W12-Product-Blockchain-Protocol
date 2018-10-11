@@ -6,7 +6,7 @@ function wait(ms) {
 async function deploy(net, deployer, contract, ...args) {
     await deployer.deploy(contract, ...args);
     await contract.deployed();
-    await wait(net === 'development' ? 0 : 60000);
+    await wait(net === 'development' ? 0 : 5000);
 }
 
 module.exports = {
