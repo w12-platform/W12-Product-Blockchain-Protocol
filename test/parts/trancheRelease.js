@@ -1,4 +1,13 @@
 const utils = require('../../shared/tests/utils.js');
+const getSourceAmount = (tranchePercent, totalFundedAmount) => {
+    return utils.percent(totalFundedAmount, tranchePercent);
+};
+const getAmount = (sourceAmount, totalTokenRefundedAmount, totalTokenBought) => {
+    return totalTokenBought
+        .sub(totalTokenRefundedAmount)
+        .mul(sourceAmount)
+        .div(totalTokenBought);
+};
 
 // ctx =>
 // contract - fund contract
@@ -27,15 +36,17 @@ module.exports = (ctx) => {
         actual.should.bignumber.eq(ctx.expectedTotalTranchePercentReleased);
     });
 
-    it('increase total funded amount released', async () => {
+    it('increase total funded released amount', async () => {
         const symbols = await ctx.contract.getTotalFundedAssetsSymbols();
+        const bought = await ctx.contract.totalTokenBought();
+        const refunded = await ctx.contract.totalTokenRefunded();
         const list = await Promise.all(
             symbols
                 .filter(s => web3.toUtf8(s) !== 'USD')
                 .map(async s => ({
                     symbol: s,
-                    funded: (await ctx.contract.getTotalFundedAmount(s)),
-                    before: await ctx.contract.getTotalFundedReleased(s)
+                    before: await ctx.contract.getTotalFundedReleased(s),
+                    funded: (await ctx.contract.getTotalFundedAmount(s))
                 }))
         );
 
@@ -43,15 +54,20 @@ module.exports = (ctx) => {
 
         for (const item of list) {
             const actual = await ctx.contract.getTotalFundedReleased(item.symbol);
-            const expected = utils.percent(item.funded, ctx.expectedTranchePercent)
-                .add(item.before);
+            const expected = getAmount(
+                getSourceAmount(ctx.expectedTranchePercent, item.funded),
+                refunded,
+                bought
+            );
 
-            actual.should.bignumber.eq(expected);
+            actual.should.bignumber.eq(item.before.add(expected));
         }
     });
 
     it('got fee on service wallet', async () => {
         const symbols = await ctx.contract.getTotalFundedAssetsSymbols();
+        const bought = await ctx.contract.totalTokenBought();
+        const refunded = await ctx.contract.totalTokenRefunded();
         const list = await Promise.all(
             symbols
                 .filter(s => web3.toUtf8(s) !== 'USD')
@@ -71,7 +87,11 @@ module.exports = (ctx) => {
                 ? await web3.eth.getBalance(ctx.serviceWalletAddress)
                 : await ctx.token.balanceOf(ctx.serviceWalletAddress);
 
-            const released = utils.percent(item.funded, ctx.expectedTranchePercent);
+            const released = getAmount(
+                getSourceAmount(ctx.expectedTranchePercent, item.funded),
+                refunded,
+                bought
+            );
             const fee = utils.percent(released, ctx.expectedTrancheFeePercent);
 
             actual.should.bignumber.eq(item.before.add(fee));
@@ -80,6 +100,8 @@ module.exports = (ctx) => {
 
     it('got assets on owner wallet', async () => {
         const symbols = await ctx.contract.getTotalFundedAssetsSymbols();
+        const bought = await ctx.contract.totalTokenBought();
+        const refunded = await ctx.contract.totalTokenRefunded();
         const list = await Promise.all(
             symbols
                 .filter(s => web3.toUtf8(s) !== 'USD')
@@ -99,7 +121,11 @@ module.exports = (ctx) => {
                 ? await web3.eth.getBalance(ctx.fundOwner)
                 : await ctx.token.balanceOf(ctx.fundOwner);
 
-            const released = utils.percent(item.funded, ctx.expectedTranchePercent);
+            const released = getAmount(
+                getSourceAmount(ctx.expectedTranchePercent, item.funded),
+                refunded,
+                bought
+            );
             const fee = utils.percent(released, ctx.expectedTrancheFeePercent);
             let expected = item.before.add(released.sub(fee));
 
@@ -111,6 +137,8 @@ module.exports = (ctx) => {
 
     it('emit events', async () => {
         const symbols = await ctx.contract.getTotalFundedAssetsSymbols();
+        const bought = await ctx.contract.totalTokenBought();
+        const refunded = await ctx.contract.totalTokenRefunded();
         const list = await Promise.all(
             symbols
                 .filter(s => web3.toUtf8(s) !== 'USD')
@@ -127,7 +155,11 @@ module.exports = (ctx) => {
                 e.event === 'TrancheTransferred'
                 && web3.toUtf8(e.args.symbol) === web3.toUtf8(item.symbol)
             );
-            const released = utils.percent(item.funded, ctx.expectedTranchePercent);
+            const released = getAmount(
+                getSourceAmount(ctx.expectedTranchePercent, item.funded),
+                refunded,
+                bought
+            );;
 
             should.exist(actual);
             actual.args.receiver.should.to.be.eq(ctx.fundOwner);

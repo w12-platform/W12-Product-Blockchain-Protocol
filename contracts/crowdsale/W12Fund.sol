@@ -216,12 +216,20 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             if (amount == 0) continue;
 
-            amount = amount.savePercent(_invoice[0]);
+            uint sourceAmount = amount.savePercent(_invoice[0]);
+
+            require(sourceAmount > 0);
+            
+            amount = Utils.saveMulDiv(
+                totalTokenBought.sub(totalTokenRefunded),
+                sourceAmount,
+                totalTokenBought
+            );
 
             require(amount > 0);
 
             totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
-
+            
             if (symbol == METHOD_USD)  continue;
 
             if (symbol != METHOD_ETH) {
