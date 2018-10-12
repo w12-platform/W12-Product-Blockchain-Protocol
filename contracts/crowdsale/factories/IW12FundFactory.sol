@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./IW12Fund.sol";
+import "../IW12Fund.sol";
 
 
 interface IW12FundFactory {

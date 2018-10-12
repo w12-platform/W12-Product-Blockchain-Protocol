@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../token/WToken.sol";
+import "../token/IWToken.sol";
 
 
 interface IW12Crowdsale {
@@ -13,10 +13,11 @@ interface IW12Crowdsale {
         uint[] bonusConditionsOfStages,
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
-        bytes nameAndDescriptionsOfMilestones
+        bytes nameAndDescriptionsOfMilestones,
+        bytes32[] paymentMethodsList
     ) external;
 
-    function getWToken() external view returns(WToken);
+    function getWToken() external view returns(IWToken);
 
     function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes);
 
@@ -36,9 +37,7 @@ interface IW12Crowdsale {
 
     function isSaleActive() external view returns (bool);
 
-    function () payable external;
-
-    function buyTokens() payable external;
+    function buyTokens(bytes32 method, uint amount) payable external;
 
     function transferOwnership(address newOwner) external;
 }

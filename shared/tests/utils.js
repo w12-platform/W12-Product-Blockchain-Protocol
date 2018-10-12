@@ -99,29 +99,135 @@ async function getTransactionCost(txOutput) {
     return gasPrice.mul(gasUsed);
 }
 
-function calculatePurchase(weiAmountPaid, weiBasePrice, stageDiscount, volumeBonus, decimals = 18) {
-    weiAmountPaid = new BigNumber(weiAmountPaid);
-    weiBasePrice = new BigNumber(weiBasePrice);
+function toInternalUSD(usd) {
+    usd = new BigNumber(usd);
+    return usd.mul(10 ** 8);
+}
 
-    let result;
+function fromInternalUSD (usd) {
+    usd = new BigNumber(usd);
+    return usd.div(10 ** 8);
+}
 
-    result = round(
-        weiBasePrice
-            .mul(new BigNumber(toInternalPercent(100)).minus(stageDiscount))
-            .div(toInternalPercent(100))
-    )
-    result = round(
-        weiAmountPaid
-            .mul(volumeBonus.plus(toInternalPercent(100)))
-            .div(result)
+function saveConversionByRate(value, decimals, rate) {
+    const ten = new BigNumber(10);
+    value = new BigNumber(value);
+    decimals = new BigNumber(decimals);
+    rate = new BigNumber(rate);
+
+    return round(value.div(ten.pow(decimals)))
+        .mul(rate)
+        .add(
+            round(value
+                .mod(ten.pow(decimals))
+                .mul(rate)
+                .div(ten.pow(decimals)))
+        );
+}
+
+function saveReverseConversionByRate(value, decimals, rate) {
+    const ten = new BigNumber(10);
+    value = new BigNumber(value);
+    decimals = new BigNumber(decimals);
+    rate = new BigNumber(rate);
+
+    return round(value.div(rate)).mul(ten.pow(decimals)).add(round(value.mod(rate).mul(ten.pow(decimals)).div(rate)));
+}
+
+function calculatePurchase(
+    method,
+    paymentAmount,
+    stageDiscount,
+    volumeBoundaries,
+    volumeBonuses,
+    methodAmountPriceUSD,
+    tokenPriceUSD,
+    tokenDecimals,
+    methodDecimals,
+    currentBalanceInTokens
+) {
+    paymentAmount = new BigNumber(paymentAmount);
+    stageDiscount = new BigNumber(stageDiscount);
+    methodAmountPriceUSD = new BigNumber(methodAmountPriceUSD);
+    tokenPriceUSD = new BigNumber(tokenPriceUSD);
+    tokenDecimals = new BigNumber(tokenDecimals);
+    methodDecimals = new BigNumber(methodDecimals);
+    currentBalanceInTokens = new BigNumber(currentBalanceInTokens);
+
+    const ten = new BigNumber(10);
+    const oneHundredPercent = new BigNumber(toInternalPercent(100));
+
+    let result = {
+        tokenAmount: new BigNumber(0),
+        cost: new BigNumber(0),
+        costUSD: new BigNumber(0),
+        change: new BigNumber(0),
+        actualTokenPriceUSD: new BigNumber(0)
+    };
+
+    result.costUSD = saveConversionByRate(paymentAmount, methodDecimals, methodAmountPriceUSD);
+
+    const volumeBonus = getPurchaseBonus(result.costUSD, volumeBoundaries, volumeBonuses);
+
+    result.actualTokenPriceUSD = stageDiscount.gt(0)
+        ? percent(tokenPriceUSD, oneHundredPercent.sub(stageDiscount))
+        : tokenPriceUSD;
+
+    result.tokenAmount = saveReverseConversionByRate(
+        percent(result.costUSD, oneHundredPercent.add(volumeBonus)),
+        tokenDecimals,
+        result.actualTokenPriceUSD
     );
-    result = round(
-        result
-            .mul(new BigNumber(10).pow(decimals))
-            .div(toInternalPercent(100))
-    );
+
+    if (currentBalanceInTokens.lt(result.tokenAmount)) {
+        result.costUSD = saveConversionByRate(currentBalanceInTokens, tokenDecimals, result.actualTokenPriceUSD);
+        result.tokenAmount = currentBalanceInTokens;
+    }
+
+    result.cost = saveReverseConversionByRate(result.costUSD, methodDecimals, methodAmountPriceUSD);
+
+    if (result.cost.eq(0) || result.tokenAmount.eq(0)) {
+        result.tokenAmount = new BigNumber(0);
+        result.cost = new BigNumber(0);
+        result.costUSD = new BigNumber(0);
+    }
+
+    result.change = paymentAmount.sub(result.cost);
 
     return result;
+}
+
+function getPurchaseBonus(value, volumeBoundaries, volumeBonuses) {
+    volumeBoundaries = Array.isArray(volumeBoundaries) ? volumeBoundaries : [];
+    volumeBonuses = Array.isArray(volumeBonuses) ? volumeBonuses : [];
+
+    let bonus = new BigNumber(0);
+
+    for (let i = 0; i < volumeBoundaries.length; i++) {
+        if (value >= volumeBoundaries[i]) {
+            bonus = volumeBonuses[i];
+        } else {
+            break;
+        }
+    }
+
+    return bonus;
+}
+
+// negative means the investor has paid less
+function getPurchaseRoundLoss(tokenAmount, cost, methodAmountPriceUSD, tokenPriceUSD, tokenDecimal, methodDecimal) {
+    tokenAmount = new BigNumber(tokenAmount);
+    cost = new BigNumber(cost);
+    methodAmountPriceUSD = new BigNumber(methodAmountPriceUSD);
+    tokenPriceUSD = new BigNumber(tokenPriceUSD);
+
+    const ten = new BigNumber(10);
+
+    return fromInternalUSD(
+        cost
+            .mul(methodAmountPriceUSD).div(ten.pow(methodDecimal))
+            .sub(tokenAmount.mul(tokenPriceUSD).div(ten.pow(tokenDecimal)))
+    );
 }
 
 function toInternalPercent(percent) {
@@ -140,7 +246,7 @@ function percent(val, percent) {
     );
 }
 
-function packSetupCrowdsaleParameters(stages, milestones) {
+function packSetupCrowdsaleParameters(stages, milestones, paymentMethods) {
     const [pack1, pack2] = stages.reduce((result, stage, idx) => {
         const pack1 = [...stage.dates, stage.discount, stage.vestingTime];
 
@@ -176,7 +282,7 @@ function packSetupCrowdsaleParameters(stages, milestones) {
             return result;
         }, [[], [], '0x']);
 
-    return [pack1, pack2, pack3, pack4, pack5];
+    return [pack1, pack2, pack3, pack4, pack5, paymentMethods];
 }
 
 function createStagesGenerator(defaults) {
@@ -232,5 +338,11 @@ module.exports = {
     fromInternalPercent,
     packSetupCrowdsaleParameters,
     createStagesGenerator,
-    createMilestonesGenerator
+    createMilestonesGenerator,
+    toInternalUSD,
+    fromInternalUSD,
+    getPurchaseRoundLoss,
+    getPurchaseBonus,
+    saveConvertByRate: saveConversionByRate,
+    saveReconvertByRate: saveReverseConversionByRate
 }

@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
-contract Symbols {
+import "./ISymbols.sol";
+
+contract Symbols is ISymbols {
     bytes32[] public symbolsList;
     mapping (bytes32 => uint) symbolIndex;
     mapping (bytes32 => bool) symbols;

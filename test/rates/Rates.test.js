@@ -92,6 +92,12 @@ contract('Rates', async (accounts) => {
         });
     });
 
+    describe.skip('add symbol with token address', () => {});
+
+    describe.skip('set token address', () => {});
+
+    describe.skip('is token', () => {});
+
     describe('remove symbol', async () => {
         const symbol1 = 'a';
         const symbol2 = 'b';

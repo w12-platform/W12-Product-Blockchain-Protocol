@@ -1,6 +1,6 @@
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12Lister = artifacts.require('W12ListerStub');
-const Versions = artifacts.require("./versioning/VersionsLedger.sol");
+const Versions = artifacts.require("VersionsLedger");
 const TokenExchanger = artifacts.require('TokenExchanger');
 const version = require('../package').version;
 const semint = require('@redtea/semint');
