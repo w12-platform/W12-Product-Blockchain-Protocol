@@ -33,10 +33,6 @@ library Utils {
         assert(c != 0);
         
         if(a == 0 || b == 0) return;
-        
-        require(a <= MAX_UINT);
-        require(b <= MAX_UINT);
-        require(c <= MAX_UINT);
 
         uint maxA = MAX_UINT.div(b);
 
