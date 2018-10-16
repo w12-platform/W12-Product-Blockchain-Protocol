@@ -26,7 +26,7 @@
     "abi": "node ./shared/scripts/generate-abi.js",
     "dev-net": "ganache-cli -p 7545 -g 1 -l 8000000 &",
     "ci-test": "cp example.config.js config.js && npm run dev-net > /dev/null && npm run test",
-    "ci-deploy-test-net": "chmod +x ./shared/scripts/deploy.sh && ./shared/scripts/deploy.sh",
+    "ci-deploy-test-net": "chmod +x ./shared/scripts/deploy-test-net.sh && ./shared/scripts/deploy-test-net.sh",
     "t:compile": "truffle compile",
     "t:migrate": "truffle migrate",
     "t:migrate:test": "truffle migrate --network test",
@@ -34,10 +34,12 @@
     "t:migrate:r": "truffle migrate --reset",
     "t:test": "truffle test",
     "flat": "truffle-flattener",
-    "test": "npm run t:test"
+    "test": "npm run t:test",
+    "gen-release": "node ./shared/scripts/gen-release.js"
   },
   "devDependencies": {
     "@redtea/semint": "^1.0.1",
+    "@w12/conventional-changelog": "^1.0.1",
     "babel-cli": "^6.26.0",
     "babel-eslint": "^8.2.6",
     "babel-polyfill": "^6.23.0",
@@ -49,6 +51,7 @@
     "chai": "^4.0.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.0",
+    "conventional-github-releaser": "^3.1.2",
     "coveralls": "^3.0.2",
     "eslint": "^4.19.1",
     "eslint-config-airbnb": "^16.1.0",

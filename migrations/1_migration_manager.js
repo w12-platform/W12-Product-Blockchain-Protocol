@@ -10,8 +10,13 @@ module.exports = function(deployer, network, accounts) {
         deployer.then(async () => {
             if (!semint.isValid(version, 4)) throw new Error('version in package.json is not valid');
 
+            utils.migrateLog.create('Rinkeby');
+
             // firstly deploy versions ledger
             await utils.deploy(network, deployer, Versions, {overwrite: false});
+
+            utils.migrateLog.addAddress(Versions.contractName, Versions.address);
+
             // get all existing versions
             const versions = (await (await Versions.deployed()).getVersions())
                 .map(v => semint.decode(v.toNumber(), 4));
@@ -23,6 +28,8 @@ module.exports = function(deployer, network, accounts) {
             if (exists) throw new Error(`version ${version} already deployed`);
 
             await utils.deploy(network, deployer, Migrations, semint.encode(version, 4));
+
+            utils.migrateLog.addAddress(Migrations.contractName, Migrations.address);
         });
     }
 };

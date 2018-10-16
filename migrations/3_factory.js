@@ -11,6 +11,10 @@ module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
         await utils.deploy(network, deployer, Percent);
 
+        if (network === 'test') {
+            utils.migrateLog.addAddress(Percent.contractName, Percent.address);
+        }
+
         W12CrowdsaleStub.link(Percent);
         W12Crowdsale.link(Percent);
         W12CrowdsaleFactory.link(Percent);
@@ -19,7 +23,12 @@ module.exports = function (deployer, network, accounts) {
     if(network === 'test') {
     	deployer.then(async () => {
             await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4));
-    		await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address);
+
+            utils.migrateLog.addAddress(W12FundFactory.contractName, W12FundFactory.address);
+
+            await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address);
+
+            utils.migrateLog.addAddress(W12CrowdsaleFactory.contractName, W12CrowdsaleFactory.address);
         });
     }
 };

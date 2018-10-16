@@ -13,6 +13,9 @@ module.exports = function (deployer, network, accounts) {
             const serviceWallet = accounts[0];
 
             await utils.deploy(network, deployer, TokenExchanger, semint.encode(version, 4));
+
+            utils.migrateLog.addAddress(TokenExchanger.contractName, TokenExchanger.address);
+
             await utils.deploy(
                 network,
                 deployer,
@@ -21,13 +24,12 @@ module.exports = function (deployer, network, accounts) {
                 W12CrowdsaleFactory.address,
                 TokenExchanger.address);
 
+            utils.migrateLog.addAddress(W12Lister.contractName, W12Lister.address);
+            utils.migrateLog.addAddress('Owner', owner);
+            utils.migrateLog.addAddress('Service wallet', serviceWallet);
+
             await (await TokenExchanger.deployed()).transferOwnership(W12Lister.address);
             await (await Versions.deployed()).setVersion(W12Lister.address, semint.encode(version, 4));
-
-            console.log('owner', owner);
-            console.log('W12CrowdsaleFactory', W12CrowdsaleFactory.address);
-            console.log('W12Lister.serviceWallet', serviceWallet);
-            console.log('W12Lister.exchanger', await (await W12Lister.deployed()).exchanger());
         });
     }
 };
