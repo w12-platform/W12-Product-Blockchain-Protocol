@@ -36,7 +36,7 @@ jobs:
             - v1-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "ethpm.json" }}
             - v1-dependencies-
       - run: npm run ci-test
-  deploy:
+  deploy_alpha_release:
     <<: *defaults
     steps:
       - checkout
@@ -58,19 +58,24 @@ workflows:
     jobs:
       - setup:
           filters:
-            tags:
-              only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
+            branches:
+              only:
+                - master
+                - develop
+                - alpha-release
       - test:
           filters:
-            tags:
-              only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
+            branches:
+              only:
+                - master
+                - develop
+                - alpha-release
           requires:
             - setup
-      - deploy:
+      - deploy_alpha_release:
           requires:
             - test
           filters:
-            tags:
-              only: /^v\d{1,4}\.\d{1,4}\.\d{1,4}$/
             branches:
-              ignore: /.*/
+              only:
+                - alpha-release
