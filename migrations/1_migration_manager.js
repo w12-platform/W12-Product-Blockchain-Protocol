@@ -1,3 +1,4 @@
+const Wallets = artifacts.require("Wallets");
 const Migrations = artifacts.require("./Migrations.sol");
 const Versions = artifacts.require("./versioning/VersionsLedger.sol");
 const version = require('../package').version;
@@ -32,6 +33,10 @@ module.exports = function(deployer, network, accounts) {
             await utils.deploy(network, deployer, Migrations, semint.encode(version, 4));
 
             utils.migrateLog.addAddress(Migrations.contractName, Migrations.address);
+
+            await utils.deploy(network, deployer, Wallets, {overwrite: false});;
+
+            utils.migrateLog.addAddress(Wallets.contractName, Wallets.address);
         });
     }
 };

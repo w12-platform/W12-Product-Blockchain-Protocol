@@ -1,3 +1,4 @@
+const Wallets = artifacts.require('Wallets');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12ListerStub = artifacts.require('W12ListerStub');
 const W12Lister = artifacts.require('W12Lister');
@@ -23,6 +24,7 @@ module.exports = function (deployer, network, accounts) {
                     deployer,
                     W12Lister,
                     semint.encode(version, 4),
+                    Wallets.address,
                     W12CrowdsaleFactory.address,
                     TokenExchanger.address);
             } else {
@@ -31,7 +33,7 @@ module.exports = function (deployer, network, accounts) {
                     deployer,
                     W12Lister,
                     semint.encode(version, 4),
-                    serviceWallet,
+                    Wallets.address,
                     W12CrowdsaleFactory.address,
                     TokenExchanger.address);
             }

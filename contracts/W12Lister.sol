@@ -6,6 +6,7 @@ import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
 import "./interfaces/IW12CrowdsaleFactory.sol";
+import "./wallets/IWallets.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
@@ -20,13 +21,13 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
 
     ITokenExchanger public exchanger;
     IW12CrowdsaleFactory public factory;
+    IWallets public wallets;
     // get token index in approvedTokens list by token address and token owner address
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     // return owners by token address
     mapping ( address => address[] ) approvedOwnersList;
     uint16 public approvedTokensLength;
-    address public serviceWallet;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, address indexed tokenOwner, uint tokenAmount, address placedTokenAddress);
@@ -50,16 +51,15 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
 
     constructor(
         uint version,
-        address _serviceWallet,
+        IWallets _wallets,
         IW12CrowdsaleFactory _factory,
         ITokenExchanger _exchanger
     ) Versionable(version) public {
-        require(_serviceWallet != address(0));
         require(_factory != address(0));
         require(_exchanger != address(0));
 
         exchanger = _exchanger;
-        serviceWallet = _serviceWallet;
+        wallets = _wallets;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
 
@@ -124,6 +124,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
      * @param amount Token amount to place
      */
     function placeToken(address tokenAddress, uint amount) external nonReentrant {
+        require(serviceWallet() != address(0));
         require(amount > 0);
         require(tokenAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).tokenAddress == tokenAddress);
@@ -143,7 +144,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
         uint amountWithoutFee = amount.sub(fee);
 
         _secureTokenTransfer(token, exchanger, amountWithoutFee);
-        _secureTokenTransfer(token, serviceWallet, fee);
+        _secureTokenTransfer(token, serviceWallet(), fee);
 
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
@@ -170,6 +171,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
     }
 
     function initCrowdsale(address tokenAddress, uint amountForSale, uint price) external nonReentrant {
+        require(serviceWallet() != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress == address(0));
@@ -180,7 +182,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
             address(tokenAddress),
             address(wtoken),
             price,
-            serviceWallet,
+            serviceWallet(),
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
             getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
             getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
@@ -238,5 +240,9 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
 
     function getApprovedToken(address tokenAddress, address ownerAddress) internal view returns (ListedToken storage result) {
         return approvedTokens[approvedTokensIndex[tokenAddress][ownerAddress]];
+    }
+
+    function serviceWallet() public view returns(address) {
+        return wallets.getWallet(wallets.SERVICE_WALLET_ID());
     }
 }

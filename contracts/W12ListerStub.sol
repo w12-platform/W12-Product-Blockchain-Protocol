@@ -15,10 +15,4 @@ contract W12ListerStub is W12Lister {
     modifier onlyRole(string _role) {
         _;
     }
-
-    constructor(
-        uint version,
-        IW12CrowdsaleFactory _factory,
-        ITokenExchanger _exchanger
-    ) W12Lister(version, msg.sender, _factory, _exchanger) public { }
 }
