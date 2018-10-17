@@ -50,6 +50,7 @@ All of main commands used in development definded in `packages.json` under `scri
  * `ci-test` - command used by CI service to run tests
  * `ci-deploy-test-net` - used by CI service to deploy process
  * `estimate-gas` - estimate gas usage for all contracts and print result
+ * `gen-release` - generate release changelog and push to github
 
 All dev scripts stored under `shared/scripts` directory. `create-flatters.sh` creates flatterns versions of contracts, you may use this flatterns to verefy contract code on any block explorer services. `deploy.sh` used to deploy contract.  `generate-abi.js` used to generate ABIs for all contracts of current version, this script uses build result of truffle compile command. ABIs will not be generate if current ABI version of contracts have not diffrent from previosly.
 
@@ -77,19 +78,23 @@ We use CircleCI to run CI jobs. All CI process cosists of 3 stages:
 
  1. *Setup*. On this stage CI do setup process: fetch repository, install dependecies and other work.
  2. *Test*. This stage requires to be done Setup stage. On this stage CI do testing job.
- 3. *Deploy*. This stage requires to be done Test stage. Stage only triggered by pushing to repository version tag, eg. `v0.0.1`. It runs migrate to test network and commit all truffle migrate results to repository automaticly. Migrate log will be attached to commit body.
+ 3. *Deploy*. This stage requires to be done Test stage. Run migrate to network. See CI config.
 
 ## Development
 
-Sending work result. After have done your work send PR to `master` branch and request reviewer to check changes and accept PR.
+**Sending work result**
 
-Deploing new version. Before triggering deploy process you must change version in `package.json`, use `npm version` command to do it correcly. For example:
-```
-$ npm run version patch -m 'v%s [ci skip]'
-```
-Command above increment version and commit changes with `v<version> [ci skip]` message(`[ci skip]` to skip ci to be triggered).
-After all ush new version tag(created by `npm version`) to repository and wait deploy stage to be done.
+After have done your work send PR to `develop` branch and request reviewer to check changes and accept PR.
 
-If you want to skip CI stage add `[ci skip]` tag at any place of your commit.
+**Deploing to test network**
 
-Do not commit truffle compile results (`build/contracts`).
+Increment the contracts version in `package.json` and send changes to `alpha-release` branche to trigger deploy process. See `deploy-to-test-net.sh` script.
+
+**Deploing to prod network**
+
+TODO
+
+**Notes**
+
+* If you want to skip CI to be triggered add `[ci skip]` tag at any place of your commit message.
+* Do not commit truffle compile results (`build/contracts`).
