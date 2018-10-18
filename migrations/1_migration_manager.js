@@ -6,11 +6,13 @@ const semver = require('semver');
 const utils = require('../shared/utils');
 
 module.exports = function(deployer, network, accounts) {
-    if (network === 'test') {
+    if (network === 'test' || network === 'mainnet') {
+        const netName = network === 'test' ? 'Rinkeby' : 'Mainnet';
+
         deployer.then(async () => {
             if (!semint.isValid(version, 4)) throw new Error('version in package.json is not valid');
 
-            utils.migrateLog.create('Rinkeby');
+            utils.migrateLog.create(netName);
 
             // firstly deploy versions ledger
             await utils.deploy(network, deployer, Versions, {overwrite: false});

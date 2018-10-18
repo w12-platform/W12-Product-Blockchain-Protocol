@@ -11,7 +11,7 @@ module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
         await utils.deploy(network, deployer, Percent);
 
-        if (network === 'test') {
+        if (network === 'test' || network === 'mainnet') {
             utils.migrateLog.addAddress(Percent.contractName, Percent.address);
         }
 
@@ -20,7 +20,7 @@ module.exports = function (deployer, network, accounts) {
         W12CrowdsaleFactory.link(Percent);
     });
 
-    if(network === 'test') {
+    if(network === 'test' || network === 'mainnet') {
     	deployer.then(async () => {
             await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4));
 
