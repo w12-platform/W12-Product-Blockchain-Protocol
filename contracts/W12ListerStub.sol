@@ -12,6 +12,10 @@ contract W12ListerStub is W12Lister {
         _;
     }
 
+    modifier onlyRole(string _role) {
+        _;
+    }
+
     constructor(
         uint version,
         IW12CrowdsaleFactory _factory,
