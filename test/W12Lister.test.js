@@ -424,4 +424,61 @@ contract('W12Lister', async (accounts) => {
             });
         });
     });
+
+    describe('roles', async () => {
+        const owner = accounts[0];
+        const admin = accounts[1];
+
+        describe('should successful', () => {
+
+            it('add admin', async () => {
+                await sut.addAdmin(admin);
+
+                await sut.checkRole(admin, 'admin')
+                    .should.be.fulfilled;
+            });
+
+            it('remove admin', async () => {
+                await sut.addAdmin(admin);
+                await sut.removeAdmin(admin);
+
+                await sut.checkRole(admin, 'admin')
+                    .should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('whitelist token when call from a admin', async () => {
+                await sut.addAdmin(admin);
+                await sut.whitelistToken(
+                    accounts[1],
+                    utils.generateRandomAddress(),
+                    "TestTokenForSale",
+                    "TTFS",
+                    18,
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    { from: admin }
+                ).should.be.fulfilled;
+            });
+        });
+
+        describe('should revert', () => {
+
+            it('when whitelisting token from not a admin', async () => {
+                await sut.whitelistToken(
+                    accounts[1],
+                    utils.generateRandomAddress(),
+                    "TestTokenForSale",
+                    "TTFS",
+                    18,
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    utils.toInternalPercent(5),
+                    {from: admin}
+                ).should.be.rejectedWith(utils.EVMRevert);
+            });
+        });
+    });
 });
