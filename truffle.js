@@ -3,6 +3,7 @@ require('babel-polyfill');
 
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const deployConfig = require('./config.js');
+const PrivateKeyProvider = require("truffle-privatekey-provider");
 
 module.exports = {
     networks: {
@@ -19,6 +20,12 @@ module.exports = {
             },
             network_id: 4
         },
+        mainnet: {
+            provider () {
+                return new PrivateKeyProvider(deployConfig.mainnetAccountPK, `https://mainnet.infura.io/v3/${deployConfig.infuraKey}`)
+            },
+            network_id: 1
+        }
     },
     mocha: {
         // grep: ''
