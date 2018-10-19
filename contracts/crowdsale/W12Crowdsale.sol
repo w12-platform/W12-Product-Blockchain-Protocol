@@ -55,8 +55,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         bytes description;
     }
 
-    event Debug1(uint[2] _fee);
-    event Debug2(uint[5] _in);
     event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
     event StagesUpdated();
     event StageUpdated(uint index);
