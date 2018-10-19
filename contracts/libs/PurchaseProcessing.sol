@@ -97,7 +97,7 @@ library PurchaseProcessing {
 
         // tokens
         result[0] = Utils.safeReverseConversionByRate(
-            result[2].percent(Percent.MAX().add(bonus)),
+            result[2].safePercent(Percent.MAX().add(bonus)),
             tokenDecimals,
             result[4]
         );
@@ -131,8 +131,8 @@ library PurchaseProcessing {
     }
 
     function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal pure returns(uint[2] result) {
-        if (tokenFee > 0) result[0] = tokenAmount.percent(tokenFee);
-        if (purchaseFee > 0) result[1] = cost.percent(purchaseFee);
+        if (tokenFee > 0) result[0] = tokenAmount.safePercent(tokenFee);
+        if (purchaseFee > 0) result[1] = cost.safePercent(purchaseFee);
     }
 
     function transferFee(
