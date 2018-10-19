@@ -2,6 +2,7 @@ const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const Percent = artifacts.require('Percent');
 const Utils = artifacts.require('Utils');
+const UtilsMock = artifacts.require('UtilsMock');
 const FundAccount = artifacts.require('FundAccount');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
@@ -36,6 +37,7 @@ module.exports = function (deployer, network, accounts) {
             W12FundStub.link(FundAccount);
             PurchaseProcessingMock.link(Percent);
             PurchaseProcessingMock.link(Utils);
+            UtilsMock.link(Utils);
         }
     });
 
