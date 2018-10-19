@@ -162,7 +162,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
      * @dev Securely transfer token from sender to account
      */
     function _secureTokenTransfer(ERC20 token, address to, uint value) internal {
-        // check for overflow before. we are not sure that the placed token has implemented save math
+        // check for overflow before. we are not sure that the placed token has implemented safe math
         uint expectedBalance = token.balanceOf(to).add(value);
 
         token.transferFrom(msg.sender, to, value);

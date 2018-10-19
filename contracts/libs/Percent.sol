@@ -15,8 +15,8 @@ library Percent {
         return _a.mul(_b).div(MAX());
     }
 
-    function savePercent(uint _a, uint _b) internal pure returns (uint) {
-        return Utils.saveMulDiv(_a, _b, MAX());
+    function safePercent(uint _a, uint _b) internal pure returns (uint) {
+        return Utils.safeMulDiv(_a, _b, MAX());
     }
 
     function isPercent(uint _a) internal pure returns (bool) {

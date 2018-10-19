@@ -109,7 +109,7 @@ function fromInternalUSD (usd) {
     return usd.div(10 ** 8);
 }
 
-function saveConversionByRate(value, decimals, rate) {
+function safeConversionByRate(value, decimals, rate) {
     const ten = new BigNumber(10);
     value = new BigNumber(value);
     decimals = new BigNumber(decimals);
@@ -125,7 +125,7 @@ function saveConversionByRate(value, decimals, rate) {
         );
 }
 
-function saveReverseConversionByRate(value, decimals, rate) {
+function safeReverseConversionByRate(value, decimals, rate) {
     const ten = new BigNumber(10);
     value = new BigNumber(value);
     decimals = new BigNumber(decimals);
@@ -165,7 +165,7 @@ function calculatePurchase(
         actualTokenPriceUSD: new BigNumber(0)
     };
 
-    result.costUSD = saveConversionByRate(paymentAmount, methodDecimals, methodAmountPriceUSD);
+    result.costUSD = safeConversionByRate(paymentAmount, methodDecimals, methodAmountPriceUSD);
 
     const volumeBonus = getPurchaseBonus(result.costUSD, volumeBoundaries, volumeBonuses);
 
@@ -173,18 +173,18 @@ function calculatePurchase(
         ? percent(tokenPriceUSD, oneHundredPercent.sub(stageDiscount))
         : tokenPriceUSD;
 
-    result.tokenAmount = saveReverseConversionByRate(
+    result.tokenAmount = safeReverseConversionByRate(
         percent(result.costUSD, oneHundredPercent.add(volumeBonus)),
         tokenDecimals,
         result.actualTokenPriceUSD
     );
 
     if (currentBalanceInTokens.lt(result.tokenAmount)) {
-        result.costUSD = saveConversionByRate(currentBalanceInTokens, tokenDecimals, result.actualTokenPriceUSD);
+        result.costUSD = safeConversionByRate(currentBalanceInTokens, tokenDecimals, result.actualTokenPriceUSD);
         result.tokenAmount = currentBalanceInTokens;
     }
 
-    result.cost = saveReverseConversionByRate(result.costUSD, methodDecimals, methodAmountPriceUSD);
+    result.cost = safeReverseConversionByRate(result.costUSD, methodDecimals, methodAmountPriceUSD);
 
     if (result.cost.eq(0) || result.tokenAmount.eq(0)) {
         result.tokenAmount = new BigNumber(0);
@@ -343,6 +343,6 @@ module.exports = {
     fromInternalUSD,
     getPurchaseRoundLoss,
     getPurchaseBonus,
-    saveConvertByRate: saveConversionByRate,
-    saveReconvertByRate: saveReverseConversionByRate
+    saveConvertByRate: safeConversionByRate,
+    saveReconvertByRate: safeReverseConversionByRate
 }

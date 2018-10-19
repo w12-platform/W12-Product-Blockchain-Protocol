@@ -79,7 +79,7 @@ library PurchaseProcessing {
         ));
 
         // costUSD
-        result[2] = Utils.saveConversionByRate(
+        result[2] = Utils.safeConversionByRate(
             paymentAmount,
             methodDecimals,
             methodUSDRate
@@ -96,7 +96,7 @@ library PurchaseProcessing {
             : tokenUSDRate;
 
         // tokens
-        result[0] = Utils.saveReverseConversionByRate(
+        result[0] = Utils.safeReverseConversionByRate(
             result[2].percent(Percent.MAX().add(bonus)),
             tokenDecimals,
             result[4]
@@ -104,7 +104,7 @@ library PurchaseProcessing {
 
         // if current balance is not enough
         if (currentBalanceInTokens < result[0]) {
-            result[2] = Utils.saveConversionByRate(
+            result[2] = Utils.safeConversionByRate(
                 currentBalanceInTokens,
                 tokenDecimals,
                 result[4]
@@ -113,7 +113,7 @@ library PurchaseProcessing {
         }
 
         // cost
-        result[1] = Utils.saveReverseConversionByRate(
+        result[1] = Utils.safeReverseConversionByRate(
             result[2],
             methodDecimals,
             methodUSDRate

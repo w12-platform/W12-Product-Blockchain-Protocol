@@ -216,11 +216,11 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
 
             if (amount == 0) continue;
 
-            uint sourceAmount = amount.savePercent(_invoice[0]);
+            uint sourceAmount = amount.safePercent(_invoice[0]);
 
             require(sourceAmount > 0);
             
-            amount = Utils.saveMulDiv(
+            amount = Utils.safeMulDiv(
                 totalTokenBought.sub(totalTokenRefunded),
                 sourceAmount,
                 totalTokenBought
@@ -238,7 +238,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             }
 
             uint fee = trancheFeePercent > 0
-                ? amount.savePercent(trancheFeePercent)
+                ? amount.safePercent(trancheFeePercent)
                 : 0;
 
             if (trancheFeePercent > 0) require(fee > 0);
@@ -247,8 +247,8 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
                 if (fee > 0) serviceWallet.transfer(fee);
                 msg.sender.transfer(amount.sub(fee));
             } else {
-                if (fee > 0) ERC20(rates.getTokenAddress(symbol)).transfer(serviceWallet, fee);
-                ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount.sub(fee));
+                if (fee > 0) require(ERC20(rates.getTokenAddress(symbol)).transfer(serviceWallet, fee));
+                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount.sub(fee)));
             }
 
             emit TrancheTransferred(msg.sender, symbol, amount);
@@ -285,7 +285,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             if (amount == 0) continue;
 
             // get source amount
-            uint sourceAmount = Utils.saveMulDiv(
+            uint sourceAmount = Utils.safeMulDiv(
                 tokenAmount,
                 amount,
                 tokenBoughtPerInvestor[msg.sender]
@@ -296,10 +296,10 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             // get released tranche amount in current currency
             uint releasedTranche = totalFunded
                 .amountOf(symbol)
-                .savePercent(totalTranchePercentReleased);
+                .safePercent(totalTranchePercentReleased);
 
             // get amount minus released tranche
-            amount = Utils.saveMulDiv(
+            amount = Utils.safeMulDiv(
                 totalFunded.amountOf(symbol).sub(releasedTranche),
                 sourceAmount,
                 totalFunded.amountOf(symbol)
@@ -322,7 +322,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
             if (symbol == METHOD_ETH) {
                 msg.sender.transfer(amount);
             } else {
-                ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount);
+                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount));
             }
 
             emit AssetRefunded(msg.sender, symbol, amount);
