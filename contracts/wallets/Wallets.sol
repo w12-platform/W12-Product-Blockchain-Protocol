@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract Wallets is Ownable {
-    uint8 constant public SERVICE_WALLET_ID = 0;
+    uint8 constant public SERVICE_WALLET_ID = 1;
 
     mapping (uint8 => address) _wallets;
 
