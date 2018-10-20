@@ -17,6 +17,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
+    uint8 constant SERVICE_WALLET_ID = 1;
     string public ROLE_ADMIN = "admin";
 
     ITokenExchanger public exchanger;
