@@ -244,6 +244,6 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
     }
 
     function serviceWallet() public view returns(address) {
-        return wallets.getWallet(wallets.SERVICE_WALLET_ID());
+        return wallets.getWallet(SERVICE_WALLET_ID);
     }
 }
