@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
 import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
@@ -11,9 +12,11 @@ import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
 
 
-contract W12Lister is Versionable, Ownable, ReentrancyGuard {
+contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
+
+    string public ROLE_ADMIN = "admin";
 
     ITokenExchanger public exchanger;
     IW12CrowdsaleFactory public factory;
@@ -59,6 +62,16 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
+
+        addRole(msg.sender, ROLE_ADMIN);
+    }
+
+    function addAdmin(address _operator) public onlyOwner {
+        addRole(_operator, ROLE_ADMIN);
+    }
+
+    function removeAdmin(address _operator) public onlyOwner {
+        removeRole(_operator, ROLE_ADMIN);
     }
 
     function whitelistToken(
@@ -72,7 +85,8 @@ contract W12Lister is Versionable, Ownable, ReentrancyGuard {
         uint WTokenSaleFeePercent,
         uint trancheFeePercent
     )
-        external onlyOwner {
+        external onlyRole(ROLE_ADMIN)
+    {
 
         require(tokenOwner != address(0));
         require(tokenAddress != address(0));
