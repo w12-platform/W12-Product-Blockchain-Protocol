@@ -1,6 +1,6 @@
-require('../shared/tests/setup.js');
+require('../../shared/tests/setup.js');
 
-const utils = require('../shared/tests/utils.js');
+const utils = require('../../shared/tests/utils.js');
 
 const WToken = artifacts.require('WToken');
 

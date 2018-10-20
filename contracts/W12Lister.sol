@@ -5,7 +5,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
-import "./interfaces/IW12CrowdsaleFactory.sol";
+import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./wallets/IWallets.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
@@ -162,7 +162,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
      * @dev Securely transfer token from sender to account
      */
     function _secureTokenTransfer(ERC20 token, address to, uint value) internal {
-        // check for overflow before. we are not sure that the placed token has implemented save math
+        // check for overflow before. we are not sure that the placed token has implemented safe math
         uint expectedBalance = token.balanceOf(to).add(value);
 
         token.transferFrom(msg.sender, to, value);
@@ -187,7 +187,7 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
             getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
             getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
-            exchanger,
+            address(exchanger),
             msg.sender
         );
 

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./IW12Crowdsale.sol";
+import "../IW12Crowdsale.sol";
 
 
 interface IW12CrowdsaleFactory {

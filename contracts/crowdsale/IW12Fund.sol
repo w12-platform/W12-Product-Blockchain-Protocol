@@ -12,5 +12,11 @@ interface IW12Fund {
 
     function transferOwnership(address newOwner) external;
 
-    function recordPurchase(address buyer, uint tokenAmount) external payable;
+    function recordPurchase(
+        address investor,
+        uint tokenAmount,
+        bytes32 symbol,
+        uint cost,
+        uint costUSD
+    ) external payable;
 }

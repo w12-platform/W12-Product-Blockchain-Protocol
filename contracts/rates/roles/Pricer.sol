@@ -1,8 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/access/rbac/Roles.sol";
+import "./IPricer.sol";
 
-contract PricerRole {
+contract PricerRole is IPricerRole {
     using Roles for Roles.Role;
 
     event PricerAdded(address indexed account);

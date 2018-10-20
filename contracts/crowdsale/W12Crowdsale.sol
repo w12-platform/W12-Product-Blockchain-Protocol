@@ -3,18 +3,39 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IW12Crowdsale.sol";
-import "./interfaces/IW12Fund.sol";
-import "./libs/Percent.sol";
-import "./versioning/Versionable.sol";
-import "./token/WToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "./IW12Crowdsale.sol";
+import "./IW12Fund.sol";
+import "../rates/IRates.sol";
+import "../libs/Percent.sol";
+import "../libs/PaymentMethods.sol";
+import "../libs/PurchaseProcessing.sol";
+import "../versioning/Versionable.sol";
+import "../token/IWToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using BytesLib for bytes;
+    using PaymentMethods for PaymentMethods.Methods;
+
+    IWToken public token;
+    ERC20 public originToken;
+    IW12Fund public fund;
+    IRates public rates;
+    uint public price;
+    uint public serviceFee;
+    uint public WTokenSaleFeePercent;
+    address public serviceWallet;
+    address public swap;
+
+    // list of payment methods
+    PaymentMethods.Methods paymentMethods;
+
+    Stage[] public stages;
+    Milestone[] public milestones;
 
     struct Stage {
         uint32 startDate;
@@ -27,26 +48,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
     struct Milestone {
         uint32 endDate;
-        uint  tranchePercent;
+        uint tranchePercent;
         uint32 voteEndDate;
         uint32 withdrawalWindow;
         bytes name;
         bytes description;
     }
 
-    WToken public token;
-    ERC20 public originToken;
-    uint public price;
-    uint public serviceFee;
-    uint public WTokenSaleFeePercent;
-    address public serviceWallet;
-    address public swap;
-    IW12Fund public fund;
-
-    Stage[] public stages;
-    Milestone[] public milestones;
-
-    event TokenPurchase(address indexed buyer, uint amountPaid, uint tokensBought, uint change);
+    event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
     event StagesUpdated();
     event StageUpdated(uint index);
     event MilestonesUpdated();
@@ -61,7 +70,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         address _swap,
         uint _serviceFee,
         uint _WTokenSaleFeePercent,
-        IW12Fund _fund
+        IW12Fund _fund,
+        IRates _rates
     )
         Versionable(version) public
     {
@@ -71,15 +81,17 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
         require(_swap != address(0));
+        require(_rates != address(0));
 
         __setParameters(_price, _serviceWallet);
 
-        token = WToken(_token);
+        token = IWToken(_token);
         originToken = ERC20(_originToken);
         serviceFee = _serviceFee;
         swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
         fund = _fund;
+        rates = _rates;
     }
 
     function stagesLength() external view returns (uint) {
@@ -159,7 +171,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         uint[] bonusConditionsOfStages,
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
-        bytes nameAndDescriptionsOfMilestones
+        bytes nameAndDescriptionsOfMilestones,
+        bytes32[] paymentMethodsList
     )
         external onlyOwner beforeSaleStart
     {
@@ -172,6 +185,13 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         require(parametersOfMilestones.length == nameAndDescriptionsOffsetOfMilestones.length / 2);
         require(parametersOfMilestones.length <= nameAndDescriptionsOfMilestones.length / 2);
 
+        // check payment methods list
+        require(paymentMethodsList.length != 0);
+
+        for (uint i = 0; i < paymentMethodsList.length; i++) {
+            require(rates.hasSymbol(paymentMethodsList[i]));
+        }
+
         _setStages(
             parametersOfStages,
             bonusConditionsOfStages
@@ -182,6 +202,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             nameAndDescriptionsOffsetOfMilestones,
             nameAndDescriptionsOfMilestones
         );
+
+        paymentMethods.update(paymentMethodsList);
     }
 
     /**
@@ -359,67 +381,56 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         emit MilestonesUpdated();
     }
 
-    function buyTokens() payable public nonReentrant onlyWhenSaleActive {
-        require(msg.value > 0);
-
-        (uint index, ) = getCurrentStageIndex();
-
-        uint discount = stages[index].discount;
-        uint32 vesting = stages[index].vesting;
-        uint volumeBonus = getSaleVolumeBonus(msg.value);
-
-        (uint tokenAmount, uint weiCost, uint change, ) = _purchaseOrder(msg.value, discount, volumeBonus);
-
-        if (WTokenSaleFeePercent > 0) {
-            uint tokensFee = tokenAmount.percent(WTokenSaleFeePercent);
-
-            require(originToken.transferFrom(swap, serviceWallet, tokensFee));
-            require(token.transfer(swap, tokensFee));
+    function buyTokens(bytes32 method, uint amount) payable public nonReentrant onlyWhenSaleActive {
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            require(rates.getTokenAddress(method) != address(0));
         }
 
-        require(token.vestingTransfer(msg.sender, tokenAmount, vesting));
+        (uint index, /*bool found*/) = getCurrentStageIndex();
 
-        if (change > 0) {
-            msg.sender.transfer(change);
-        }
+        uint[5] memory invoice = getInvoice(method, amount);
+        uint[2] memory fee = getFee(invoice[0], invoice[1]);
 
-        if(serviceFee > 0)
-            serviceWallet.transfer(weiCost.percent(serviceFee));
+        _transferFee(fee, method);
+        _transferPurchase(invoice, fee, stages[index].vesting, method);
+        _recordPurchase(invoice, fee, method);
 
-        fund.recordPurchase.value(address(this).balance).gas(100000)(msg.sender, tokenAmount);
-
-        emit TokenPurchase(msg.sender, weiCost, tokenAmount, change);
+        emit TokenPurchase(msg.sender, invoice[0], invoice[1], invoice[3]);
     }
 
-    function _purchaseOrder(uint _wei, uint discount, uint volumeBonus)
-        internal view returns (uint tokens, uint weiCost, uint change, uint actualPrice)
-    {
-        weiCost = _wei;
+    function _transferFee(uint[2] _fee, bytes32 method) internal {
+        PurchaseProcessing.transferFee(
+            _fee,
+            method,
+            rates.isToken(method) ? rates.getTokenAddress(method) : address(0),
+            address(token),
+            address(originToken),
+            swap,
+            serviceWallet
+        );
+    }
 
-        uint balance = token.balanceOf(address(this));
+    function _transferPurchase(uint[5] _invoice, uint[2] _fee, uint32 vesting, bytes32 method) internal {
+        PurchaseProcessing.transferPurchase(
+            _invoice,
+            _fee,
+            vesting,
+            method,
+            rates.isToken(method) ? rates.getTokenAddress(method) : address(0),
+            address(token)
+        );
+    }
 
-        require(balance >= 10 ** uint(token.decimals()));
-
-        actualPrice = discount > 0
-            ? price.percent(Percent.MAX() - discount)
-            : price;
-
-        tokens = _wei
-            .mul(Percent.MAX() + volumeBonus)
-            .mul(10 ** uint(token.decimals()))
-            .div(actualPrice)
-            .div(Percent.MAX());
-
-        if (balance < tokens) {
-            weiCost = _wei
-                .mul(balance)
-                .div(tokens);
-            change = _wei - weiCost;
-            tokens = balance;
+    function _recordPurchase(uint[5] _invoice, uint[2] _fee, bytes32 method) internal {
+        if (method == PurchaseProcessing.METHOD_ETH()) {
+            fund.recordPurchase.value(_invoice[1].sub(_fee[1]))(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
+        } else {
+            require(ERC20(rates.getTokenAddress(method)).transfer(address(fund), _invoice[1].sub(_fee[1])));
+            fund.recordPurchase(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
         }
     }
 
-    function getWToken() external view returns(WToken) {
+    function getWToken() external view returns(IWToken) {
         return token;
     }
 
@@ -427,20 +438,53 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         return fund;
     }
 
+    function getPaymentMethodsList() external view returns(bytes32[]) {
+        return paymentMethods.list();
+    }
+
+    function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
+        return paymentMethods.isAllowed(_method);
+    }
+
+    function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            if (rates.getTokenAddress(method) == address(0)) {
+                return;
+            }
+        }
+
+        return PurchaseProcessing.invoice(
+            method,
+            amount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            rates.get(method),
+            price,
+            uint(token.decimals()),
+            PurchaseProcessing.METHOD_ETH() == method
+                ? 18
+                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
+            token.balanceOf(address(this))
+        );
+    }
+
+    function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
+        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, WTokenSaleFeePercent);
+    }
+
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
         (uint index, bool found) = getCurrentStageIndex();
 
-        if (!found) return 0;
+        if (!found) return;
 
         Stage storage stage = stages[index];
 
-        for(uint i = 0; i < stage.volumeBoundaries.length; i++) {
-            if (value >= stage.volumeBoundaries[i]) {
-                bonus = stage.volumeBonuses[i];
-            } else {
-                break;
-            }
-        }
+        return PurchaseProcessing.getBonus(value, stage.volumeBoundaries, stage.volumeBonuses);
     }
 
     function getCurrentStageIndex() public view returns (uint index, bool found) {
@@ -473,10 +517,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         (, bool found) = getCurrentStageIndex();
 
         return found;
-    }
-
-    function() payable external {
-        buyTokens();
     }
 
     modifier beforeSaleStart() {
