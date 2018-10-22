@@ -27,6 +27,7 @@ $'\n'\
 "$ADDRESSES"
 
 git tag "$VERSION_TAG"
-git push --tags origin HEAD:master
+git push origin HEAD:master
+git push "$VERSION_TAG"
 
 npm run gen-release
