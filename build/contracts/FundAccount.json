@@ -1,0 +1,4040 @@
+{
+  "contractName": "FundAccount",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_account",
+          "type": "FundAccount.Account storage"
+        }
+      ],
+      "name": "symbolsList",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x610140610030600b82828239805160001a6073146000811461002057610022565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600436106100575763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166320e1e1d1811461005c575b600080fd5b6100676004356100b7565b60408051602080825283518183015283519192839290830191858101910280838360005b838110156100a357818101518382015260200161008b565b505050509050019250505060405180910390f35b60608160000180548060200260200160405190810160405280929190818152602001828054801561010857602002820191906000526020600020905b815481526001909101906020018083116100f3575b505050505090509190505600a165627a7a723058202f97db4fc50b1e61ca5879af0d2b9212521d8aed4ef04f114cedc6acb28adcf80029",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106100575763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166320e1e1d1811461005c575b600080fd5b6100676004356100b7565b60408051602080825283518183015283519192839290830191858101910280838360005b838110156100a357818101518382015260200161008b565b505050509050019250505060405180910390f35b60608160000180548060200260200160405190810160405280929190818152602001828054801561010857602002820191906000526020600020905b815481526001909101906020018083116100f3575b505050505090509190505600a165627a7a723058202f97db4fc50b1e61ca5879af0d2b9212521d8aed4ef04f114cedc6acb28adcf80029",
+  "sourceMap": "87:1347:11:-;;132:2:-1;166:7;155:9;146:7;137:37;252:7;246:14;243:1;238:23;232:4;229:33;270:1;265:20;;;;222:63;;265:20;274:9;222:63;;298:9;295:1;288:20;328:4;319:7;311:22;352:7;343;336:24",
+  "deployedSourceMap": "87:1347:11:-;;;;;;;;;;;;;;;;;;;;;;;;;;1076:116;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:100:-1;33:3;30:1;27:10;8:100;;;90:11;;;84:18;71:11;;;64:39;52:2;45:10;8:100;;;12:14;1076:116:11;;;;;;;;;;;;;;;;;;1136:9;1164:8;:21;;1157:28;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1076:116;;;:::o",
+  "source": "pragma solidity ^0.4.24;\n\nimport \"openzeppelin-solidity/contracts/math/SafeMath.sol\";\n\nlibrary FundAccount {\n    using SafeMath for uint;\n\n    struct Account {\n        bytes32[] _symbolsList;\n        mapping ( bytes32 => bool ) symbols;\n        mapping ( bytes32 => uint ) amount;\n    }\n\n    function deposit(Account storage _account, bytes32 _symbol, uint _amount) internal {\n        _writeSymbol(_account, _symbol);\n\n        _account.amount[_symbol] = _account.amount[_symbol].add(_amount);\n    }\n\n    function withdrawal(Account storage _account, bytes32 _symbol, uint _amount) internal {\n        require(hasDepositIn(_account, _symbol));\n        require(amountOf(_account, _symbol) >= _amount);\n\n        _account.amount[_symbol] = _account.amount[_symbol].sub(_amount);\n    }\n\n    function hasDepositIn(Account storage _account, bytes32 _symbol) internal view returns(bool) {\n        return _account.symbols[_symbol];\n    }\n\n    function amountOf(Account storage _account, bytes32 _symbol) internal view returns(uint) {\n        return _account.amount[_symbol];\n    }\n\n    function symbolsList(Account storage _account) view returns(bytes32[]) {\n        return _account._symbolsList;\n    }\n\n    function _writeSymbol(Account storage _account, bytes32 _symbol) internal {\n        if (!hasDepositIn(_account, _symbol)) {\n            _account._symbolsList.push(_symbol);\n            _account.symbols[_symbol] = true;\n        }\n    }\n}\n",
+  "sourcePath": "/home/circleci/code/contracts/libs/FundAccount.sol",
+  "ast": {
+    "absolutePath": "/home/circleci/code/contracts/libs/FundAccount.sol",
+    "exportedSymbols": {
+      "FundAccount": [
+        4841
+      ]
+    },
+    "id": 4842,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 4682,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:11"
+      },
+      {
+        "absolutePath": "openzeppelin-solidity/contracts/math/SafeMath.sol",
+        "file": "openzeppelin-solidity/contracts/math/SafeMath.sol",
+        "id": 4683,
+        "nodeType": "ImportDirective",
+        "scope": 4842,
+        "sourceUnit": 9603,
+        "src": "26:59:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 4841,
+        "linearizedBaseContracts": [
+          4841
+        ],
+        "name": "FundAccount",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "id": 4686,
+            "libraryName": {
+              "contractScope": null,
+              "id": 4684,
+              "name": "SafeMath",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 9602,
+              "src": "119:8:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_SafeMath_$9602",
+                "typeString": "library SafeMath"
+              }
+            },
+            "nodeType": "UsingForDirective",
+            "src": "113:24:11",
+            "typeName": {
+              "id": 4685,
+              "name": "uint",
+              "nodeType": "ElementaryTypeName",
+              "src": "132:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            }
+          },
+          {
+            "canonicalName": "FundAccount.Account",
+            "id": 4698,
+            "members": [
+              {
+                "constant": false,
+                "id": 4689,
+                "name": "_symbolsList",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "168:22:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                  "typeString": "bytes32[]"
+                },
+                "typeName": {
+                  "baseType": {
+                    "id": 4687,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "168:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "id": 4688,
+                  "length": null,
+                  "nodeType": "ArrayTypeName",
+                  "src": "168:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                    "typeString": "bytes32[]"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 4693,
+                "name": "symbols",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "200:35:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                  "typeString": "mapping(bytes32 => bool)"
+                },
+                "typeName": {
+                  "id": 4692,
+                  "keyType": {
+                    "id": 4690,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "210:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "200:27:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                    "typeString": "mapping(bytes32 => bool)"
+                  },
+                  "valueType": {
+                    "id": 4691,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "221:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 4697,
+                "name": "amount",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "245:34:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                  "typeString": "mapping(bytes32 => uint256)"
+                },
+                "typeName": {
+                  "id": 4696,
+                  "keyType": {
+                    "id": 4694,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "255:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "245:27:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                    "typeString": "mapping(bytes32 => uint256)"
+                  },
+                  "valueType": {
+                    "id": 4695,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "266:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "Account",
+            "nodeType": "StructDefinition",
+            "scope": 4841,
+            "src": "143:143:11",
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 4726,
+              "nodeType": "Block",
+              "src": "375:123:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 4708,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4700,
+                        "src": "398:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "id": 4709,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4702,
+                        "src": "408:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        },
+                        {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      ],
+                      "id": 4707,
+                      "name": "_writeSymbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4840,
+                      "src": "385:12:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$__$",
+                        "typeString": "function (struct FundAccount.Account storage pointer,bytes32)"
+                      }
+                    },
+                    "id": 4710,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "385:31:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4711,
+                  "nodeType": "ExpressionStatement",
+                  "src": "385:31:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 4724,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4712,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4700,
+                          "src": "427:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        "id": 4715,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "amount",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4697,
+                        "src": "427:15:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                          "typeString": "mapping(bytes32 => uint256)"
+                        }
+                      },
+                      "id": 4716,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 4714,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4702,
+                        "src": "443:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "427:24:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4722,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4704,
+                          "src": "483:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "expression": {
+                              "argumentTypes": null,
+                              "id": 4717,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4700,
+                              "src": "454:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            "id": 4718,
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "amount",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 4697,
+                            "src": "454:15:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                              "typeString": "mapping(bytes32 => uint256)"
+                            }
+                          },
+                          "id": 4720,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 4719,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4702,
+                            "src": "470:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "454:24:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4721,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "add",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9601,
+                        "src": "454:28:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
+                          "typeString": "function (uint256,uint256) pure returns (uint256)"
+                        }
+                      },
+                      "id": 4723,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "454:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "427:64:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 4725,
+                  "nodeType": "ExpressionStatement",
+                  "src": "427:64:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4727,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "deposit",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4705,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4700,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "309:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4699,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "309:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4702,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "335:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4701,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "335:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4704,
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "352:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4703,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "352:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "308:57:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4706,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "375:0:11"
+            },
+            "scope": 4841,
+            "src": "292:206:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4766,
+              "nodeType": "Block",
+              "src": "590:189:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "arguments": [
+                          {
+                            "argumentTypes": null,
+                            "id": 4738,
+                            "name": "_account",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4729,
+                            "src": "621:8:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                              "typeString": "struct FundAccount.Account storage pointer"
+                            }
+                          },
+                          {
+                            "argumentTypes": null,
+                            "id": 4739,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4731,
+                            "src": "631:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": [
+                            {
+                              "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                              "typeString": "struct FundAccount.Account storage pointer"
+                            },
+                            {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          ],
+                          "id": 4737,
+                          "name": "hasDepositIn",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4782,
+                          "src": "608:12:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_bool_$",
+                            "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (bool)"
+                          }
+                        },
+                        "id": 4740,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "functionCall",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "608:31:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      ],
+                      "id": 4736,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        10045,
+                        10046
+                      ],
+                      "referencedDeclaration": 10045,
+                      "src": "600:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
+                        "typeString": "function (bool) pure"
+                      }
+                    },
+                    "id": 4741,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "600:40:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4742,
+                  "nodeType": "ExpressionStatement",
+                  "src": "600:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "commonType": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        "id": 4749,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "leftExpression": {
+                          "argumentTypes": null,
+                          "arguments": [
+                            {
+                              "argumentTypes": null,
+                              "id": 4745,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4729,
+                              "src": "667:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            {
+                              "argumentTypes": null,
+                              "id": 4746,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4731,
+                              "src": "677:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            }
+                          ],
+                          "expression": {
+                            "argumentTypes": [
+                              {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              },
+                              {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            ],
+                            "id": 4744,
+                            "name": "amountOf",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4797,
+                            "src": "658:8:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_uint256_$",
+                              "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (uint256)"
+                            }
+                          },
+                          "id": 4747,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "kind": "functionCall",
+                          "lValueRequested": false,
+                          "names": [],
+                          "nodeType": "FunctionCall",
+                          "src": "658:27:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "nodeType": "BinaryOperation",
+                        "operator": ">=",
+                        "rightExpression": {
+                          "argumentTypes": null,
+                          "id": 4748,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4733,
+                          "src": "689:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "src": "658:38:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      ],
+                      "id": 4743,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        10045,
+                        10046
+                      ],
+                      "referencedDeclaration": 10045,
+                      "src": "650:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
+                        "typeString": "function (bool) pure"
+                      }
+                    },
+                    "id": 4750,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "650:47:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4751,
+                  "nodeType": "ExpressionStatement",
+                  "src": "650:47:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 4764,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4752,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4729,
+                          "src": "708:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        "id": 4755,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "amount",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4697,
+                        "src": "708:15:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                          "typeString": "mapping(bytes32 => uint256)"
+                        }
+                      },
+                      "id": 4756,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 4754,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4731,
+                        "src": "724:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "708:24:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4762,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4733,
+                          "src": "764:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "expression": {
+                              "argumentTypes": null,
+                              "id": 4757,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4729,
+                              "src": "735:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            "id": 4758,
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "amount",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 4697,
+                            "src": "735:15:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                              "typeString": "mapping(bytes32 => uint256)"
+                            }
+                          },
+                          "id": 4760,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 4759,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4731,
+                            "src": "751:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "735:24:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4761,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "sub",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9577,
+                        "src": "735:28:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
+                          "typeString": "function (uint256,uint256) pure returns (uint256)"
+                        }
+                      },
+                      "id": 4763,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "735:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "708:64:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 4765,
+                  "nodeType": "ExpressionStatement",
+                  "src": "708:64:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4767,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "withdrawal",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4734,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4729,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "524:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4728,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "524:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4731,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "550:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4730,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "550:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4733,
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "567:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4732,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "567:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "523:57:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4735,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "590:0:11"
+            },
+            "scope": 4841,
+            "src": "504:275:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4781,
+              "nodeType": "Block",
+              "src": "878:49:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 4776,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4769,
+                        "src": "895:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      "id": 4777,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "symbols",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4693,
+                      "src": "895:16:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                        "typeString": "mapping(bytes32 => bool)"
+                      }
+                    },
+                    "id": 4779,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 4778,
+                      "name": "_symbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4771,
+                      "src": "912:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "895:25:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "functionReturnParameters": 4775,
+                  "id": 4780,
+                  "nodeType": "Return",
+                  "src": "888:32:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4782,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "hasDepositIn",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4772,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4769,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "807:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4768,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "807:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4771,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "833:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4770,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "833:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "806:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4775,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4774,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "872:4:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 4773,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "872:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "871:6:11"
+            },
+            "scope": 4841,
+            "src": "785:142:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4796,
+              "nodeType": "Block",
+              "src": "1022:48:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 4791,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4784,
+                        "src": "1039:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      "id": 4792,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "amount",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4697,
+                      "src": "1039:15:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                        "typeString": "mapping(bytes32 => uint256)"
+                      }
+                    },
+                    "id": 4794,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 4793,
+                      "name": "_symbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4786,
+                      "src": "1055:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1039:24:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 4790,
+                  "id": 4795,
+                  "nodeType": "Return",
+                  "src": "1032:31:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4797,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "amountOf",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4787,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4784,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "951:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4783,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "951:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4786,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "977:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4785,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "977:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "950:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4790,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4789,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "1016:4:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4788,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1016:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1015:6:11"
+            },
+            "scope": 4841,
+            "src": "933:137:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4808,
+              "nodeType": "Block",
+              "src": "1147:45:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "expression": {
+                      "argumentTypes": null,
+                      "id": 4805,
+                      "name": "_account",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4799,
+                      "src": "1164:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                        "typeString": "struct FundAccount.Account storage pointer"
+                      }
+                    },
+                    "id": 4806,
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "memberName": "_symbolsList",
+                    "nodeType": "MemberAccess",
+                    "referencedDeclaration": 4689,
+                    "src": "1164:21:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage",
+                      "typeString": "bytes32[] storage ref"
+                    }
+                  },
+                  "functionReturnParameters": 4804,
+                  "id": 4807,
+                  "nodeType": "Return",
+                  "src": "1157:28:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4809,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "symbolsList",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4800,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4799,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4809,
+                  "src": "1097:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4798,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "1097:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1096:26:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4804,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4803,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4809,
+                  "src": "1136:9:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_memory_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 4801,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1136:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 4802,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1136:9:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1135:11:11"
+            },
+            "scope": 4841,
+            "src": "1076:116:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 4839,
+              "nodeType": "Block",
+              "src": "1272:160:11",
+              "statements": [
+                {
+                  "condition": {
+                    "argumentTypes": null,
+                    "id": 4820,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "UnaryOperation",
+                    "operator": "!",
+                    "prefix": true,
+                    "src": "1286:32:11",
+                    "subExpression": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4817,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4811,
+                          "src": "1300:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 4818,
+                          "name": "_symbol",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4813,
+                          "src": "1310:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes32",
+                            "typeString": "bytes32"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          },
+                          {
+                            "typeIdentifier": "t_bytes32",
+                            "typeString": "bytes32"
+                          }
+                        ],
+                        "id": 4816,
+                        "name": "hasDepositIn",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4782,
+                        "src": "1287:12:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_bool_$",
+                          "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (bool)"
+                        }
+                      },
+                      "id": 4819,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "1287:31:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "falseBody": null,
+                  "id": 4838,
+                  "nodeType": "IfStatement",
+                  "src": "1282:144:11",
+                  "trueBody": {
+                    "id": 4837,
+                    "nodeType": "Block",
+                    "src": "1320:106:11",
+                    "statements": [
+                      {
+                        "expression": {
+                          "argumentTypes": null,
+                          "arguments": [
+                            {
+                              "argumentTypes": null,
+                              "id": 4826,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4813,
+                              "src": "1361:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            }
+                          ],
+                          "expression": {
+                            "argumentTypes": [
+                              {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            ],
+                            "expression": {
+                              "argumentTypes": null,
+                              "expression": {
+                                "argumentTypes": null,
+                                "id": 4821,
+                                "name": "_account",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 4811,
+                                "src": "1334:8:11",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                  "typeString": "struct FundAccount.Account storage pointer"
+                                }
+                              },
+                              "id": 4824,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "_symbolsList",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 4689,
+                              "src": "1334:21:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_array$_t_bytes32_$dyn_storage",
+                                "typeString": "bytes32[] storage ref"
+                              }
+                            },
+                            "id": 4825,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "push",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": null,
+                            "src": "1334:26:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_function_arraypush_nonpayable$_t_bytes32_$returns$_t_uint256_$",
+                              "typeString": "function (bytes32) returns (uint256)"
+                            }
+                          },
+                          "id": 4827,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "kind": "functionCall",
+                          "lValueRequested": false,
+                          "names": [],
+                          "nodeType": "FunctionCall",
+                          "src": "1334:35:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4828,
+                        "nodeType": "ExpressionStatement",
+                        "src": "1334:35:11"
+                      },
+                      {
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4835,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "leftHandSide": {
+                            "argumentTypes": null,
+                            "baseExpression": {
+                              "argumentTypes": null,
+                              "expression": {
+                                "argumentTypes": null,
+                                "id": 4829,
+                                "name": "_account",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 4811,
+                                "src": "1383:8:11",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                  "typeString": "struct FundAccount.Account storage pointer"
+                                }
+                              },
+                              "id": 4832,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "symbols",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 4693,
+                              "src": "1383:16:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                                "typeString": "mapping(bytes32 => bool)"
+                              }
+                            },
+                            "id": 4833,
+                            "indexExpression": {
+                              "argumentTypes": null,
+                              "id": 4831,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4813,
+                              "src": "1400:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            },
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": true,
+                            "nodeType": "IndexAccess",
+                            "src": "1383:25:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bool",
+                              "typeString": "bool"
+                            }
+                          },
+                          "nodeType": "Assignment",
+                          "operator": "=",
+                          "rightHandSide": {
+                            "argumentTypes": null,
+                            "hexValue": "74727565",
+                            "id": 4834,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": true,
+                            "kind": "bool",
+                            "lValueRequested": false,
+                            "nodeType": "Literal",
+                            "src": "1411:4:11",
+                            "subdenomination": null,
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bool",
+                              "typeString": "bool"
+                            },
+                            "value": "true"
+                          },
+                          "src": "1383:32:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bool",
+                            "typeString": "bool"
+                          }
+                        },
+                        "id": 4836,
+                        "nodeType": "ExpressionStatement",
+                        "src": "1383:32:11"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4840,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "_writeSymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4814,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4811,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4840,
+                  "src": "1220:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4810,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "1220:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4813,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4840,
+                  "src": "1246:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4812,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1246:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1219:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4815,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1272:0:11"
+            },
+            "scope": 4841,
+            "src": "1198:234:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          }
+        ],
+        "scope": 4842,
+        "src": "87:1347:11"
+      }
+    ],
+    "src": "0:1435:11"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/circleci/code/contracts/libs/FundAccount.sol",
+    "exportedSymbols": {
+      "FundAccount": [
+        4841
+      ]
+    },
+    "id": 4842,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 4682,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:11"
+      },
+      {
+        "absolutePath": "openzeppelin-solidity/contracts/math/SafeMath.sol",
+        "file": "openzeppelin-solidity/contracts/math/SafeMath.sol",
+        "id": 4683,
+        "nodeType": "ImportDirective",
+        "scope": 4842,
+        "sourceUnit": 9603,
+        "src": "26:59:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 4841,
+        "linearizedBaseContracts": [
+          4841
+        ],
+        "name": "FundAccount",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "id": 4686,
+            "libraryName": {
+              "contractScope": null,
+              "id": 4684,
+              "name": "SafeMath",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 9602,
+              "src": "119:8:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_SafeMath_$9602",
+                "typeString": "library SafeMath"
+              }
+            },
+            "nodeType": "UsingForDirective",
+            "src": "113:24:11",
+            "typeName": {
+              "id": 4685,
+              "name": "uint",
+              "nodeType": "ElementaryTypeName",
+              "src": "132:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            }
+          },
+          {
+            "canonicalName": "FundAccount.Account",
+            "id": 4698,
+            "members": [
+              {
+                "constant": false,
+                "id": 4689,
+                "name": "_symbolsList",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "168:22:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                  "typeString": "bytes32[]"
+                },
+                "typeName": {
+                  "baseType": {
+                    "id": 4687,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "168:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "id": 4688,
+                  "length": null,
+                  "nodeType": "ArrayTypeName",
+                  "src": "168:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                    "typeString": "bytes32[]"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 4693,
+                "name": "symbols",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "200:35:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                  "typeString": "mapping(bytes32 => bool)"
+                },
+                "typeName": {
+                  "id": 4692,
+                  "keyType": {
+                    "id": 4690,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "210:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "200:27:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                    "typeString": "mapping(bytes32 => bool)"
+                  },
+                  "valueType": {
+                    "id": 4691,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "221:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 4697,
+                "name": "amount",
+                "nodeType": "VariableDeclaration",
+                "scope": 4698,
+                "src": "245:34:11",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                  "typeString": "mapping(bytes32 => uint256)"
+                },
+                "typeName": {
+                  "id": 4696,
+                  "keyType": {
+                    "id": 4694,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "255:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "245:27:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                    "typeString": "mapping(bytes32 => uint256)"
+                  },
+                  "valueType": {
+                    "id": 4695,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "266:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "Account",
+            "nodeType": "StructDefinition",
+            "scope": 4841,
+            "src": "143:143:11",
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 4726,
+              "nodeType": "Block",
+              "src": "375:123:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 4708,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4700,
+                        "src": "398:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "id": 4709,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4702,
+                        "src": "408:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        },
+                        {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      ],
+                      "id": 4707,
+                      "name": "_writeSymbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4840,
+                      "src": "385:12:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$__$",
+                        "typeString": "function (struct FundAccount.Account storage pointer,bytes32)"
+                      }
+                    },
+                    "id": 4710,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "385:31:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4711,
+                  "nodeType": "ExpressionStatement",
+                  "src": "385:31:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 4724,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4712,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4700,
+                          "src": "427:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        "id": 4715,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "amount",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4697,
+                        "src": "427:15:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                          "typeString": "mapping(bytes32 => uint256)"
+                        }
+                      },
+                      "id": 4716,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 4714,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4702,
+                        "src": "443:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "427:24:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4722,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4704,
+                          "src": "483:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "expression": {
+                              "argumentTypes": null,
+                              "id": 4717,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4700,
+                              "src": "454:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            "id": 4718,
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "amount",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 4697,
+                            "src": "454:15:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                              "typeString": "mapping(bytes32 => uint256)"
+                            }
+                          },
+                          "id": 4720,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 4719,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4702,
+                            "src": "470:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "454:24:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4721,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "add",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9601,
+                        "src": "454:28:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
+                          "typeString": "function (uint256,uint256) pure returns (uint256)"
+                        }
+                      },
+                      "id": 4723,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "454:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "427:64:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 4725,
+                  "nodeType": "ExpressionStatement",
+                  "src": "427:64:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4727,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "deposit",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4705,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4700,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "309:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4699,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "309:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4702,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "335:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4701,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "335:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4704,
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4727,
+                  "src": "352:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4703,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "352:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "308:57:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4706,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "375:0:11"
+            },
+            "scope": 4841,
+            "src": "292:206:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4766,
+              "nodeType": "Block",
+              "src": "590:189:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "arguments": [
+                          {
+                            "argumentTypes": null,
+                            "id": 4738,
+                            "name": "_account",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4729,
+                            "src": "621:8:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                              "typeString": "struct FundAccount.Account storage pointer"
+                            }
+                          },
+                          {
+                            "argumentTypes": null,
+                            "id": 4739,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4731,
+                            "src": "631:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": [
+                            {
+                              "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                              "typeString": "struct FundAccount.Account storage pointer"
+                            },
+                            {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          ],
+                          "id": 4737,
+                          "name": "hasDepositIn",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4782,
+                          "src": "608:12:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_bool_$",
+                            "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (bool)"
+                          }
+                        },
+                        "id": 4740,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "functionCall",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "608:31:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      ],
+                      "id": 4736,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        10045,
+                        10046
+                      ],
+                      "referencedDeclaration": 10045,
+                      "src": "600:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
+                        "typeString": "function (bool) pure"
+                      }
+                    },
+                    "id": 4741,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "600:40:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4742,
+                  "nodeType": "ExpressionStatement",
+                  "src": "600:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "commonType": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        "id": 4749,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "leftExpression": {
+                          "argumentTypes": null,
+                          "arguments": [
+                            {
+                              "argumentTypes": null,
+                              "id": 4745,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4729,
+                              "src": "667:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            {
+                              "argumentTypes": null,
+                              "id": 4746,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4731,
+                              "src": "677:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            }
+                          ],
+                          "expression": {
+                            "argumentTypes": [
+                              {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              },
+                              {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            ],
+                            "id": 4744,
+                            "name": "amountOf",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4797,
+                            "src": "658:8:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_uint256_$",
+                              "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (uint256)"
+                            }
+                          },
+                          "id": 4747,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "kind": "functionCall",
+                          "lValueRequested": false,
+                          "names": [],
+                          "nodeType": "FunctionCall",
+                          "src": "658:27:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "nodeType": "BinaryOperation",
+                        "operator": ">=",
+                        "rightExpression": {
+                          "argumentTypes": null,
+                          "id": 4748,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4733,
+                          "src": "689:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "src": "658:38:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      ],
+                      "id": 4743,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        10045,
+                        10046
+                      ],
+                      "referencedDeclaration": 10045,
+                      "src": "650:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
+                        "typeString": "function (bool) pure"
+                      }
+                    },
+                    "id": 4750,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "650:47:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 4751,
+                  "nodeType": "ExpressionStatement",
+                  "src": "650:47:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 4764,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4752,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4729,
+                          "src": "708:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        "id": 4755,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "amount",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4697,
+                        "src": "708:15:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                          "typeString": "mapping(bytes32 => uint256)"
+                        }
+                      },
+                      "id": 4756,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 4754,
+                        "name": "_symbol",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4731,
+                        "src": "724:7:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "708:24:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4762,
+                          "name": "_amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4733,
+                          "src": "764:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "expression": {
+                              "argumentTypes": null,
+                              "id": 4757,
+                              "name": "_account",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4729,
+                              "src": "735:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                "typeString": "struct FundAccount.Account storage pointer"
+                              }
+                            },
+                            "id": 4758,
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "amount",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 4697,
+                            "src": "735:15:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                              "typeString": "mapping(bytes32 => uint256)"
+                            }
+                          },
+                          "id": 4760,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 4759,
+                            "name": "_symbol",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 4731,
+                            "src": "751:7:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes32",
+                              "typeString": "bytes32"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "735:24:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4761,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "sub",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9577,
+                        "src": "735:28:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
+                          "typeString": "function (uint256,uint256) pure returns (uint256)"
+                        }
+                      },
+                      "id": 4763,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "735:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "708:64:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 4765,
+                  "nodeType": "ExpressionStatement",
+                  "src": "708:64:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4767,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "withdrawal",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4734,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4729,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "524:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4728,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "524:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4731,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "550:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4730,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "550:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4733,
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4767,
+                  "src": "567:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4732,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "567:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "523:57:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4735,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "590:0:11"
+            },
+            "scope": 4841,
+            "src": "504:275:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4781,
+              "nodeType": "Block",
+              "src": "878:49:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 4776,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4769,
+                        "src": "895:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      "id": 4777,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "symbols",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4693,
+                      "src": "895:16:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                        "typeString": "mapping(bytes32 => bool)"
+                      }
+                    },
+                    "id": 4779,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 4778,
+                      "name": "_symbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4771,
+                      "src": "912:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "895:25:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "functionReturnParameters": 4775,
+                  "id": 4780,
+                  "nodeType": "Return",
+                  "src": "888:32:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4782,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "hasDepositIn",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4772,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4769,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "807:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4768,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "807:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4771,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "833:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4770,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "833:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "806:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4775,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4774,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4782,
+                  "src": "872:4:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 4773,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "872:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "871:6:11"
+            },
+            "scope": 4841,
+            "src": "785:142:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4796,
+              "nodeType": "Block",
+              "src": "1022:48:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 4791,
+                        "name": "_account",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4784,
+                        "src": "1039:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                          "typeString": "struct FundAccount.Account storage pointer"
+                        }
+                      },
+                      "id": 4792,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "amount",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4697,
+                      "src": "1039:15:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                        "typeString": "mapping(bytes32 => uint256)"
+                      }
+                    },
+                    "id": 4794,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 4793,
+                      "name": "_symbol",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4786,
+                      "src": "1055:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1039:24:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 4790,
+                  "id": 4795,
+                  "nodeType": "Return",
+                  "src": "1032:31:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4797,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "amountOf",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4787,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4784,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "951:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4783,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "951:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4786,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "977:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4785,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "977:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "950:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4790,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4789,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4797,
+                  "src": "1016:4:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 4788,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1016:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1015:6:11"
+            },
+            "scope": 4841,
+            "src": "933:137:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 4808,
+              "nodeType": "Block",
+              "src": "1147:45:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "expression": {
+                      "argumentTypes": null,
+                      "id": 4805,
+                      "name": "_account",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 4799,
+                      "src": "1164:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                        "typeString": "struct FundAccount.Account storage pointer"
+                      }
+                    },
+                    "id": 4806,
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "memberName": "_symbolsList",
+                    "nodeType": "MemberAccess",
+                    "referencedDeclaration": 4689,
+                    "src": "1164:21:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage",
+                      "typeString": "bytes32[] storage ref"
+                    }
+                  },
+                  "functionReturnParameters": 4804,
+                  "id": 4807,
+                  "nodeType": "Return",
+                  "src": "1157:28:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4809,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "symbolsList",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4800,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4799,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4809,
+                  "src": "1097:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4798,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "1097:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1096:26:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4804,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4803,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4809,
+                  "src": "1136:9:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_memory_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 4801,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1136:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 4802,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1136:9:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1135:11:11"
+            },
+            "scope": 4841,
+            "src": "1076:116:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 4839,
+              "nodeType": "Block",
+              "src": "1272:160:11",
+              "statements": [
+                {
+                  "condition": {
+                    "argumentTypes": null,
+                    "id": 4820,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "UnaryOperation",
+                    "operator": "!",
+                    "prefix": true,
+                    "src": "1286:32:11",
+                    "subExpression": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 4817,
+                          "name": "_account",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4811,
+                          "src": "1300:8:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 4818,
+                          "name": "_symbol",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 4813,
+                          "src": "1310:7:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes32",
+                            "typeString": "bytes32"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                            "typeString": "struct FundAccount.Account storage pointer"
+                          },
+                          {
+                            "typeIdentifier": "t_bytes32",
+                            "typeString": "bytes32"
+                          }
+                        ],
+                        "id": 4816,
+                        "name": "hasDepositIn",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 4782,
+                        "src": "1287:12:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_view$_t_struct$_Account_$4698_storage_ptr_$_t_bytes32_$returns$_t_bool_$",
+                          "typeString": "function (struct FundAccount.Account storage pointer,bytes32) view returns (bool)"
+                        }
+                      },
+                      "id": 4819,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "1287:31:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "falseBody": null,
+                  "id": 4838,
+                  "nodeType": "IfStatement",
+                  "src": "1282:144:11",
+                  "trueBody": {
+                    "id": 4837,
+                    "nodeType": "Block",
+                    "src": "1320:106:11",
+                    "statements": [
+                      {
+                        "expression": {
+                          "argumentTypes": null,
+                          "arguments": [
+                            {
+                              "argumentTypes": null,
+                              "id": 4826,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4813,
+                              "src": "1361:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            }
+                          ],
+                          "expression": {
+                            "argumentTypes": [
+                              {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            ],
+                            "expression": {
+                              "argumentTypes": null,
+                              "expression": {
+                                "argumentTypes": null,
+                                "id": 4821,
+                                "name": "_account",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 4811,
+                                "src": "1334:8:11",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                  "typeString": "struct FundAccount.Account storage pointer"
+                                }
+                              },
+                              "id": 4824,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "_symbolsList",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 4689,
+                              "src": "1334:21:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_array$_t_bytes32_$dyn_storage",
+                                "typeString": "bytes32[] storage ref"
+                              }
+                            },
+                            "id": 4825,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "push",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": null,
+                            "src": "1334:26:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_function_arraypush_nonpayable$_t_bytes32_$returns$_t_uint256_$",
+                              "typeString": "function (bytes32) returns (uint256)"
+                            }
+                          },
+                          "id": 4827,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "kind": "functionCall",
+                          "lValueRequested": false,
+                          "names": [],
+                          "nodeType": "FunctionCall",
+                          "src": "1334:35:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "id": 4828,
+                        "nodeType": "ExpressionStatement",
+                        "src": "1334:35:11"
+                      },
+                      {
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 4835,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "leftHandSide": {
+                            "argumentTypes": null,
+                            "baseExpression": {
+                              "argumentTypes": null,
+                              "expression": {
+                                "argumentTypes": null,
+                                "id": 4829,
+                                "name": "_account",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 4811,
+                                "src": "1383:8:11",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                                  "typeString": "struct FundAccount.Account storage pointer"
+                                }
+                              },
+                              "id": 4832,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "symbols",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 4693,
+                              "src": "1383:16:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                                "typeString": "mapping(bytes32 => bool)"
+                              }
+                            },
+                            "id": 4833,
+                            "indexExpression": {
+                              "argumentTypes": null,
+                              "id": 4831,
+                              "name": "_symbol",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 4813,
+                              "src": "1400:7:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              }
+                            },
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": true,
+                            "nodeType": "IndexAccess",
+                            "src": "1383:25:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bool",
+                              "typeString": "bool"
+                            }
+                          },
+                          "nodeType": "Assignment",
+                          "operator": "=",
+                          "rightHandSide": {
+                            "argumentTypes": null,
+                            "hexValue": "74727565",
+                            "id": 4834,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": true,
+                            "kind": "bool",
+                            "lValueRequested": false,
+                            "nodeType": "Literal",
+                            "src": "1411:4:11",
+                            "subdenomination": null,
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bool",
+                              "typeString": "bool"
+                            },
+                            "value": "true"
+                          },
+                          "src": "1383:32:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bool",
+                            "typeString": "bool"
+                          }
+                        },
+                        "id": 4836,
+                        "nodeType": "ExpressionStatement",
+                        "src": "1383:32:11"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 4840,
+            "implemented": true,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "_writeSymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 4814,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4811,
+                  "name": "_account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4840,
+                  "src": "1220:24:11",
+                  "stateVariable": false,
+                  "storageLocation": "storage",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                    "typeString": "struct FundAccount.Account"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 4810,
+                    "name": "Account",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4698,
+                    "src": "1220:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Account_$4698_storage_ptr",
+                      "typeString": "struct FundAccount.Account"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 4813,
+                  "name": "_symbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 4840,
+                  "src": "1246:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 4812,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1246:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1219:43:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 4815,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1272:0:11"
+            },
+            "scope": 4841,
+            "src": "1198:234:11",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "internal"
+          }
+        ],
+        "scope": 4842,
+        "src": "87:1347:11"
+      }
+    ],
+    "src": "0:1435:11"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.24+commit.e67f0147.Emscripten.clang"
+  },
+  "networks": {
+    "4": {
+      "events": {},
+      "links": {},
+      "address": "0x4adffa67c9560ecb80b9016527c9529992c3870b",
+      "transactionHash": "0xe639a68f9994c15d003388ed2fa5ea265164ddde4937cbcdc5d82fbf627e88a0"
+    }
+  },
+  "schemaVersion": "2.0.1",
+  "updatedAt": "2018-10-22T07:59:52.063Z"
+}
