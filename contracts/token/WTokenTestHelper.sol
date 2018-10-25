@@ -11,7 +11,7 @@ contract WTokenTestHelper {
 
     function createToken(string _name, string _symbol, uint8 _decimals, uint amountToIssue) public returns(WToken token) {
         require(_isStringValid(_name, 5, 50));
-        require(_isStingValid(_symbol, 3, 5));
+        require(_isStringValid(_symbol, 3, 5));
         require(_decimals > uint8(1) && _decimals < uint8(19));
         require(amountToIssue > 99 && amountToIssue <= (uint(-1) / 10 ** uint(_decimals)));
 
