@@ -54,7 +54,7 @@ contract WTokenTestHelper {
         return WToken(tokenAddress).totalSupply();
     }
 
-    function _isStingValid(string _string, uint minLn, uint maxLn) internal pure returns(bool) {
+    function _isStringValid(string _string, uint minLn, uint maxLn) internal pure returns(bool) {
         require(maxLn >= minLn);
 
         bytes memory _stringBytes = bytes(_string);
