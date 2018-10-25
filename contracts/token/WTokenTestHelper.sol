@@ -72,7 +72,7 @@ contract WTokenTestHelper {
                 && !(_stringBytes[i] >= 0x30 && _stringBytes[i] <= 0x39) // 0-9
                 && !(_stringBytes[i] >= 0x41 && _stringBytes[i] <= 0x5a) // A-Z
                 && !(_stringBytes[i] >= 0x61 && _stringBytes[i] <= 0x7a) // a-z
-            ) return;
+            ) return false;
         }
 
         return true;
