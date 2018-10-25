@@ -166,7 +166,7 @@ contract('WTokenTestHelper', async (accounts) => {
         balance.should.bignumber.eq(new BigNumber(100).mul(BigNumber.TEN.pow(18)).mul(2));
     });
 
-    it('should revert mint if token is not exists', async () => {
+    it('should revert mint if token does not exist', async () => {
         const helper = await WTokenTestHelperTest.new();
         const address = utils.generateRandomAddress();
 
