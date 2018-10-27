@@ -8,6 +8,8 @@ VERSION_TAG="v$VERSION-alpha";
 
 npm run --silent t:migrate:r:test 2>&1 | tee ".MIGRATE_LOG_v$VERSION"
 
+cat ".MIGRATE_LOG_v$VERSION";
+
 MIGRATE_LOG=$(cat ".MIGRATE_LOG_v$VERSION");
 ADDRESSES=$(cat ".MIGRATE_v$VERSION");
 
@@ -27,7 +29,7 @@ $'\n'\
 "$ADDRESSES"
 
 git tag "$VERSION_TAG"
-git push origin HEAD:master
+git push origin HEAD:alpha-release
 git push "$VERSION_TAG"
 
 npm run gen-release

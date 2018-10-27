@@ -22,7 +22,7 @@ module.exports = function (deployer, network, accounts) {
                 await utils.deploy(
                     network,
                     deployer,
-                    W12Lister,
+                    W12ListerStub,
                     semint.encode(version, 4),
                     Wallets.address,
                     W12CrowdsaleFactory.address,
