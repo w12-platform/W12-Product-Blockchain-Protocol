@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-cp example.config.js config.js
+cp ci.config.js config.js
 
 VERSION=$(npm run --silent version);
 VERSION_TAG="v$VERSION-alpha";
