@@ -59,6 +59,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     event StagesUpdated();
     event StageUpdated(uint index);
     event MilestonesUpdated();
+    event CrowdsaleSetUpDone();
     event UnsoldTokenReturned(address indexed owner, uint amount);
 
     constructor (
@@ -204,6 +205,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         );
 
         paymentMethods.update(paymentMethodsList);
+
+        emit CrowdsaleSetUpDone();
     }
 
     /**
@@ -452,7 +455,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         if (!found) return;
 
         if (PurchaseProcessing.METHOD_ETH() != method) {
-            if (rates.getTokenAddress(method) == address(0)) {
+            if (!rates.isToken(method)) {
                 return;
             }
         }
@@ -460,6 +463,33 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         return PurchaseProcessing.invoice(
             method,
             amount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            rates.get(method),
+            price,
+            uint(token.decimals()),
+            PurchaseProcessing.METHOD_ETH() == method
+                ? 18
+                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
+            token.balanceOf(address(this))
+        );
+    }
+
+    function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            if (!rates.isToken(method)) {
+                return;
+            }
+        }
+
+        return PurchaseProcessing.invoiceByTokenAmount(
+            method,
+            tokenAmount,
             stages[index].discount,
             stages[index].volumeBoundaries,
             stages[index].volumeBonuses,

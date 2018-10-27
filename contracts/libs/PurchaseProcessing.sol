@@ -14,14 +14,14 @@ library PurchaseProcessing {
 
     function checkInvoiceInput(
         bytes32 method,
-        uint paymentAmount,
+        uint amount,
         uint methodUSDRate,
         uint tokenUSDRate,
         uint currentBalanceInTokens,
         uint tokenDecimals,
         uint methodDecimals
     ) internal pure returns(bool result) {
-        result = paymentAmount > 0
+        result = amount > 0
             && methodUSDRate > 0
             && tokenUSDRate > 0
             && currentBalanceInTokens >= 10 ** tokenDecimals;
@@ -128,6 +128,91 @@ library PurchaseProcessing {
 
         // change
         result[3] = paymentAmount.sub(result[1]);
+    }
+
+    /**
+     * @notice Generate invoice by token amount
+     * @dev 1 USD = 10^8. In this case precision will be up to 10^8 decimals after point
+     * @param method Payment method
+     * @param tokenAmount Token amount
+     * @param discount Discount percent
+     * @param volumeBoundaries Volume boundaries to calculate bonus
+     * @param volumeBonuses List of bonuses bound to boundaries
+     * @param methodUSDRate Payment method rate in USD
+     * @param tokenUSDRate Token rate in USD
+     * @param tokenDecimals Token decimal
+     * @param methodDecimals Method decimal. N for token, 18 for ETH
+     * @param currentBalanceInTokens Current balance in tokens
+     * @return uint[4] result Invoice calculation result:
+     *
+     * [tokenAmount, cost, costUSD, change, actualTokenPriceUSD]
+     *
+     * [0] tokenAmount - amount of token to buy
+     * [1] cost - cost in method currency
+     * [2] costUSD cost in USD
+     * [3] actualTokenPriceUSD - actual token price in USD(with discount)
+     */
+    function invoiceByTokenAmount(
+        bytes32 method,
+        uint tokenAmount,
+        uint discount,
+        uint[] volumeBoundaries,
+        uint[] volumeBonuses,
+        uint methodUSDRate,
+        uint tokenUSDRate,
+        uint tokenDecimals,
+        uint methodDecimals,
+        uint currentBalanceInTokens
+    )
+        internal view returns (uint[4] result)
+    {
+        require(checkInvoiceInput(
+            method,
+            tokenAmount,
+            methodUSDRate,
+            tokenUSDRate,
+            currentBalanceInTokens,
+            tokenDecimals,
+            methodDecimals
+        ));
+
+        if (currentBalanceInTokens < tokenAmount) {
+            tokenAmount = currentBalanceInTokens;
+        }
+
+        // tokens
+        result[0] = tokenAmount;
+
+        // priceUSD
+        result[3] = discount > 0
+            ? tokenUSDRate.percent(Percent.MAX() - discount)
+            : tokenUSDRate;
+
+        // costUSD
+        result[2] = Utils.safeConversionByRate(
+            tokenAmount,
+            tokenDecimals,
+            result[3]
+        );
+
+        // min costUSD = tokenUSDRate
+        require(result[2] >= tokenUSDRate);
+
+        uint bonus = getBonus(result[2], volumeBoundaries, volumeBonuses);
+
+        result[1] = Utils.safeReverseConversionByRate(
+            result[2],
+            methodDecimals,
+            methodUSDRate.safePercent(Percent.MAX().add(bonus))
+        );
+
+        // reset if cost is zero
+        if (result[1] == 0) {
+            result[0] = 0;
+            result[1] = 0;
+            result[2] = 0;
+            return;
+        }
     }
 
     function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal pure returns(uint[2] result) {
