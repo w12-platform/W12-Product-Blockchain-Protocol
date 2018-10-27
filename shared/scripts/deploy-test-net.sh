@@ -30,6 +30,6 @@ $'\n'\
 
 git tag "$VERSION_TAG"
 git push origin HEAD:alpha-release
-git push "$VERSION_TAG"
+git push origin "$VERSION_TAG"
 
 npm run gen-release
