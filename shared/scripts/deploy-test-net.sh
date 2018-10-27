@@ -8,6 +8,8 @@ VERSION_TAG="v$VERSION-alpha";
 
 npm run --silent t:migrate:r:test 2>&1 | tee ".MIGRATE_LOG_v$VERSION"
 
+cat ".MIGRATE_LOG_v$VERSION";
+
 MIGRATE_LOG=$(cat ".MIGRATE_LOG_v$VERSION");
 ADDRESSES=$(cat ".MIGRATE_v$VERSION");
 
