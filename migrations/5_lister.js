@@ -13,38 +13,28 @@ module.exports = function (deployer, network, accounts) {
         deployer.then(async () => {
             const owner = accounts[0];
             const serviceWallet = accounts[0];
+            const Lister = network === 'test' ? W12ListerStub : W12Lister;
 
             await utils.deploy(network, deployer, TokenExchanger, semint.encode(version, 4));
 
             utils.migrateLog.addAddress(TokenExchanger.contractName, TokenExchanger.address);
 
-            if (network === 'test') {
-                await utils.deploy(
-                    network,
-                    deployer,
-                    W12ListerStub,
-                    semint.encode(version, 4),
-                    Wallets.address,
-                    W12CrowdsaleFactory.address,
-                    TokenExchanger.address);
-            } else {
-                await utils.deploy(
-                    network,
-                    deployer,
-                    W12Lister,
-                    semint.encode(version, 4),
-                    Wallets.address,
-                    W12CrowdsaleFactory.address,
-                    TokenExchanger.address);
-            }
+            await utils.deploy(
+                network,
+                deployer,
+                Lister,
+                semint.encode(version, 4),
+                Wallets.address,
+                W12CrowdsaleFactory.address,
+                TokenExchanger.address
+            );
 
-
-            utils.migrateLog.addAddress(W12Lister.contractName, W12Lister.address);
+            utils.migrateLog.addAddress(Lister.contractName, Lister.address);
             utils.migrateLog.addAddress('Owner', owner);
             utils.migrateLog.addAddress('Service wallet', serviceWallet);
 
-            await (await TokenExchanger.deployed()).transferOwnership(W12Lister.address);
-            await (await Versions.deployed()).setVersion(W12Lister.address, semint.encode(version, 4));
+            await (await TokenExchanger.deployed()).transferOwnership(Lister.address);
+            await (await Versions.deployed()).setVersion(Lister.address, semint.encode(version, 4));
         });
     }
 };
