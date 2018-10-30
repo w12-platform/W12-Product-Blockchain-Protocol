@@ -36,7 +36,7 @@ $ truffle install
  * `contracts` - contracts code
  * `docs` - documentation
  * `migration` - truffle migrate scripts
- * `shared` - shared javascript code for tests, scripts and other
+ * `shared` - shared utility code for tests, scripts and other
  * `test` - project tests
  * `config.js` - (IGNORED, not commited) configuration file for CI and devops purposes. 
 
