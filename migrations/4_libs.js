@@ -17,6 +17,7 @@ const W12CrowdsaleStub = artifacts.require('W12CrowdsaleStub');
 const W12FundStub = artifacts.require('W12FundStub');
 const W12ListerStub = artifacts.require('W12ListerStub');
 const PurchaseProcessingMock = artifacts.require('PurchaseProcessingMock');
+const PercentMock = artifacts.require('PercentMock');
 
 const utils = require('../shared/utils');
 
@@ -78,6 +79,7 @@ module.exports = function (deployer, network, accounts) {
         if (network === 'development') {
             PurchaseProcessingMock.link(PurchaseProcessing);
             UtilsMock.link(Utils);
+            PercentMock.link(Percent);
         }
     });
 };
