@@ -7,6 +7,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./IW12Crowdsale.sol";
 import "./IW12Fund.sol";
 import "../rates/IRates.sol";
+import "../libs/Utils.sol";
 import "../libs/Percent.sol";
 import "../libs/FundAccount.sol";
 import "../versioning/Versionable.sol";
