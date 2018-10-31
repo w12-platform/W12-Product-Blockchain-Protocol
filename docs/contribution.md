@@ -11,7 +11,7 @@
 
 ## Development Setup
 
-You will need install thes tools:
+1. You will need install thes tools:
 
  * [Truffle](https://github.com/trufflesuite/truffle)
  * Development ethereum network. For example: [Ganache UI](https://github.com/trufflesuite/ganache), [Ganache CLI](https://github.com/trufflesuite/ganache-cli)
@@ -20,11 +20,16 @@ You will need install thes tools:
  * Node JS 8+
  * NPM 6+
 
-And then install project dependecies:
+2. Install project dependecies:
 
 ```
 $ npm install
 $ truffle install
+```
+
+3. Create configuration file:
+```
+$ cp example.config.js config.js
 ```
 
 ## Project structure
