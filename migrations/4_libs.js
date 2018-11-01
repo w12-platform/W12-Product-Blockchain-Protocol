@@ -5,6 +5,7 @@ const PaymentMethods = artifacts.require('PaymentMethods');
 const Percent = artifacts.require('Percent');
 const PurchaseProcessing = artifacts.require('PurchaseProcessing');
 const Utils = artifacts.require('Utils');
+const Fund = artifacts.require('Fund');
 // contracts
 const W12Crowdsale = artifacts.require('W12Crowdsale');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
@@ -34,7 +35,11 @@ module.exports = function (deployer, network, accounts) {
         Crowdsale.link(Percent);
         PurchaseProcessing.link(Utils);
         PurchaseProcessing.link(Percent);
+        Fund.link(Utils);
+        Fund.link(Percent);
+        Fund.link(FundAccount);
 
+        await utils.deploy(network, deployer, Fund);
         await utils.deploy(network, deployer, Crowdsale);
         await utils.deploy(network, deployer, PurchaseProcessing);
 
@@ -65,12 +70,15 @@ module.exports = function (deployer, network, accounts) {
         W12Fund.link(Utils);
         W12Fund.link(Percent);
         W12Fund.link(FundAccount);
+        W12Fund.link(Fund);
         W12FundStub.link(Percent);
         W12FundStub.link(FundAccount);
         W12FundStub.link(Utils);
+        W12FundStub.link(Fund);
         W12FundFactory.link(Utils);
         W12FundFactory.link(Percent);
         W12FundFactory.link(FundAccount);
+        W12FundFactory.link(Fund);
 
         // lister, lister stub
         W12Lister.link(Percent);
