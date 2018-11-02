@@ -17,6 +17,7 @@ import "../token/IWToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
     using SafeMath for uint;
+    using SafeMath for uint8;
     using Percent for uint;
     using PaymentMethods for PaymentMethods.Methods;
 
