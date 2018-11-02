@@ -11,7 +11,7 @@ contract WTokenStub is WToken {
         _;
     }
 
-    modifier onlyTrusted(address caller) {
+    modifier onlyAdmin {
         _;
     }
 

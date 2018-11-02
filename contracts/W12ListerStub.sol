@@ -14,7 +14,7 @@ contract W12ListerStub is W12Lister {
         _;
     }
 
-    modifier onlyRole(string _role) {
+    modifier onlyAdmin {
         _;
     }
 

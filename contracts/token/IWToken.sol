@@ -1,8 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
+import "../access/roles/IAdmin.sol";
 
-contract IWToken is ERC20Detailed {
+contract IWToken is IAdminRole, ERC20Detailed {
     mapping(address => uint256) public balances;
     mapping(address => mapping(uint256 => uint256)) public vestingBalanceOf;
 
@@ -19,8 +20,4 @@ contract IWToken is ERC20Detailed {
     function burnFrom(address _from, uint256 _value) public;
 
     function accountBalance(address _address) public view returns (uint256 balance);
-
-    function addTrustedAccount(address caller) external;
-
-    function removeTrustedAccount(address caller) external;
 }

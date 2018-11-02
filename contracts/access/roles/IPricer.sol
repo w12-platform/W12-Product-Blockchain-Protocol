@@ -6,4 +6,6 @@ contract IPricerRole {
     function addPricer(address account) public;
 
     function removePricer(address account) public;
+
+    function renouncePricer(address account) public;
 }

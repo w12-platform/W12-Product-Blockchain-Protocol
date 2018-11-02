@@ -2,10 +2,12 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../access/roles/IAdmin.sol";
 import "./IWToken.sol";
+import "../access/roles/Admin.sol";
 
 
-contract WToken is IWToken, Secondary {
+contract WToken is IWToken, AdminRole, Secondary {
     using SafeMath for uint256;
 
     mapping (address => mapping (address => uint256)) internal allowed;
@@ -18,8 +20,6 @@ contract WToken is IWToken, Secondary {
 
     mapping (address => uint[]) vestingTimes;
 
-    mapping (address => bool) trustedAccounts;
-
     event VestingTransfer(address from, address to, uint256 value, uint256 agingTime);
     event Burn(address indexed burner, uint256 value);
 
@@ -30,9 +30,7 @@ contract WToken is IWToken, Secondary {
         return _totalSupply;
     }
 
-    constructor(string _name, string _symbol, uint8 _decimals) ERC20Detailed(_name, _symbol, _decimals) public {
-        trustedAccounts[msg.sender] = true;
-    }
+    constructor(string _name, string _symbol, uint8 _decimals) ERC20Detailed(_name, _symbol, _decimals) public {}
 
     /**
     * @dev transfer token for a specified address
@@ -53,7 +51,7 @@ contract WToken is IWToken, Secondary {
         return true;
     }
 
-    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
+    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) external onlyAdmin returns (bool) {
         transfer(_to, _value);
 
         if (_vestingTime > now) {
@@ -161,7 +159,7 @@ contract WToken is IWToken, Secondary {
         return true;
     }
 
-    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
+    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyAdmin returns (bool) {
         balances[_to] = balances[_to].add(_amount);
         _totalSupply = _totalSupply.add(_amount);
 
@@ -242,16 +240,11 @@ contract WToken is IWToken, Secondary {
         }
     }
 
-    function addTrustedAccount(address caller) external onlyPrimary {
-        trustedAccounts[caller] = true;
+    function addAdmin(address _account) public onlyPrimary {
+        _addAdmin(_account);
     }
 
-    function removeTrustedAccount(address caller) external onlyPrimary {
-        trustedAccounts[caller] = false;
-    }
-
-    modifier onlyTrusted(address caller) {
-        require(trustedAccounts[caller]);
-        _;
+    function removeAdmin(address _account) public onlyPrimary {
+        _removeAdmin(_account);
     }
 }

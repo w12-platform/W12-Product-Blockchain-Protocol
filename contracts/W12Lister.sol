@@ -5,21 +5,21 @@ import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
 import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./wallets/IWallets.sol";
+import "./access/roles/IAdmin.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
+import "./access/roles/Admin.sol";
 
 
-contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
+contract W12Lister is IAdminRole, Versionable, Secondary, ReentrancyGuard, AdminRole {
     using SafeMath for uint;
     using Percent for uint;
 
     uint8 constant SERVICE_WALLET_ID = 1;
-    string public ROLE_ADMIN = "admin";
 
     ITokenExchanger public exchanger;
     IW12CrowdsaleFactory public factory;
@@ -64,16 +64,14 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
         wallets = _wallets;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
-
-        addRole(msg.sender, ROLE_ADMIN);
     }
 
-    function addAdmin(address _operator) public onlyPrimary {
-        addRole(_operator, ROLE_ADMIN);
+    function addAdmin(address _account) public onlyPrimary {
+        _addAdmin(_account);
     }
 
-    function removeAdmin(address _operator) public onlyPrimary {
-        removeRole(_operator, ROLE_ADMIN);
+    function removeAdmin(address _account) public onlyPrimary {
+        _removeAdmin(_account);
     }
 
     function whitelistToken(
@@ -87,7 +85,7 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
         uint WTokenSaleFeePercent,
         uint trancheFeePercent
     )
-        external onlyRole(ROLE_ADMIN)
+        external onlyAdmin
     {
 
         require(tokenOwner != address(0));
@@ -193,7 +191,7 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
         );
 
         getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress = crowdsale;
-        wtoken.addTrustedAccount(crowdsale);
+        wtoken.addAdmin(crowdsale);
 
         if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
             exchanger.approve(

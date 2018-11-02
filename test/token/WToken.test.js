@@ -474,14 +474,14 @@ contract('WToken', function ([_, owner, recipient, anotherAccount, burner]) {
     describe('when called by the owner', async () => {
       it('should allow to add trusted accounts', async function () {
         await this.token.vestingTransfer(recipient, 5, 0, { from: owner }).should.be.rejectedWith(utils.EVMRevert);
-        await this.token.addTrustedAccount(owner).should.be.fulfilled;
+        await this.token.addAdmin(owner).should.be.fulfilled;
         await this.token.vestingTransfer(recipient, 5, 0, { from: owner }).should.be.fulfilled;
       });
     });
 
     describe('when owner added to trusted accounts', async function () {
       beforeEach(async function () {
-        await this.token.addTrustedAccount(owner);
+        await this.token.addAdmin(owner);
       });
 
       it('should be applied to a transfer', async function () {

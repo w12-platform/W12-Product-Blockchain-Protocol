@@ -440,16 +440,14 @@ contract('W12Lister', async (accounts) => {
             it('add admin', async () => {
                 await sut.addAdmin(admin);
 
-                await sut.checkRole(admin, 'admin')
-                    .should.be.fulfilled;
+                (await sut.isAdmin(admin)).should.to.be.true;
             });
 
             it('remove admin', async () => {
                 await sut.addAdmin(admin);
                 await sut.removeAdmin(admin);
 
-                await sut.checkRole(admin, 'admin')
-                    .should.be.rejectedWith(utils.EVMRevert);
+                (await sut.isAdmin(admin)).should.to.be.false;
             });
 
             it('whitelist token when call from a admin', async () => {

@@ -42,7 +42,7 @@ async function createW12CrowdsaleViaFabric(
     const W12FundInst = W12Fund.at(fundAddress);
     const tokenOwner = await token.owner();
 
-    await token.addTrustedAccount(W12CrowdsaleInst.address, {from: tokenOwner});
+    await token.addAdmin(W12CrowdsaleInst.address, {from: tokenOwner});
 
     return {
         args: {

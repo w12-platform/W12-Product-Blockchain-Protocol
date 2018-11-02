@@ -2,7 +2,8 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "./IRates.sol";
-import "./roles/Pricer.sol";
+import "../access/roles/IPricer.sol";
+import "../access/roles/Pricer.sol";
 import "./Symbols.sol";
 
 contract Rates is IRates, Symbols, PricerRole, Secondary {
@@ -44,11 +45,11 @@ contract Rates is IRates, Symbols, PricerRole, Secondary {
     }
 
     function addPricer(address account) public onlyPrimary {
-        PricerRole.addPricer(account);
+        _addPricer(account);
     }
 
     function removePricer(address account) public onlyPrimary {
-        PricerRole.removePricer(account);
+        _removePricer(account);
     }
 
     function get(bytes32 symbol) public view returns(uint) {
