@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IWToken.sol";
 
 
-contract WToken is IWToken, Ownable {
+contract WToken is IWToken, Secondary {
     using SafeMath for uint256;
 
     mapping (address => mapping (address => uint256)) internal allowed;
@@ -242,11 +242,11 @@ contract WToken is IWToken, Ownable {
         }
     }
 
-    function addTrustedAccount(address caller) external onlyOwner {
+    function addTrustedAccount(address caller) external onlyPrimary {
         trustedAccounts[caller] = true;
     }
 
-    function removeTrustedAccount(address caller) external onlyOwner {
+    function removeTrustedAccount(address caller) external onlyPrimary {
         trustedAccounts[caller] = false;
     }
 

@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 
-contract Wallets is Ownable {
+contract Wallets is Secondary {
     uint8 constant public SERVICE_WALLET_ID = 1;
 
     mapping (uint8 => address) _wallets;
@@ -13,7 +13,7 @@ contract Wallets is Ownable {
         setWallet(SERVICE_WALLET_ID, msg.sender);
     }
 
-    function setWallet(uint8 ID, address wallet) onlyOwner {
+    function setWallet(uint8 ID, address wallet) onlyPrimary {
         _wallets[ID] = wallet;
 
         emit NewWallet(ID, wallet);

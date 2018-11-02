@@ -29,7 +29,7 @@ contract('W12Lister', async (accounts) => {
         factory = await W12CrowdsaleFactory.new(0, fundFactory.address, rates.address);
         sut = await W12Lister.new(0, wallets.address, factory.address, exchanger.address);
 
-        await exchanger.transferOwnership(sut.address);
+        await exchanger.transferPrimary(sut.address);
 
         token = await WToken.new('TestToken', 'TT', 18);
     });

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
@@ -9,7 +9,7 @@ import "../WToken.sol";
 import "./ITokenExchanger.sol";
 
 
-contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuard {
+contract TokenExchanger is ITokenExchanger, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for ERC20;
 
@@ -21,7 +21,7 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
 
     constructor(uint version) Versionable(version) public {}
 
-    function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner {
+    function addTokenToListing(ERC20 token, WToken wToken) external onlyPrimary {
         require(token != address(0));
         require(wToken != address(0));
         require(address(listingTokenToWToken[token]) == address(0));
@@ -49,7 +49,7 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
         tokenAddress = listingWTokenToToken[wToken];
     }
 
-    function approve(ERC20 token, address spender, uint amount) external onlyOwner returns (bool) {
+    function approve(ERC20 token, address spender, uint amount) external onlyPrimary returns (bool) {
         return token.approve(spender, amount);
     }
 

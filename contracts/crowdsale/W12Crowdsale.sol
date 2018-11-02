@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -15,7 +15,7 @@ import "../libs/Crowdsale.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
 
-contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
+contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using PaymentMethods for PaymentMethods.Methods;
@@ -141,7 +141,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         serviceWallet = _serviceWallet;
     }
 
-    function setParameters(uint _price) external onlyOwner beforeSaleStart {
+    function setParameters(uint _price) external onlyPrimary beforeSaleStart {
         __setParameters(_price, serviceWallet);
     }
 
@@ -156,7 +156,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         bytes nameAndDescriptionsOfMilestones,
         bytes32[] paymentMethodsList
     )
-        external onlyOwner beforeSaleStart
+        external onlyPrimary beforeSaleStart
     {
         // primary check of parameters of stages
         require(parametersOfStages.length != 0);
@@ -400,14 +400,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
         return (0, false);
     }
 
-    function claimRemainingTokens() external onlyOwner {
+    function claimRemainingTokens() external onlyPrimary {
         require(isEnded());
 
         uint amount = token.balanceOf(address(this));
 
-        require(token.transfer(owner, amount));
+        require(token.transfer(primary(), amount));
 
-        emit UnsoldTokenReturned(owner, amount);
+        emit UnsoldTokenReturned(primary(), amount);
     }
 
     function isEnded() public view returns (bool) {

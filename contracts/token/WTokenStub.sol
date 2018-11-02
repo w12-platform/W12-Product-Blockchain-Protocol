@@ -8,7 +8,7 @@ contract WTokenStub is WToken {
     /**
     * @dev Allows for any account besides the owner.
     */
-    modifier onlyOwner() {
+    modifier onlyPrimary() {
         _;
     }
 

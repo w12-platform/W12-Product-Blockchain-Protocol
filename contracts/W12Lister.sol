@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
@@ -13,7 +13,7 @@ import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
 
 
-contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
+contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
@@ -67,11 +67,11 @@ contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
         addRole(msg.sender, ROLE_ADMIN);
     }
 
-    function addAdmin(address _operator) public onlyOwner {
+    function addAdmin(address _operator) public onlyPrimary {
         addRole(_operator, ROLE_ADMIN);
     }
 
-    function removeAdmin(address _operator) public onlyOwner {
+    function removeAdmin(address _operator) public onlyPrimary {
         removeRole(_operator, ROLE_ADMIN);
     }
 

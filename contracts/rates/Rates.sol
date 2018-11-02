@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "./IRates.sol";
 import "./roles/Pricer.sol";
 import "./Symbols.sol";
 
-contract Rates is IRates, Symbols, PricerRole, Ownable {
+contract Rates is IRates, Symbols, PricerRole, Secondary {
     mapping (bytes32 => uint) rates;
     mapping (bytes32 => address) tokenAddress;
 
@@ -43,11 +43,11 @@ contract Rates is IRates, Symbols, PricerRole, Ownable {
         return tokenAddress[symbol] != address(0);
     }
 
-    function addPricer(address account) public onlyOwner {
+    function addPricer(address account) public onlyPrimary {
         PricerRole.addPricer(account);
     }
 
-    function removePricer(address account) public onlyOwner {
+    function removePricer(address account) public onlyPrimary {
         PricerRole.removePricer(account);
     }
 

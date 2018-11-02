@@ -2,7 +2,6 @@ pragma solidity ^0.4.24;
 
 import "./WToken.sol";
 
-
 contract WTokenTestHelper {
     address[] public tokens;
     mapping(address => uint256) public tokenIndexes;
@@ -16,7 +15,7 @@ contract WTokenTestHelper {
         require(amountToIssue > 99 && amountToIssue <= (uint(-1) / 10 ** uint(_decimals)));
 
         token = new WToken(_name, _symbol, _decimals);
-        token.transferOwnership(msg.sender);
+        token.transferPrimary(msg.sender);
 
         tokenIndexes[address(token)] = tokens.length;
         tokens.push(address(token));

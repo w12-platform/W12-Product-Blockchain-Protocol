@@ -33,7 +33,7 @@ module.exports = function (deployer, network, accounts) {
             utils.migrateLog.addAddress('Owner', owner);
             utils.migrateLog.addAddress('Service wallet', serviceWallet);
 
-            await (await TokenExchanger.deployed()).transferOwnership(Lister.address);
+            await (await TokenExchanger.deployed()).transferPrimary(Lister.address);
             await (await Versions.deployed()).setVersion(Lister.address, semint.encode(version, 4));
         });
     }

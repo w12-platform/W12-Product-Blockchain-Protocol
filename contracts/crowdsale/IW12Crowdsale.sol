@@ -39,5 +39,5 @@ interface IW12Crowdsale {
 
     function buyTokens(bytes32 method, uint amount) payable external;
 
-    function transferOwnership(address newOwner) external;
+    function transferPrimary(address _address) external;
 }
