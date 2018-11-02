@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -13,6 +14,7 @@ import "./ITokenExchanger.sol";
 contract TokenExchanger is ITokenExchanger, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for ERC20Detailed;
+    using SafeERC20 for IERC20;
 
     mapping(address => IWToken) public listingTokenToWToken;
     mapping(address => ERC20Detailed) public listingWTokenToToken;
@@ -26,7 +28,7 @@ contract TokenExchanger is ITokenExchanger, Versionable, Secondary, ReentrancyGu
         require(token != address(0));
         require(wToken != address(0));
         require(address(listingTokenToWToken[token]) == address(0));
-        require(token != wToken);
+        require(address(token) != address(wToken));
         require(!hasPair(ERC20Detailed(token), ERC20Detailed(wToken)));
 
         listingTokenToWToken[token] = wToken;

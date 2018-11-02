@@ -13,7 +13,7 @@ contract Wallets is Secondary {
         setWallet(SERVICE_WALLET_ID, msg.sender);
     }
 
-    function setWallet(uint8 ID, address wallet) onlyPrimary {
+    function setWallet(uint8 ID, address wallet) public onlyPrimary {
         _wallets[ID] = wallet;
 
         emit NewWallet(ID, wallet);

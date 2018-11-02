@@ -8,16 +8,20 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./wallets/IWallets.sol";
 import "./access/roles/IAdmin.sol";
+import "./token/IWToken.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
 import "./access/roles/Admin.sol";
+import "./rates/Rates.sol";
 
 
-contract W12Lister is IAdminRole, Versionable, Secondary, ReentrancyGuard, AdminRole {
+contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
+
+    Rates rates = new Rates();
 
     uint8 constant SERVICE_WALLET_ID = 1;
 
@@ -149,7 +153,7 @@ contract W12Lister is IAdminRole, Versionable, Secondary, ReentrancyGuard, Admin
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
         if (address(exchanger.getWTokenByToken(tokenAddress)) == address(0)) {
-            WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+            IWToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
             exchanger.addTokenToListing(ERC20Detailed(tokenAddress), wToken);
         }
@@ -176,7 +180,7 @@ contract W12Lister is IAdminRole, Versionable, Secondary, ReentrancyGuard, Admin
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress == address(0));
 
-        WToken wtoken = exchanger.getWTokenByToken(tokenAddress);
+        IWToken wtoken = exchanger.getWTokenByToken(tokenAddress);
 
         IW12Crowdsale crowdsale = factory.createCrowdsale(
             address(tokenAddress),
@@ -215,7 +219,7 @@ contract W12Lister is IAdminRole, Versionable, Secondary, ReentrancyGuard, Admin
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
 
-        WToken token = exchanger.getWTokenByToken(tokenAddress);
+        IWToken token = exchanger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsale = getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress;
 
         getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount = getApprovedToken(tokenAddress, msg.sender)

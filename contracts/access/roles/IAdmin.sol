@@ -5,7 +5,7 @@ contract IAdminRole {
 
     function addAdmin(address account) public;
 
-    function removeAdmin(address account) public;
+    function renounceAdmin() public;
 
-    function renounceAdmin(address account) public;
+    function removeAdmin(address account) public;
 }

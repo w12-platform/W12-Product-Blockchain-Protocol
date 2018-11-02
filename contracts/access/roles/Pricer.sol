@@ -10,7 +10,7 @@ contract PricerRole {
 
     Roles.Role private pricers;
 
-    constructor() public {
+    constructor() internal {
         _addPricer(msg.sender);
     }
 

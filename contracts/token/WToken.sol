@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../access/roles/IAdmin.sol";
 import "./IWToken.sol";
 import "../access/roles/Admin.sol";
+import "../access/roles/IAdmin.sol";
 
-
-contract WToken is IWToken, AdminRole, Secondary {
+contract WToken is IWToken, AdminRole, ERC20Detailed, Secondary {
     using SafeMath for uint256;
 
     mapping (address => mapping (address => uint256)) internal allowed;
@@ -16,7 +16,7 @@ contract WToken is IWToken, AdminRole, Secondary {
 
     uint256 private _totalSupply;
 
-    mapping (address => mapping (uint256 => uint256)) public vestingBalanceOf;
+    mapping (address => mapping (uint256 => uint256)) private _vestingBalanceOf;
 
     mapping (address => uint[]) vestingTimes;
 
@@ -174,12 +174,12 @@ contract WToken is IWToken, AdminRole, Secondary {
     }
 
     function _addToVesting(address _from, address _to, uint256 _vestingTime, uint256 _amount) internal {
-        vestingBalanceOf[_to][0] = vestingBalanceOf[_to][0].add(_amount);
+        _vestingBalanceOf[_to][0] = _vestingBalanceOf[_to][0].add(_amount);
 
-        if(vestingBalanceOf[_to][_vestingTime] == 0)
+        if(_vestingBalanceOf[_to][_vestingTime] == 0)
             vestingTimes[_to].push(_vestingTime);
 
-        vestingBalanceOf[_to][_vestingTime] = vestingBalanceOf[_to][_vestingTime].add(_amount);
+        _vestingBalanceOf[_to][_vestingTime] = _vestingBalanceOf[_to][_vestingTime].add(_amount);
     }
 
     /**
@@ -217,13 +217,13 @@ contract WToken is IWToken, AdminRole, Secondary {
     }
 
     function _checkMyVesting(address _from) internal {
-        if (vestingBalanceOf[_from][0] == 0) return;
+        if (_vestingBalanceOf[_from][0] == 0) return;
 
         for (uint256 k = 0; k < vestingTimes[_from].length; k++) {
             if (vestingTimes[_from][k] < now) {
-                vestingBalanceOf[_from][0] = vestingBalanceOf[_from][0]
-                    .sub(vestingBalanceOf[_from][vestingTimes[_from][k]]);
-                vestingBalanceOf[_from][vestingTimes[_from][k]] = 0;
+                _vestingBalanceOf[_from][0] = _vestingBalanceOf[_from][0]
+                    .sub(_vestingBalanceOf[_from][vestingTimes[_from][k]]);
+                _vestingBalanceOf[_from][vestingTimes[_from][k]] = 0;
             }
         }
     }
@@ -231,13 +231,17 @@ contract WToken is IWToken, AdminRole, Secondary {
     function accountBalance(address _address) public view returns (uint256 balance) {
         balance = balances[_address];
 
-        if (vestingBalanceOf[_address][0] == 0) return;
+        if (_vestingBalanceOf[_address][0] == 0) return;
 
         for (uint256 k = 0; k < vestingTimes[_address].length; k++) {
             if (vestingTimes[_address][k] >= now) {
-                balance = balance.sub(vestingBalanceOf[_address][vestingTimes[_address][k]]);
+                balance = balance.sub(_vestingBalanceOf[_address][vestingTimes[_address][k]]);
             }
         }
+    }
+
+    function vestingBalanceOf(address _address, uint _date) public view returns (uint) {
+        return _vestingBalanceOf[_address][_date];
     }
 
     function addAdmin(address _account) public onlyPrimary {

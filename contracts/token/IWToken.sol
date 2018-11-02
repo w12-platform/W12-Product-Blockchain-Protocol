@@ -1,11 +1,10 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "../access/roles/IAdmin.sol";
 
-contract IWToken is IAdminRole, ERC20Detailed {
-    mapping(address => uint256) public balances;
-    mapping(address => mapping(uint256 => uint256)) public vestingBalanceOf;
+contract IWToken is IERC20, IAdminRole {
+    function vestingBalanceOf(address _address, uint _date) public view returns (uint);
 
     function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) external returns (bool);
 
@@ -20,4 +19,10 @@ contract IWToken is IAdminRole, ERC20Detailed {
     function burnFrom(address _from, uint256 _value) public;
 
     function accountBalance(address _address) public view returns (uint256 balance);
+
+    function name() public view returns (string);
+
+    function symbol() public view returns (string);
+
+    function decimals() public view returns (uint8);
 }
