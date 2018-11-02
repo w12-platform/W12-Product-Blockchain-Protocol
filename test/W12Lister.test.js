@@ -259,11 +259,13 @@ contract('W12Lister', async (accounts) => {
                     {from: tokenOwner1}
                 ).should.be.fulfilled;
 
-                placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
-                placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
-                placementReceipt.logs[0].args.tokenOwner.should.be.equal(tokenOwner1);
-                placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
-                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                const last = placementReceipt.logs.length -1;
+
+                placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
+                placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
+                placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner1);
+                placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
+                placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
@@ -281,11 +283,13 @@ contract('W12Lister', async (accounts) => {
                     {from: tokenOwner2}
                 ).should.be.fulfilled;
 
-                placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
-                placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
-                placementReceipt.logs[0].args.tokenOwner.should.be.equal(tokenOwner2);
-                placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
-                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                const last = placementReceipt.logs.length - 1;
+
+                placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
+                placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
+                placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner2);
+                placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
+                placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
