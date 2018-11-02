@@ -2,253 +2,140 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IWToken.sol";
 import "../access/roles/Admin.sol";
 import "../access/roles/IAdmin.sol";
 
-contract WToken is IWToken, AdminRole, ERC20Detailed, Secondary {
+contract WToken is IWToken, AdminRole, ERC20Detailed, ERC20, Secondary {
     using SafeMath for uint256;
-
-    mapping (address => mapping (address => uint256)) internal allowed;
-
-    mapping(address => uint256) public balances;
-
-    uint256 private _totalSupply;
 
     mapping (address => mapping (uint256 => uint256)) private _vestingBalanceOf;
 
-    mapping (address => uint[]) vestingTimes;
+    mapping (address => uint[]) private _vestingTimes;
 
-    event VestingTransfer(address from, address to, uint256 value, uint256 agingTime);
-    event Burn(address indexed burner, uint256 value);
+    event VestingTransferred(address from, address to, uint256 value, uint256 agingTime);
 
-    /**
-    * @dev total number of tokens in existence
-    */
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
-    }
+    constructor(string name, string symbol, uint8 decimals) ERC20Detailed(name, symbol, decimals) public {}
 
-    constructor(string _name, string _symbol, uint8 _decimals) ERC20Detailed(_name, _symbol, _decimals) public {}
-
-    /**
-    * @dev transfer token for a specified address
-    * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
-    */
-    function transfer(address _to, uint256 _value) public returns (bool) {
+    function transfer(address to, uint256 value) public returns (bool) {
         _checkMyVesting(msg.sender);
-        require(_to != address(0));
-        require(_value <= accountBalance(msg.sender));
 
-        balances[msg.sender] = balances[msg.sender].sub(_value);
+        require(to != address(0));
+        require(value <= accountBalance(msg.sender));
 
-        balances[_to] = balances[_to].add(_value);
-
-        emit Transfer(msg.sender, _to, _value);
-
-        return true;
+        return super.transfer(to, value);
     }
 
-    function vestingTransfer(address _to, uint256 _value, uint32 _vestingTime) external onlyAdmin returns (bool) {
-        transfer(_to, _value);
+    function vestingTransfer(address to, uint256 value, uint32 vestingTime) external onlyAdmin returns (bool) {
+        transfer(to, value);
 
-        if (_vestingTime > now) {
-            _addToVesting(address(0), _to, _vestingTime, _value);
+        if (vestingTime > now) {
+            _addToVesting(msg.sender, to, vestingTime, value);
         }
 
-        emit VestingTransfer(msg.sender, _to, _value, _vestingTime);
-
         return true;
     }
 
-    /**
-    * @dev Gets the balance of the specified address.
-    * @param _owner The address to query the the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
-    */
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        return balances[_owner];
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+        _checkMyVesting(from);
+
+        require(to != address(0));
+        require(value <= accountBalance(from));
+
+        return super.transferFrom(from, to, value);
     }
 
-    /**
-    * @dev Transfer tokens from one address to another
-    * @param _from address The address which you want to send tokens from
-    * @param _to address The address which you want to transfer to
-    * @param _value uint256 the amount of tokens to be transferred
-    */
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        _checkMyVesting(_from);
-
-        require(_to != address(0));
-        require(_value <= accountBalance(_from));
-        require(_value <= allowed[_from][msg.sender]);
-
-        balances[_from] = balances[_from].sub(_value);
-        balances[_to] = balances[_to].add(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
-
-        emit Transfer(_from, _to, _value);
-        return true;
+    function increaseApproval(address spender, uint addedValue) public returns (bool) {
+        return increaseAllowance(spender, addedValue);
     }
 
-    /**
-    * @dev Approve the passed address to spend the specified amount of tokens on behalf of msg.sender.
-    *
-    * Beware that changing an allowance with this method brings the risk that someone may use both the old
-    * and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this
-    * race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
-    * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-    * @param _spender The address which will spend the funds.
-    * @param _value The amount of tokens to be spent.
-    */
-    function approve(address _spender, uint256 _value) public returns (bool) {
-        allowed[msg.sender][_spender] = _value;
-        emit Approval(msg.sender, _spender, _value);
-
-        return true;
+    function decreaseApproval(address spender, uint subtractedValue) public returns (bool) {
+        return decreaseAllowance(spender, subtractedValue);
     }
 
-    /**
-    * @dev Function to check the amount of tokens that an owner allowed to a spender.
-    * @param _owner address The address which owns the funds.
-    * @param _spender address The address which will spend the funds.
-    * @return A uint256 specifying the amount of tokens still available for the spender.
-    */
-    function allowance(address _owner, address _spender) public view returns (uint256) {
-        return allowed[_owner][_spender];
-    }
+    function mint(address to, uint amount, uint32 vestingTime) external onlyAdmin returns (bool) {
+        _mint(to, amount);
 
-    /**
-    * @dev Increase the amount of tokens that an owner allowed to a spender.
-    *
-    * approve should be called when allowed[_spender] == 0. To increment
-    * allowed value is better to use this function to avoid 2 calls (and wait until
-    * the first transaction is mined)
-    * From MonolithDAO Token.sol
-    * @param _spender The address which will spend the funds.
-    * @param _addedValue The amount of tokens to increase the allowance by.
-    */
-    function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
-        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
-        emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
-
-        return true;
-    }
-
-    /**
-    * @dev Decrease the amount of tokens that an owner allowed to a spender.
-    *
-    * approve should be called when allowed[_spender] == 0. To decrement
-    * allowed value is better to use this function to avoid 2 calls (and wait until
-    * the first transaction is mined)
-    * From MonolithDAO Token.sol
-    * @param _spender The address which will spend the funds.
-    * @param _subtractedValue The amount of tokens to decrease the allowance by.
-    */
-    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
-        uint oldValue = allowed[msg.sender][_spender];
-        if (_subtractedValue >= oldValue) {
-            allowed[msg.sender][_spender] = 0;
-        } else {
-            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
-        }
-        emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
-
-        return true;
-    }
-
-    function mint(address _to, uint _amount, uint32 _vestingTime) external onlyAdmin returns (bool) {
-        balances[_to] = balances[_to].add(_amount);
-        _totalSupply = _totalSupply.add(_amount);
-
-        if (_vestingTime > now) {
-            _addToVesting(address(0), _to, _vestingTime, _amount);
+        if (vestingTime > now) {
+            _addToVesting(address(0), to, vestingTime, amount);
         }
 
-        emit Transfer(address(0), _to, _amount);
-        emit VestingTransfer(address(0), _to, _amount, _vestingTime);
-
         return true;
     }
 
-    function _addToVesting(address _from, address _to, uint256 _vestingTime, uint256 _amount) internal {
-        _vestingBalanceOf[_to][0] = _vestingBalanceOf[_to][0].add(_amount);
+    function _addToVesting(address from, address to, uint256 vestingTime, uint256 amount) internal {
+        _vestingBalanceOf[to][0] = _vestingBalanceOf[to][0].add(amount);
 
-        if(_vestingBalanceOf[_to][_vestingTime] == 0)
-            vestingTimes[_to].push(_vestingTime);
+        if(_vestingBalanceOf[to][vestingTime] == 0) {
+            _vestingTimes[to].push(vestingTime);
+        }
 
-        _vestingBalanceOf[_to][_vestingTime] = _vestingBalanceOf[_to][_vestingTime].add(_amount);
+        _vestingBalanceOf[to][vestingTime] = _vestingBalanceOf[to][vestingTime].add(amount);
+
+        emit VestingTransferred(from, to, amount, vestingTime);
     }
 
-    /**
-      * @dev Burns a specific amount of tokens.
-      * @param _value The amount of token to be burned.
-      */
-    function burn(uint256 _value) public {
-        _burn(msg.sender, _value);
+    function burn(uint256 value) public {
+        _burn(msg.sender, value);
     }
 
-    /**
-     * @dev Burns a specific amount of tokens from the target address and decrements allowance
-     * @param _from address The address which you want to send tokens from
-     * @param _value uint256 The amount of token to be burned
-     */
-    function burnFrom(address _from, uint256 _value) public {
-        require(_value <= allowed[_from][msg.sender]);
-        // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
-        // this function needs to emit an event with the updated approval.
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
-        _burn(_from, _value);
+    function burnFrom(address from, uint256 value) public {
+        _burnFrom(from, value);
     }
 
-    function _burn(address _who, uint256 _value) internal {
-        _checkMyVesting(_who);
+    function _burnFrom(address account, uint256 value) internal {
+        _checkMyVesting(account);
 
-        require(_value <= accountBalance(_who));
-        // no need to require value <= totalSupply, since that would imply the
-        // sender's balance is greater than the totalSupply, which *should* be an assertion failure
+        require(value <= accountBalance(account));
 
-        balances[_who] = balances[_who].sub(_value);
-        _totalSupply = _totalSupply.sub(_value);
-        emit Burn(_who, _value);
-        emit Transfer(_who, address(0), _value);
+        super._burnFrom(account, value);
     }
 
-    function _checkMyVesting(address _from) internal {
-        if (_vestingBalanceOf[_from][0] == 0) return;
+    function _burn(address account, uint256 value) internal {
+        _checkMyVesting(account);
 
-        for (uint256 k = 0; k < vestingTimes[_from].length; k++) {
-            if (vestingTimes[_from][k] < now) {
-                _vestingBalanceOf[_from][0] = _vestingBalanceOf[_from][0]
-                    .sub(_vestingBalanceOf[_from][vestingTimes[_from][k]]);
-                _vestingBalanceOf[_from][vestingTimes[_from][k]] = 0;
+        require(value <= accountBalance(account));
+
+        super._burn(account, value);
+    }
+
+    function _checkMyVesting(address account) internal {
+        require(account != address(0));
+
+        if (_vestingBalanceOf[account][0] == 0) return;
+
+        for (uint256 k = 0; k < _vestingTimes[account].length; k++) {
+            if (_vestingTimes[account][k] < now) {
+                _vestingBalanceOf[account][0] = _vestingBalanceOf[account][0]
+                    .sub(_vestingBalanceOf[account][_vestingTimes[account][k]]);
+                _vestingBalanceOf[account][_vestingTimes[account][k]] = 0;
             }
         }
     }
 
-    function accountBalance(address _address) public view returns (uint256 balance) {
-        balance = balances[_address];
+    function accountBalance(address account) public view returns (uint256 balance) {
+        balance = balanceOf(account);
 
-        if (_vestingBalanceOf[_address][0] == 0) return;
+        if (_vestingBalanceOf[account][0] == 0) return;
 
-        for (uint256 k = 0; k < vestingTimes[_address].length; k++) {
-            if (vestingTimes[_address][k] >= now) {
-                balance = balance.sub(_vestingBalanceOf[_address][vestingTimes[_address][k]]);
+        for (uint256 k = 0; k < _vestingTimes[account].length; k++) {
+            if (_vestingTimes[account][k] >= now) {
+                balance = balance.sub(_vestingBalanceOf[account][_vestingTimes[account][k]]);
             }
         }
     }
 
-    function vestingBalanceOf(address _address, uint _date) public view returns (uint) {
-        return _vestingBalanceOf[_address][_date];
+    function vestingBalanceOf(address account, uint date) public view returns (uint) {
+        return _vestingBalanceOf[account][date];
     }
 
-    function addAdmin(address _account) public onlyPrimary {
-        _addAdmin(_account);
+    function addAdmin(address account) public onlyPrimary {
+        _addAdmin(account);
     }
 
-    function removeAdmin(address _account) public onlyPrimary {
-        _removeAdmin(_account);
+    function removeAdmin(address account) public onlyPrimary {
+        _removeAdmin(account);
     }
 }
