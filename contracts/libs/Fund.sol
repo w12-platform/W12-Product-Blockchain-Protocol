@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../crowdsale/IW12Crowdsale.sol";
 import "../rates/IRates.sol";
@@ -64,7 +64,7 @@ library  Fund {
 
             if (symbol != METHOD_ETH) {
                 require(rates.isToken(symbol));
-                require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
+                require(IERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
             }
 
             uint fee = trancheFeePercent > 0
@@ -77,8 +77,8 @@ library  Fund {
                 if (fee > 0) serviceWallet.transfer(fee);
                 msg.sender.transfer(amount.sub(fee));
             } else {
-                if (fee > 0) require(ERC20(rates.getTokenAddress(symbol)).transfer(serviceWallet, fee));
-                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount.sub(fee)));
+                if (fee > 0) require(IERC20(rates.getTokenAddress(symbol)).transfer(serviceWallet, fee));
+                require(IERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount.sub(fee)));
             }
 
             emit TrancheTransferred(msg.sender, symbol, amount);
@@ -167,7 +167,7 @@ library  Fund {
 
             if (symbol != METHOD_ETH) {
                 require(rates.isToken(symbol));
-                require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
+                require(IERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
             } else {
                 require(address(this).balance >= amount);
             }
@@ -175,7 +175,7 @@ library  Fund {
             if (symbol == METHOD_ETH) {
                 msg.sender.transfer(amount);
             } else {
-                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount));
+                require(IERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount));
             }
 
             emit AssetRefunded(msg.sender, symbol, amount);
@@ -204,7 +204,7 @@ library  Fund {
             require(msg.value >= cost);
         } else {
             require(rates.isToken(symbol));
-            require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= state.totalFunded.amountOf(symbol).add(cost));
+            require(IERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= state.totalFunded.amountOf(symbol).add(cost));
         }
 
         // write to investor account

@@ -3,8 +3,8 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 import "./IW12Crowdsale.sol";
 import "./IW12Fund.sol";
 import "../rates/IRates.sol";
@@ -21,7 +21,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
     using PaymentMethods for PaymentMethods.Methods;
 
     IWToken public token;
-    ERC20 public originToken;
+    IERC20 public originToken;
     IW12Fund public fund;
     IRates public rates;
     uint public price;
@@ -68,7 +68,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         __setParameters(_price, _serviceWallet);
 
         token = IWToken(_token);
-        originToken = ERC20(_originToken);
+        originToken = IERC20(_originToken);
         serviceFee = _serviceFee;
         swap = _swap;
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
@@ -270,7 +270,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
             _fee,
             vesting,
             method,
-            rates.isToken(method) ? rates.getTokenAddress(method) : address(0),
+            rates.isToken(method) ? address(rates.getTokenAddress(method)) : address(0),
             address(token)
         );
     }
@@ -279,7 +279,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         if (method == PurchaseProcessing.METHOD_ETH()) {
             fund.recordPurchase.value(_invoice[1].sub(_fee[1]))(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
         } else {
-            require(ERC20(rates.getTokenAddress(method)).transfer(address(fund), _invoice[1].sub(_fee[1])));
+            require(IERC20(rates.getTokenAddress(method)).transfer(address(fund), _invoice[1].sub(_fee[1])));
             fund.recordPurchase(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
         }
     }
@@ -333,7 +333,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         result[2] = uint(token.decimals());
         result[3] = PurchaseProcessing.METHOD_ETH() == method
             ? 18
-            : uint(DetailedERC20(rates.getTokenAddress(method)).decimals());
+            : uint(ERC20Detailed(rates.getTokenAddress(method)).decimals());
         result[4] = token.balanceOf(address(this));
     }
 
@@ -370,7 +370,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         result[2] = uint(token.decimals());
         result[3] = PurchaseProcessing.METHOD_ETH() == method
             ? 18
-            : uint(DetailedERC20(rates.getTokenAddress(method)).decimals());
+            : uint(ERC20Detailed(rates.getTokenAddress(method)).decimals());
         result[4] = token.balanceOf(address(this));
     }
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./Percent.sol";
 import "./Utils.sol";
 import "../token/IWToken.sol";
@@ -239,16 +239,16 @@ library PurchaseProcessing {
         }
 
         if (_fee[0] > 0) {
-            require(ERC20(originToken).transferFrom(exchanger, serviceWallet, _fee[0]));
-            require(ERC20(token).transfer(exchanger, _fee[0]));
+            require(IERC20(originToken).transferFrom(exchanger, serviceWallet, _fee[0]));
+            require(IERC20(token).transfer(exchanger, _fee[0]));
         }
 
         if (_fee[1] > 0) {
             if (method == METHOD_ETH()) {
                 serviceWallet.transfer(_fee[1]);
             } else {
-                require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _fee[1]);
-                require(ERC20(methodToken).transferFrom(msg.sender, serviceWallet, _fee[1]));
+                require(IERC20(methodToken).allowance(msg.sender, address(this)) >= _fee[1]);
+                require(IERC20(methodToken).transferFrom(msg.sender, serviceWallet, _fee[1]));
             }
         }
     }
@@ -273,8 +273,8 @@ library PurchaseProcessing {
 
         if (method != METHOD_ETH()) {
             require(methodToken != address(0));
-            require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1].sub(_fee[1]));
-            require(ERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1].sub(_fee[1])));
+            require(IERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1].sub(_fee[1]));
+            require(IERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1].sub(_fee[1])));
         }
 
         require(IWToken(token).vestingTransfer(msg.sender, _invoice[0], vesting));

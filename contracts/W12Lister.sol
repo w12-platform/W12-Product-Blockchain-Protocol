@@ -3,7 +3,8 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
 import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./wallets/IWallets.sol";
@@ -131,7 +132,7 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
         require(getApprovedToken(tokenAddress, msg.sender).tokenAddress == tokenAddress);
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender]);
 
-        DetailedERC20 token = DetailedERC20(tokenAddress);
+        ERC20Detailed token = ERC20Detailed(tokenAddress);
 
         require(token.allowance(msg.sender, address(this)) >= amount);
 
@@ -144,24 +145,24 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
             : 0;
         uint amountWithoutFee = amount.sub(fee);
 
-        _secureTokenTransfer(token, exchanger, amountWithoutFee);
-        _secureTokenTransfer(token, serviceWallet(), fee);
+        _secureTokenTransfer(IERC20(token), exchanger, amountWithoutFee);
+        _secureTokenTransfer(IERC20(token), serviceWallet(), fee);
 
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
-        if (exchanger.getWTokenByToken(tokenAddress) == address(0)) {
+        if (address(exchanger.getWTokenByToken(tokenAddress)) == address(0)) {
             WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
-            exchanger.addTokenToListing(ERC20(tokenAddress), wToken);
+            exchanger.addTokenToListing(ERC20Detailed(tokenAddress), wToken);
         }
 
-        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, exchanger.getWTokenByToken(tokenAddress));
+        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, address(exchanger.getWTokenByToken(tokenAddress)));
     }
 
     /**
      * @dev Securely transfer token from sender to account
      */
-    function _secureTokenTransfer(ERC20 token, address to, uint value) internal {
+    function _secureTokenTransfer(IERC20 token, address to, uint value) internal {
         // check for overflow before. we are not sure that the placed token has implemented safe math
         uint expectedBalance = token.balanceOf(to).add(value);
 
@@ -196,7 +197,7 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
 
         if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
             exchanger.approve(
-                ERC20(tokenAddress),
+                IERC20(tokenAddress),
                 address(crowdsale),
                 getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount
                     .percent(getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent)
@@ -211,7 +212,7 @@ contract W12Lister is Versionable, RBAC, Secondary, ReentrancyGuard {
     function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {
         require(amountForSale > 0);
         require(tokenAddress != address(0));
-        require(exchanger.getWTokenByToken(tokenAddress) != address(0));
+        require(address(exchanger.getWTokenByToken(tokenAddress)) != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));

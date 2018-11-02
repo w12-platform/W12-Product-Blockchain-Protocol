@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 
-contract IWToken is DetailedERC20 {
+contract IWToken is ERC20Detailed {
     mapping(address => uint256) public balances;
     mapping(address => mapping(uint256 => uint256)) public vestingBalanceOf;
 

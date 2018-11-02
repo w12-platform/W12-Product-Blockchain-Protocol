@@ -30,7 +30,7 @@ contract WToken is IWToken, Secondary {
         return _totalSupply;
     }
 
-    constructor(string _name, string _symbol, uint8 _decimals) DetailedERC20(_name, _symbol, _decimals) public {
+    constructor(string _name, string _symbol, uint8 _decimals) ERC20Detailed(_name, _symbol, _decimals) public {
         trustedAccounts[msg.sender] = true;
     }
 
