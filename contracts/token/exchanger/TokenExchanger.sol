@@ -24,6 +24,7 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
     function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner {
         require(token != address(0));
         require(wToken != address(0));
+        require(address(listingTokenToWToken[token]) == address(0));
         require(token != wToken);
         require(!hasPair(token, wToken));
 

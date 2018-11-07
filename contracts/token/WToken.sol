@@ -162,14 +162,13 @@ contract WToken is DetailedERC20, Ownable {
     }
 
     function mint(address _to, uint _amount, uint32 _vestingTime) external onlyTrusted(msg.sender) returns (bool) {
-        require(_totalSupply.add(_amount) > _totalSupply);
+        balances[_to] = balances[_to].add(_amount);
+        _totalSupply = _totalSupply.add(_amount);
 
         if (_vestingTime > now) {
             _addToVesting(address(0), _to, _vestingTime, _amount);
         }
 
-        balances[_to] = balances[_to].add(_amount);
-        _totalSupply = _totalSupply.add(_amount);
         emit Transfer(address(0), _to, _amount);
         emit VestingTransfer(address(0), _to, _amount, _vestingTime);
 
