@@ -13,7 +13,6 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
     using SafeMath for uint;
     using SafeERC20 for ERC20;
 
-    mapping(address => bool) private _tokenListed;
     mapping(address => WToken) public listingTokenToWToken;
     mapping(address => ERC20) public listingWTokenToToken;
     mapping(address => mapping(address => bool)) pairs;
@@ -25,18 +24,13 @@ contract TokenExchanger is ITokenExchanger, Versionable, Ownable, ReentrancyGuar
     function addTokenToListing(ERC20 token, WToken wToken) external onlyOwner {
         require(token != address(0));
         require(wToken != address(0));
-        require(!tokenListed(address(token)));
+        require(address(listingTokenToWToken[token]) == address(0));
         require(token != wToken);
         require(!hasPair(token, wToken));
 
         listingTokenToWToken[token] = wToken;
         listingWTokenToToken[wToken] = token;
         pairs[token][wToken] = true;
-        _tokenListed[address(token)] = true;
-    }
-
-    function tokenListed(address token) public view returns (bool) {
-        return _tokenListed[token];
     }
 
     function hasPair(ERC20 token1, ERC20 token2) public view returns (bool) {
