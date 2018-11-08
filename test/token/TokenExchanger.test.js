@@ -40,6 +40,21 @@ contract('TokenExchanger', async (accounts) => {
         });
     });
 
+    describe('when add the same token twice', async () => {
+        const token1 = utils.generateRandomAddress();
+        const token2 = utils.generateRandomAddress();
+        const token3 = utils.generateRandomAddress();
+
+        beforeEach(async () => {
+            await sut.addTokenToListing(token1, token2);
+        });
+
+        it('should revert', async () => {
+            await sut.addTokenToListing(token1, token3)
+                .should.to.be.rejectedWith(utils.EVMRevert);
+        });
+    });
+
     describe('when called not by the owner', async () => {
         it('should reject adding token to listing', async () => {
             const expectedToken = utils.generateRandomAddress();

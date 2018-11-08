@@ -40,9 +40,11 @@ contract('Symbols', async (accounts) => {
     describe('remove symbols', async () => {
         const symbol1 = 'a';
         const symbol2 = 'b';
+        const symbol3 = 'c';
 
         beforeEach(async () => {
             await ctx.Symbols.addSymbol(web3.fromUtf8(symbol1));
+            await ctx.Symbols.addSymbol(web3.fromUtf8(symbol2));
 
             ctx.Tx = ctx.Symbols.removeSymbol(web3.fromUtf8(symbol1));
         });
@@ -50,6 +52,34 @@ contract('Symbols', async (accounts) => {
         it('should`t revert', async () => {
             await ctx.Tx
                 .should.be.fulfilled;
+        });
+
+        it('should remove one symbol and keep other', async () => {
+            await ctx.Tx;
+
+            const list = (await ctx.Symbols.getSymbolsList())
+                .map(a => web3.toUtf8(a));
+
+            list.should.to.include(symbol2);
+            list.should.to.not.include(symbol1);
+        });
+
+        describe('remove the first symbol then add new then remove the previous last symbol', () => {
+            beforeEach(async () => {
+                await ctx.Tx;
+                await ctx.Symbols.addSymbol(web3.fromUtf8(symbol3));
+
+                ctx.Tx = ctx.Symbols.removeSymbol(web3.fromUtf8(symbol2));
+            });
+
+            it('should remove and keep other', async () => {
+                const list = (await ctx.Symbols.getSymbolsList())
+                    .map(a => web3.toUtf8(a));
+
+                list.should.to.include(symbol3);
+                list.should.to.not.include(symbol1);
+                list.should.to.not.include(symbol2);
+            });
         });
 
         it('should revert', async () => {

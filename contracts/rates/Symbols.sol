@@ -19,8 +19,17 @@ contract Symbols is ISymbols {
         require(symbols[symbol]);
 
         symbols[symbol] = false;
-        _removeSymbolByIndex(symbolIndex[symbol]);
+
+        uint index = symbolIndex[symbol];
+
         symbolIndex[symbol] = 0;
+
+        if (index != symbolsList.length - 1) {
+            symbolsList[index] = symbolsList[symbolsList.length - 1];
+            symbolIndex[symbolsList[index]] = index;
+        }
+
+        symbolsList.length--;
     }
 
     function hasSymbol(bytes32 symbol) public view returns(bool) {
@@ -29,15 +38,5 @@ contract Symbols is ISymbols {
 
     function getSymbolsList() public view returns(bytes32[]) {
         return symbolsList;
-    }
-
-    function _removeSymbolByIndex(uint index) internal {
-        require(index < symbolsList.length);
-
-        if (index != symbolsList.length - 1) {
-            symbolsList[index] = symbolsList[symbolsList.length - 1];
-        }
-
-        symbolsList.length--;
     }
 }
