@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "./IRates.sol";
 import "../access/roles/IPricerRole.sol";
-import "../access/roles/Pricer.sol";
+import "../access/roles/PricerRole.sol";
 import "./Symbols.sol";
 
 contract Rates is IRates, Symbols, PricerRole, Secondary {

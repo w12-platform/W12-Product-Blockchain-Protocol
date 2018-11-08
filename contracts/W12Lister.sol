@@ -13,7 +13,7 @@ import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
-import "./access/roles/Admin.sol";
+import "./access/roles/AdminRole.sol";
 import "./rates/Rates.sol";
 
 
