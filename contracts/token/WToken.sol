@@ -8,7 +8,7 @@ import "./IWToken.sol";
 import "../access/roles/AdminRole.sol";
 import "../access/roles/IAdminRole.sol";
 
-contract WToken is IWToken, IAdminRole, AdminRole, ERC20Detailed, ERC20, Secondary {
+contract WToken is IWToken, AdminRole, ERC20Detailed, ERC20, Secondary {
     using SafeMath for uint256;
 
     mapping (address => mapping (uint256 => uint256)) private _vestingBalanceOf;
