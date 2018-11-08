@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "../access/roles/IAdmin.sol";
+import "../access/roles/IAdminRole.sol";
 
 contract IWToken is IERC20, IAdminRole {
     function vestingBalanceOf(address _address, uint _date) public view returns (uint);

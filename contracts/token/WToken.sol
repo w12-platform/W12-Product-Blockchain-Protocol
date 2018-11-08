@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IWToken.sol";
 import "../access/roles/Admin.sol";
-import "../access/roles/IAdmin.sol";
+import "../access/roles/IAdminRole.sol";
 
 contract WToken is IWToken, AdminRole, ERC20Detailed, ERC20, Secondary {
     using SafeMath for uint256;

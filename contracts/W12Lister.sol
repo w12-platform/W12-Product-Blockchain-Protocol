@@ -7,7 +7,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./wallets/IWallets.sol";
-import "./access/roles/IAdmin.sol";
+import "./access/roles/IAdminRole.sol";
 import "./token/IWToken.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";

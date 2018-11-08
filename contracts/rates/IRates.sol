@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./ISymbols.sol";
-import "../access/roles/IPricer.sol";
+import "../access/roles/IPricerRole.sol";
 
 contract IRates is ISymbols, IPricerRole {
     function addSymbolWithTokenAddress(bytes32 symbol, address _address) public;
