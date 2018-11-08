@@ -27,7 +27,7 @@ library Utils {
      * @dev Doing multiplying `a` by `b` and then divide by `c`. In some case it avoids overflow.
      *      (2^256-1) * 2 / 2 = (2^256-1) - no overflow when (2^256-1) * 2
      */
-    function safeMulDiv(uint a, uint b, uint c) internal pure returns(uint result) {
+    function safeMulDiv(uint a, uint b, uint c) public pure returns(uint result) {
         uint fractionsSum;
 
         assert(c != 0);

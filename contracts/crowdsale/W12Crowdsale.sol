@@ -5,20 +5,19 @@ import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "./IW12Crowdsale.sol";
 import "./IW12Fund.sol";
 import "../rates/IRates.sol";
 import "../libs/Percent.sol";
 import "../libs/PaymentMethods.sol";
 import "../libs/PurchaseProcessing.sol";
+import "../libs/Crowdsale.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
 
 contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
-    using BytesLib for bytes;
     using PaymentMethods for PaymentMethods.Methods;
 
     IWToken public token;
@@ -34,26 +33,8 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     // list of payment methods
     PaymentMethods.Methods paymentMethods;
 
-    Stage[] public stages;
-    Milestone[] public milestones;
-
-    struct Stage {
-        uint32 startDate;
-        uint32 endDate;
-        uint discount;
-        uint32 vesting;
-        uint[] volumeBoundaries;
-        uint[] volumeBonuses;
-    }
-
-    struct Milestone {
-        uint32 endDate;
-        uint tranchePercent;
-        uint32 voteEndDate;
-        uint32 withdrawalWindow;
-        bytes name;
-        bytes description;
-    }
+    Crowdsale.Stage[] public stages;
+    Crowdsale.Milestone[] public milestones;
 
     event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
     event StagesUpdated();
@@ -224,93 +205,9 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
      * [uint boundary, uint bonus, ...]
      */
     function _setStages(uint[6][] parameters, uint[] bonusConditions) internal {
-        if (milestones.length > 0) {
-            // end date of firs milestone must be greater then end date of last stage
-            require(milestones[0].endDate > parameters[parameters.length - 1][1]);
-        }
-
-        delete stages;
-
-        for (uint8 i = 0; i < parameters.length; i++) {
-            // check overflow
-            require(parameters[i][0] <= uint32(-1));
-            require(parameters[i][1] <= uint32(-1));
-            require(parameters[i][3] <= uint32(-1));
-            require(parameters[i][4] <= uint8(-1));
-            require(parameters[i][5] <= uint8(-1));
-
-            // check dates
-            require(parameters[i][0] > now);
-            require(parameters[i][0] < parameters[i][1]);
-
-            if (i > 0) {
-                require(parameters[i - 1][1] <= parameters[i][0]);
-            }
-
-            // check discount
-            require(parameters[i][2].isPercent());
-            require(parameters[i][2] < Percent.MAX());
-
-            stages.push(Stage({
-                startDate: uint32(parameters[i][0]),
-                endDate: uint32(parameters[i][1]),
-                discount: parameters[i][2],
-                vesting: uint32(parameters[i][3]),
-                volumeBoundaries: new uint[](0),
-                volumeBonuses: new uint[](0)
-            }));
-
-            _setStageBonusConditions(
-                uint8(stages.length - 1),
-                uint8(parameters[i][4]),
-                uint8(parameters[i][5]),
-                bonusConditions
-            );
-        }
+        Crowdsale.setStages(stages, milestones, parameters, bonusConditions);
 
         emit StagesUpdated();
-    }
-
-    /**
-     * @dev Set stage bonus conditions by stage index
-     * @param bonusConditions List of bonus conditions:
-     * [uint boundary, uint bonus, ...]
-     */
-    function _setStageBonusConditions(uint8 stageIndex, uint8 start, uint8 end, uint[] bonusConditions) internal {
-        if (start == 0 && end == 0) {
-            stages[stageIndex].volumeBoundaries = new uint[](0);
-            stages[stageIndex].volumeBonuses = new uint[](0);
-
-            return;
-        }
-
-        require(end <= bonusConditions.length);
-        require(start < end);
-        require(start % 2 == 0);
-        require(end % 2 == 0);
-
-        uint[] memory boundaries = new uint[]((end - start) / 2);
-        uint[] memory bonuses = new uint[]((end - start) / 2);
-        uint k = 0;
-
-        while (start < end) {
-            // check bonus
-            require(bonusConditions[start + 1].isPercent());
-            require(bonusConditions[start + 1] < Percent.MAX());
-
-            // check boundary
-            if (k > 0) {
-                require(boundaries[k - 1] < bonusConditions[start]);
-            }
-
-            boundaries[k] = bonusConditions[start];
-            bonuses[k] = bonusConditions[start + 1];
-            k++;
-            start += 2;
-        }
-
-        stages[stageIndex].volumeBoundaries = boundaries;
-        stages[stageIndex].volumeBonuses = bonuses;
     }
 
     /**
@@ -333,53 +230,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     )
         internal
     {
-        if (stages.length > 0) {
-            require(stages[stages.length - 1].endDate < parameters[0][0]);
-        }
-
-        delete milestones;
-
-        uint offset = 0;
-        uint k = 0;
-        uint totalPercents = 0;
-
-        for (uint8 i = 0; i < parameters.length; i++) {
-            // check overflow
-            require(parameters[i][0] <= uint32(- 1));
-            require(parameters[i][1] <= uint32(- 1));
-            require(parameters[i][2] <= uint32(- 1));
-
-            // check dates
-            require(parameters[i][0] > now);
-            require(parameters[i][1] > parameters[i][0]);
-            require(parameters[i][2] > parameters[i][1]);
-
-            if (i > 0) {
-                require(parameters[i - 1][2] < parameters[i][0]);
-            }
-
-            // check tranch percent
-            require(parameters[i][3].isPercent());
-
-            bytes memory name = namesAndDescriptions.slice(offset, offsets[k]);
-            offset = offset.add(offsets[k]);
-            bytes memory description = namesAndDescriptions.slice(offset, offsets[k + 1]);
-            offset = offset.add(offsets[k + 1]);
-            k = k.add(2);
-
-            totalPercents = totalPercents.add(parameters[i][3]);
-
-            milestones.push(Milestone({
-                endDate: uint32(parameters[i][0]),
-                tranchePercent: parameters[i][3],
-                voteEndDate: uint32(parameters[i][1]),
-                withdrawalWindow: uint32(parameters[i][2]),
-                name: name,
-                description: description
-            }));
-        }
-
-        require(totalPercents == Percent.MAX());
+        Crowdsale.setMilestones(stages, milestones, parameters, offsets, namesAndDescriptions);
 
         emit MilestonesUpdated();
     }
@@ -460,20 +311,30 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             }
         }
 
+        uint[5] memory lastArguments = _getInvoiceLastArguments(method);
+
         return PurchaseProcessing.invoice(
             method,
             amount,
             stages[index].discount,
             stages[index].volumeBoundaries,
             stages[index].volumeBonuses,
-            rates.get(method),
-            price,
-            uint(token.decimals()),
-            PurchaseProcessing.METHOD_ETH() == method
-                ? 18
-                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
-            token.balanceOf(address(this))
+            lastArguments[0],
+            lastArguments[1],
+            lastArguments[2],
+            lastArguments[3],
+            lastArguments[4]
         );
+    }
+
+    function _getInvoiceLastArguments(bytes32 method) internal view returns(uint[5] result) {
+        result[0] = rates.get(method);
+        result[1] = price;
+        result[2] = uint(token.decimals());
+        result[3] = PurchaseProcessing.METHOD_ETH() == method
+            ? 18
+            : uint(DetailedERC20(rates.getTokenAddress(method)).decimals());
+        result[4] = token.balanceOf(address(this));
     }
 
     function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
@@ -487,20 +348,30 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
             }
         }
 
+        uint[5] memory lastArguments = _getInvoiceByTokenAmountLastArguments(method);
+
         return PurchaseProcessing.invoiceByTokenAmount(
             method,
             tokenAmount,
             stages[index].discount,
             stages[index].volumeBoundaries,
             stages[index].volumeBonuses,
-            rates.get(method),
-            price,
-            uint(token.decimals()),
-            PurchaseProcessing.METHOD_ETH() == method
-                ? 18
-                : uint(DetailedERC20(rates.getTokenAddress(method)).decimals()),
-            token.balanceOf(address(this))
+            lastArguments[0],
+            lastArguments[1],
+            lastArguments[2],
+            lastArguments[3],
+            lastArguments[4]
         );
+    }
+
+    function _getInvoiceByTokenAmountLastArguments(bytes32 method) internal view returns (uint[5] result) {
+        result[0] = rates.get(method);
+        result[1] = price;
+        result[2] = uint(token.decimals());
+        result[3] = PurchaseProcessing.METHOD_ETH() == method
+            ? 18
+            : uint(DetailedERC20(rates.getTokenAddress(method)).decimals());
+        result[4] = token.balanceOf(address(this));
     }
 
     function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
@@ -512,14 +383,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
 
         if (!found) return;
 
-        Stage storage stage = stages[index];
+        Crowdsale.Stage storage stage = stages[index];
 
         return PurchaseProcessing.getBonus(value, stage.volumeBoundaries, stage.volumeBonuses);
     }
 
     function getCurrentStageIndex() public view returns (uint index, bool found) {
         for(uint i = 0; i < stages.length; i++) {
-            Stage storage stage = stages[i];
+            Crowdsale.Stage storage stage = stages[i];
 
             if (stage.startDate <= now && stage.endDate > now) {
                 return (i, true);
@@ -558,7 +429,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
     }
 
     modifier onlyWhenSaleActive() {
-        require(isSaleActive(), "Sale is not started yet");
+        require(isSaleActive());
 
         _;
     }
