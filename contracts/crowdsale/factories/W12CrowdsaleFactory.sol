@@ -59,18 +59,18 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
         }
 
         // transfer all permissions to sender
-        fund.renounceAdmin();
-        fund.renounceProjectOwner();
         fund.addAdmin(msg.sender);
         fund.addProjectOwner(msg.sender);
         fund.transferPrimary(msg.sender);
+        fund.renounceAdmin();
+        fund.renounceProjectOwner();
 
         // transfer all permissions to sender
-        result.renounceAdmin();
-        result.renounceProjectOwner();
         result.addAdmin(msg.sender);
         result.addProjectOwner(msg.sender);
         result.transferPrimary(msg.sender);
+        result.renounceAdmin();
+        result.renounceProjectOwner();
 
         emit CrowdsaleCreated(wTokenAddress, address(result), fund);
     }

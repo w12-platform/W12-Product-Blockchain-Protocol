@@ -79,7 +79,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     }
 
     function whitelistToken(
-        address tokenOwner,
+        address[] tokenOwners,
         address tokenAddress,
         string name,
         string symbol,
@@ -92,7 +92,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         external onlyAdmin
     {
 
-        require(tokenOwner != address(0));
+        require(tokenOwners.length > 0);
         require(tokenAddress != address(0));
         require(feePercent.isPercent() && feePercent.fromPercent() < 100);
         require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
