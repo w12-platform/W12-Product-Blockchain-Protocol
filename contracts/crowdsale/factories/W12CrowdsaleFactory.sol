@@ -55,6 +55,8 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
 
         // give the project owner role to addresses from owners list
         for(uint i = 0; i < owners.length; i++) {
+            require(owners[i] != address(0));
+
             result.addProjectOwner(owners[i]);
         }
 

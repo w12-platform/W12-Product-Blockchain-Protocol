@@ -13,7 +13,7 @@ contract W12CrowdsaleFundStub is IW12Fund {
 
     function setSwap(address _swap) external {}
 
-    function transferPrimary(address _address) external {}
+    function transferPrimary(address _address) public {}
 
     struct RecordPurchaseCallResult {
         address investor;

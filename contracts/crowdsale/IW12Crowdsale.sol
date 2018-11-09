@@ -4,11 +4,9 @@ import "../token/IWToken.sol";
 import "../access/roles/IAdminRole.sol";
 import "../access/roles/IProjectOwnerRole.sol";
 
-interface IW12Crowdsale is IAdminRole, IProjectOwnerRole {
+contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function setParameters(uint price) external;
 
-    // TODO: this should be external
-    // See https://github.com/ethereum/solidity/issues/4832
     function setup(
         uint[6][] parametersOfStages,
         uint[] bonusConditionsOfStages,
@@ -20,25 +18,25 @@ interface IW12Crowdsale is IAdminRole, IProjectOwnerRole {
 
     function getWToken() external view returns(IWToken);
 
-    function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes);
+    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes);
 
-    function getStage(uint index) external view returns (uint32, uint32, uint, uint32, uint[], uint[]);
+    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]);
 
-    function getCurrentMilestoneIndex() external view returns (uint, bool);
+    function getCurrentMilestoneIndex() public view returns (uint, bool);
 
-    function getLastMilestoneIndex() external view returns (uint index, bool found);
+    function getLastMilestoneIndex() public view returns (uint index, bool found);
 
     function milestonesLength() external view returns (uint);
 
-    function getCurrentStageIndex() external view returns (uint index, bool found);
+    function getCurrentStageIndex() public view returns (uint index, bool found);
 
-    function getSaleVolumeBonus(uint value) external view returns (uint bonus);
+    function getSaleVolumeBonus(uint value) public view returns (uint bonus);
 
-    function isEnded() external view returns (bool);
+    function isEnded() public view returns (bool);
 
-    function isSaleActive() external view returns (bool);
+    function isSaleActive() public view returns (bool);
 
-    function buyTokens(bytes32 method, uint amount) payable external;
+    function buyTokens(bytes32 method, uint amount) payable public;
 
-    function transferPrimary(address _address) external;
+    function transferPrimary(address _address) public;
 }

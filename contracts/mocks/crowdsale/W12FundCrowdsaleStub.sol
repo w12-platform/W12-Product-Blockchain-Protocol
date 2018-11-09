@@ -48,7 +48,7 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, Reentran
         _wtoken = a;
     }
 
-    function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes) {
+    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes) {
         return (
             _currentMilestones[index].endDate,
             _currentMilestones[index].tranchePercent,
@@ -70,37 +70,37 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, Reentran
         });
     }
 
-    function getStage(uint index) external view returns (uint32, uint32, uint, uint32, uint[], uint[]) {}
+    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]) {}
 
-    function getCurrentMilestoneIndex() external view returns (uint, bool) {
+    function getCurrentMilestoneIndex() public view returns (uint, bool) {
         return (_currentMilestoneIndex, _currentMilestoneIndexFound);
     }
 
-    function _getCurrentMilestoneIndexMockData(uint a, bool b) external {
+    function _getCurrentMilestoneIndexMockData(uint a, bool b) public {
         _currentMilestoneIndex = a;
         _currentMilestoneIndexFound = b;
     }
 
-    function getLastMilestoneIndex() external view returns (uint index, bool found) {
+    function getLastMilestoneIndex() public view returns (uint index, bool found) {
         return (_lastMilestoneIndex, _lastMilestoneIndexFound);
     }
 
-    function _getLastMilestoneIndexMockData(uint a, bool b) external {
+    function _getLastMilestoneIndexMockData(uint a, bool b) public {
         _lastMilestoneIndex = a;
         _lastMilestoneIndexFound = b;
     }
 
     function milestonesLength() external view returns (uint) {}
 
-    function getCurrentStageIndex() external view returns (uint index, bool found) {}
+    function getCurrentStageIndex() public view returns (uint index, bool found) {}
 
-    function getSaleVolumeBonus(uint value) external view returns (uint bonus) {}
+    function getSaleVolumeBonus(uint value) public view returns (uint bonus) {}
 
-    function isEnded() external view returns (bool) {}
+    function isEnded() public view returns (bool) {}
 
-    function isSaleActive() external view returns (bool) {}
+    function isSaleActive() public view returns (bool) {}
 
     function() payable external {}
 
-    function buyTokens(bytes32 method, uint amount) payable external {}
+    function buyTokens(bytes32 method, uint amount) payable public {}
 }
