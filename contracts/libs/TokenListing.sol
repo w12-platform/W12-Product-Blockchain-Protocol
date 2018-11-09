@@ -3,7 +3,6 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../crowdsale/IW12Crowdsale.sol";
 import "./Percent.sol";
-import "./Crowdsale.sol";
 
 library TokenListing {
     using Percent for uint;
@@ -44,7 +43,7 @@ library TokenListing {
     }
 
     function isExist(Whitelist storage whitelist, uint index) internal view returns(bool) {
-        return whitelist._list[index].token != address(0);
+        return whitelist._list.length > index;
     }
 
     function owners(Whitelist storage whitelist, address token) internal view returns (address[]) {
@@ -86,7 +85,7 @@ library TokenListing {
         internal returns(uint)
     {
         require(token != address(0));
-        require(owners(whitelist, token).length == 0 && tokenOwners.length > 0);
+        require(owners(whitelist, token).length == 0 ? tokenOwners.length > 0 : true);
         require(feePercent.isPercent() && feePercent.fromPercent() < 100);
         require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
         require(WTokenSaleFeePercent.isPercent() && WTokenSaleFeePercent.fromPercent() < 100);
@@ -98,6 +97,7 @@ library TokenListing {
         whitelist._hasIndex[token][index] = true;
 
         for(uint i = 0; i < tokenOwners.length; i++) {
+            require(tokenOwners[i] != address(0));
             require(!hasOwner(whitelist, token, tokenOwners[i]));
 
             whitelist._owners[token].push(tokenOwners[i]);

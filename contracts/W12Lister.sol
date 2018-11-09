@@ -14,7 +14,6 @@ import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
 import "./access/roles/AdminRole.sol";
-import "./rates/Rates.sol";
 import "./libs/TokenListing.sol";
 
 
@@ -22,8 +21,6 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     using SafeMath for uint;
     using Percent for uint;
     using TokenListing for TokenListing.Whitelist;
-
-    Rates rates = new Rates();
 
     uint8 constant SERVICE_WALLET_ID = 1;
 
@@ -44,6 +41,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         IW12CrowdsaleFactory _factory,
         ITokenExchanger _exchanger
     ) Versionable(version) public {
+        require(_wallets != address(0));
         require(_factory != address(0));
         require(_exchanger != address(0));
 
@@ -164,6 +162,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         );
 
         listedToken.crowdsale = address(crowdsale);
+        listedToken.owners = whitelist.owners(listedToken.token);
         wtoken.addAdmin(address(crowdsale));
 
         if (listedToken.WTokenSaleFeePercent > 0) {
