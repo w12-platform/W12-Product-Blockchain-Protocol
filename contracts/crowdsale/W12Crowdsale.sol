@@ -14,8 +14,10 @@ import "../libs/PurchaseProcessing.sol";
 import "../libs/Crowdsale.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
+import "../access/roles/AdminRole.sol";
+import "../access/roles/ProjectOwnerRole.sol";
 
-contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
+contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using SafeMath for uint8;
     using Percent for uint;
@@ -76,6 +78,38 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         fund = _fund;
         rates = _rates;
     }
+
+    function addAdmin(address _account) public onlyAdmin {
+        _addAdmin(_account);
+        fund.addAdmin(_account);
+    }
+
+    function removeAdmin(address _account) public onlyAdmin {
+        _removeAdmin(_account);
+        fund.removeAdmin(_account);
+    }
+
+// remove comments if need
+//    function renounceAdmin() public {
+//        _removeAdmin(msg.sender);
+//        fund.removeAdmin(msg.sender);
+//    }
+
+    function addProjectOwner(address _account) public onlyAdmin {
+        _addProjectOwner(_account);
+        fund.addProjectOwner(_account);
+    }
+
+    function removeProjectOwner(address _account) public onlyAdmin {
+        _removeProjectOwner(_account);
+        fund.removeProjectOwner(_account);
+    }
+
+// remove comments if need
+//    function renounceProjectOwner() public {
+//        _removeProjectOwner(msg.sender);
+//        fund.removeProjectOwner(msg.sender);
+//    }
 
     function stagesLength() external view returns (uint) {
         return stages.length;
@@ -157,7 +191,7 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         bytes nameAndDescriptionsOfMilestones,
         bytes32[] paymentMethodsList
     )
-        external onlyPrimary beforeSaleStart
+        external onlyProjectOwner beforeSaleStart
     {
         // primary check of parameters of stages
         require(parametersOfStages.length != 0);
@@ -401,14 +435,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         return (0, false);
     }
 
-    function claimRemainingTokens() external onlyPrimary {
+    function claimRemainingTokens() external onlyProjectOwner {
         require(isEnded());
 
         uint amount = token.balanceOf(address(this));
 
-        require(token.transfer(primary(), amount));
+        require(token.transfer(msg.sender, amount));
 
-        emit UnsoldTokenReturned(primary(), amount);
+        emit UnsoldTokenReturned(msg.sender, amount);
     }
 
     function isEnded() public view returns (bool) {

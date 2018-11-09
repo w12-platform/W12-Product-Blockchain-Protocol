@@ -1,9 +1,10 @@
 pragma solidity ^0.4.24;
 
 import "../token/IWToken.sol";
+import "../access/roles/IAdminRole.sol";
+import "../access/roles/IProjectOwnerRole.sol";
 
-
-interface IW12Crowdsale {
+interface IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function setParameters(uint price) external;
 
     // TODO: this should be external

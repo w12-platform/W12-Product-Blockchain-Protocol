@@ -13,8 +13,10 @@ import "../libs/FundAccount.sol";
 import "../libs/Fund.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
+import "../access/roles/AdminRole.sol";
+import "../access/roles/ProjectOwnerRole.sol";
 
-contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
+contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using FundAccount for FundAccount.Account;
@@ -46,7 +48,23 @@ contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
         rates = _rates;
     }
 
-    function setCrowdsale(IW12Crowdsale _crowdsale) onlyPrimary external {
+    function addAdmin(address _account) public onlyAdmin {
+        _addAdmin(_account);
+    }
+
+    function removeAdmin(address _account) public onlyAdmin {
+        _removeAdmin(_account);
+    }
+
+    function addProjectOwner(address _account) public onlyAdmin {
+        _addProjectOwner(_account);
+    }
+
+    function removeProjectOwner(address _account) public onlyAdmin {
+        _removeProjectOwner(_account);
+    }
+
+    function setCrowdsale(IW12Crowdsale _crowdsale) onlyAdmin external {
         require(_crowdsale != address(0));
         require(_crowdsale.getWToken() != address(0));
 
@@ -54,13 +72,13 @@ contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
         wToken = IWToken(_crowdsale.getWToken());
     }
 
-    function setSwap(address _swap) onlyPrimary external {
+    function setSwap(address _swap) onlyAdmin external {
         require(_swap != address(0));
 
         swap = _swap;
     }
 
-    function setServiceWallet(address _serviceWallet) onlyPrimary external {
+    function setServiceWallet(address _serviceWallet) onlyAdmin external {
         require(_serviceWallet != address(0));
 
         serviceWallet = _serviceWallet;
@@ -81,7 +99,7 @@ contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
         uint cost,
         uint costUSD
     )
-        external payable onlyFrom(crowdsale)
+        external payable onlyCrowdsale
     {
         Fund.recordPurchase(
             state,
@@ -153,7 +171,7 @@ contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
     /**
      * @notice Realise project tranche
      */
-    function tranche() external onlyPrimary nonReentrant {
+    function tranche() external onlyProjectOwner nonReentrant {
         require(trancheTransferAllowed());
 
         uint[3] memory trancheInvoice = getTrancheInvoice();
@@ -236,8 +254,8 @@ contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
         return endDate > now || now >= lastWithdrawalWindow;
     }
 
-    modifier onlyFrom(address sender) {
-        require(msg.sender == sender);
+    modifier onlyCrowdsale {
+        require(msg.sender == address(crowdsale));
 
         _;
     }
