@@ -29,6 +29,8 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, Reentran
 
     constructor(uint version) Versionable(version) public {}
 
+    function getFund() external view returns (IW12Fund) {}
+
     function isAdmin(address account) public view returns (bool) {}
 
     function addAdmin(address account) public {}
