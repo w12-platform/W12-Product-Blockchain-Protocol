@@ -81,35 +81,19 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
 
     function addAdmin(address _account) public onlyAdmin {
         _addAdmin(_account);
-        fund.addAdmin(_account);
     }
 
     function removeAdmin(address _account) public onlyAdmin {
         _removeAdmin(_account);
-        fund.removeAdmin(_account);
     }
-
-// remove comments if need
-//    function renounceAdmin() public {
-//        _removeAdmin(msg.sender);
-//        fund.removeAdmin(msg.sender);
-//    }
 
     function addProjectOwner(address _account) public onlyAdmin {
         _addProjectOwner(_account);
-        fund.addProjectOwner(_account);
     }
 
     function removeProjectOwner(address _account) public onlyAdmin {
         _removeProjectOwner(_account);
-        fund.removeProjectOwner(_account);
     }
-
-// remove comments if need
-//    function renounceProjectOwner() public {
-//        _removeProjectOwner(msg.sender);
-//        fund.removeProjectOwner(msg.sender);
-//    }
 
     function stagesLength() external view returns (uint) {
         return stages.length;

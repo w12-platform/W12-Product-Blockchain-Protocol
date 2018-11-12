@@ -161,6 +161,8 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
             whitelist.owners(listedToken.token)
         );
 
+        crowdsale.addAdmin(msg.sender);
+
         listedToken.crowdsale = address(crowdsale);
         listedToken.owners = whitelist.owners(listedToken.token);
         wtoken.addAdmin(address(crowdsale));

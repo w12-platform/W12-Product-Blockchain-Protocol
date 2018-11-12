@@ -35,8 +35,6 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     {
         IW12Fund fund = fundFactory.createFund(swap, serviceWallet, trancheFeePercent);
 
-        fund.setCrowdsale(result);
-
         result = new W12Crowdsale(
             version,
             tokenAddress,
@@ -50,6 +48,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             rates
         );
 
+        fund.setCrowdsale(result);
         // make crowdsale a admin
         fund.addAdmin(address(result));
 
@@ -62,18 +61,16 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
 
         // transfer all permissions to sender
         fund.addAdmin(msg.sender);
-        fund.addProjectOwner(msg.sender);
         fund.transferPrimary(msg.sender);
         fund.renounceAdmin();
         fund.renounceProjectOwner();
 
         // transfer all permissions to sender
         result.addAdmin(msg.sender);
-        result.addProjectOwner(msg.sender);
         result.transferPrimary(msg.sender);
         result.renounceAdmin();
         result.renounceProjectOwner();
 
-        emit CrowdsaleCreated(wTokenAddress, address(result), fund);
+        emit CrowdsaleCreated(wTokenAddress, address(result), address(fund));
     }
 }
