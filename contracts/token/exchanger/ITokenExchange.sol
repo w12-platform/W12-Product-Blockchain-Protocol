@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 contract ITokenExchange {
-    function approve(ERC20 token, address spender, uint amount) external returns (bool);
+    function approve(IERC20 token, address spender, uint amount) external returns (bool);
 
-    function exchange(ERC20 fromToken, uint amount) external;
+    function exchange(IERC20 fromToken, uint amount) external;
 }

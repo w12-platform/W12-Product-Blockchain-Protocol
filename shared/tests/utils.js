@@ -1,5 +1,5 @@
-import * as time from 'openzeppelin-solidity/test/helpers/increaseTime';
-import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
+import * as time from 'openzeppelin-solidity/test/helpers/time';
+import * as shouldFail from 'openzeppelin-solidity/test/helpers/shouldFail';
 import * as expectEvent from 'openzeppelin-solidity/test/helpers/expectEvent';
 
 function generateRandomAddress () {
@@ -322,10 +322,16 @@ function createMilestonesGenerator (defaults) {
 }
 
 module.exports = {
-    time,
+    time: {
+        ...time,
+        latestTime: time.latest,
+        increaseTime: time.increase,
+        increaseTimeTo: time.increaseTo
+    },
     expectEvent,
+    EVMRevert: 'revert',
     round,
-    EVMRevert,
+    shouldFail,
     ZERO_ADDRESS,
     ONE_TOKEN_18,
     generateRandomAddress,

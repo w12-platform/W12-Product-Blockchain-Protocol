@@ -1,9 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/access/rbac/Roles.sol";
-import "./IPricer.sol";
+import "openzeppelin-solidity/contracts/access/Roles.sol";
 
-contract PricerRole is IPricerRole {
+contract PricerRole {
     using Roles for Roles.Role;
 
     event PricerAdded(address indexed account);
@@ -11,7 +10,7 @@ contract PricerRole is IPricerRole {
 
     Roles.Role private pricers;
 
-    constructor() public {
+    constructor() internal {
         _addPricer(msg.sender);
     }
 
@@ -24,12 +23,8 @@ contract PricerRole is IPricerRole {
         return pricers.has(account);
     }
 
-    function addPricer(address account) public onlyPricer {
-        _addPricer(account);
-    }
-
-    function removePricer(address account) public {
-        _removePricer(account);
+    function renouncePricer() public {
+        _removePricer(msg.sender);
     }
 
     function _addPricer(address account) internal {

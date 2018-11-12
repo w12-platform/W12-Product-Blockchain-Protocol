@@ -1,18 +1,20 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./IW12Crowdsale.sol";
 import "./IW12Fund.sol";
 import "../rates/IRates.sol";
+import "../libs/Utils.sol";
 import "../libs/Percent.sol";
 import "../libs/FundAccount.sol";
+import "../libs/Fund.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
 
-contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
+contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using FundAccount for FundAccount.Account;
@@ -27,24 +29,8 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     address public serviceWallet;
     // fee for realised tranche
     uint public trancheFeePercent;
-    // total percent of realised project tranche
-    uint public totalTranchePercentReleased;
-    // maps of completed tranches periods
-    mapping (uint => bool) public completedTranches;
 
-    // total funded assets
-    FundAccount.Account totalFunded;
-    // total realised funded assets bt currency symbol
-    // updated when tranche was realised or investor assets was refunded
-    mapping(bytes32 => uint) totalFundedReleased;
-    // total amount of bought token
-    uint public totalTokenBought;
-    // total amount of refunded token
-    uint public totalTokenRefunded;
-    // total amount of bought token per investor
-    mapping (address => uint) tokenBoughtPerInvestor;
-    // total funded assets of each investor
-    mapping (address => FundAccount.Account) fundedPerInvestor;
+    Fund.State state;
 
     event FundsReceived(address indexed investor, uint tokenAmount, bytes32 symbol, uint cost);
     event AssetRefunded(address indexed investor, bytes32 symbol, uint amount);
@@ -60,7 +46,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         rates = _rates;
     }
 
-    function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
+    function setCrowdsale(IW12Crowdsale _crowdsale) onlyPrimary external {
         require(_crowdsale != address(0));
         require(_crowdsale.getWToken() != address(0));
 
@@ -68,13 +54,13 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         wToken = IWToken(_crowdsale.getWToken());
     }
 
-    function setSwap(address _swap) onlyOwner external {
+    function setSwap(address _swap) onlyPrimary external {
         require(_swap != address(0));
 
         swap = _swap;
     }
 
-    function setServiceWallet(address _serviceWallet) onlyOwner external {
+    function setServiceWallet(address _serviceWallet) onlyPrimary external {
         require(_serviceWallet != address(0));
 
         serviceWallet = _serviceWallet;
@@ -97,55 +83,58 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     )
         external payable onlyFrom(crowdsale)
     {
-        require(tokenAmount > 0);
-        require(cost > 0);
-        require(costUSD > 0);
-        require(investor != address(0));
-        require(rates.hasSymbol(symbol));
+        Fund.recordPurchase(
+            state,
+            investor,
+            tokenAmount,
+            symbol,
+            cost,
+            costUSD,
+            rates
+        );
+    }
 
-        // check payment
-        if (symbol == METHOD_ETH)  {
-            require(msg.value >= cost);
-        } else {
-            require(rates.isToken(symbol));
-            require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= totalFunded.amountOf(symbol).add(cost));
-        }
+    // total percent of realised project tranche
+    function totalTranchePercentReleased() public view returns (uint) {
+        return state.totalTranchePercentReleased;
+    }
 
-        // write to investor account
-        tokenBoughtPerInvestor[investor] = tokenBoughtPerInvestor[investor].add(tokenAmount);
-        fundedPerInvestor[investor].deposit(symbol, cost);
-        fundedPerInvestor[investor].deposit(METHOD_USD, costUSD);
+    function completedTranches(uint milestoneIndex) public view returns (bool) {
+        return state.completedTranches[milestoneIndex];
+    }
 
-        // write to total fund
-        totalTokenBought = totalTokenBought.add(tokenAmount);
-        totalFunded.deposit(symbol, cost);
-        totalFunded.deposit(METHOD_USD, costUSD);
+    // total amount of bought token
+    function totalTokenBought() public view returns (uint) {
+        return state.totalTokenBought;
+    }
 
-        emit FundsReceived(investor, tokenAmount, symbol, cost);
+    // total amount of refunded token
+    function totalTokenRefunded() public view returns (uint) {
+        return state.totalTokenRefunded;
     }
 
     function getInvestorFundedAmount(address _investor, bytes32 _symbol) public view returns(uint) {
-        return fundedPerInvestor[_investor].amountOf(_symbol);
+        return state.fundedPerInvestor[_investor].amountOf(_symbol);
     }
 
     function getInvestorFundedAssetsSymbols(address _investor) public view returns(bytes32[]) {
-        return fundedPerInvestor[_investor].symbolsList();
+        return state.fundedPerInvestor[_investor].symbolsList();
     }
 
     function getInvestorTokenBoughtAmount(address _investor) public view returns (uint) {
-        return tokenBoughtPerInvestor[_investor];
+        return state.tokenBoughtPerInvestor[_investor];
     }
 
     function getTotalFundedAmount(bytes32 _symbol) public view returns (uint) {
-        return totalFunded.amountOf(_symbol);
+        return state.totalFunded.amountOf(_symbol);
     }
 
     function getTotalFundedAssetsSymbols() public view returns (bytes32[]) {
-        return totalFunded.symbolsList();
+        return state.totalFunded.symbolsList();
     }
 
     function getTotalFundedReleased(bytes32 _symbol) public view returns (uint) {
-        return totalFundedReleased[_symbol];
+        return state.totalFundedReleased[_symbol];
     }
 
     /**
@@ -154,53 +143,26 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
      * [tranchePercent, totalTranchePercentBefore, milestoneIndex]
      */
     function getTrancheInvoice() public view returns (uint[3] result) {
-        if (!trancheTransferAllowed()) return;
-
-        (uint index, /*bool found*/) = crowdsale.getCurrentMilestoneIndex();
-        (uint lastIndex, /*bool found*/) = crowdsale.getLastMilestoneIndex();
-
-        (,,, uint32 lastWithdrawalWindow,,) = crowdsale.getMilestone(lastIndex);
-
-        // get percent from prev milestone
-        index = index == 0 || lastIndex == index ? index : index - 1;
-
-        ( , uint tranchePercent, , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
-
-        bool completed = completedTranches[index];
-
-        if (completed) return;
-
-        uint prevIndex = index;
-        uint totalTranchePercentBefore;
-
-        while (prevIndex > 0) {
-            prevIndex--;
-
-            (, uint _tranchePercent, , , , ) = crowdsale.getMilestone(prevIndex);
-
-            totalTranchePercentBefore = totalTranchePercentBefore.add(_tranchePercent);
-        }
-
-        result[0] = tranchePercent
-            .add(totalTranchePercentBefore)
-            .sub(totalTranchePercentReleased);
-        result[1] = totalTranchePercentBefore;
-        result[2] = index;
+        return Fund.getTrancheInvoice(
+            state,
+            trancheTransferAllowed(),
+            crowdsale
+        );
     }
 
     /**
      * @notice Realise project tranche
      */
-    function tranche() external onlyOwner nonReentrant {
+    function tranche() external onlyPrimary nonReentrant {
         require(trancheTransferAllowed());
 
         uint[3] memory trancheInvoice = getTrancheInvoice();
 
         require(trancheInvoice[0] > 0);
-        require(totalFunded.symbolsList().length != 0);
+        require(state.totalFunded.symbolsList().length != 0);
 
-        completedTranches[trancheInvoice[2]] = true;
-        totalTranchePercentReleased = totalTranchePercentReleased.add(trancheInvoice[0]);
+        state.completedTranches[trancheInvoice[2]] = true;
+        state.totalTranchePercentReleased = state.totalTranchePercentReleased.add(trancheInvoice[0]);
 
         _transferTranche(trancheInvoice);
 
@@ -208,51 +170,13 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function _transferTranche(uint[3] _invoice) internal {
-        uint ln = totalFunded.symbolsList().length;
-
-        while(ln != 0) {
-            bytes32 symbol = totalFunded.symbolsList()[--ln];
-            uint amount = totalFunded.amountOf(symbol);
-
-            if (amount == 0) continue;
-
-            uint sourceAmount = amount.safePercent(_invoice[0]);
-
-            require(sourceAmount > 0);
-            
-            amount = Utils.safeMulDiv(
-                totalTokenBought.sub(totalTokenRefunded),
-                sourceAmount,
-                totalTokenBought
-            );
-
-            require(amount > 0);
-
-            totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
-            
-            if (symbol == METHOD_USD)  continue;
-
-            if (symbol != METHOD_ETH) {
-                require(rates.isToken(symbol));
-                require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
-            }
-
-            uint fee = trancheFeePercent > 0
-                ? amount.safePercent(trancheFeePercent)
-                : 0;
-
-            if (trancheFeePercent > 0) require(fee > 0);
-
-            if (symbol == METHOD_ETH) {
-                if (fee > 0) serviceWallet.transfer(fee);
-                msg.sender.transfer(amount.sub(fee));
-            } else {
-                if (fee > 0) require(ERC20(rates.getTokenAddress(symbol)).transfer(serviceWallet, fee));
-                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount.sub(fee)));
-            }
-
-            emit TrancheTransferred(msg.sender, symbol, amount);
-        }
+        Fund.transferTranche(
+            state,
+            _invoice,
+            trancheFeePercent,
+            serviceWallet,
+            rates
+        );
     }
 
     /**
@@ -261,14 +185,14 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     function refund(uint tokenAmount) external nonReentrant {
         require(tokenRefundAllowed());
         require(tokenAmount != 0);
-        require(tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
+        require(state.tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
         require(wToken.balanceOf(msg.sender) >= tokenAmount);
         require(wToken.allowance(msg.sender, address(this)) >= tokenAmount);
 
         _refundAssets(tokenAmount);
 
-        totalTokenRefunded = totalTokenRefunded.add(tokenAmount);
-        tokenBoughtPerInvestor[msg.sender] = tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
+        state.totalTokenRefunded = state.totalTokenRefunded.add(tokenAmount);
+        state.tokenBoughtPerInvestor[msg.sender] = state.tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
 
         require(wToken.transferFrom(msg.sender, swap, tokenAmount));
 
@@ -276,57 +200,11 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     }
 
     function _refundAssets(uint tokenAmount) internal {
-        uint ln = fundedPerInvestor[msg.sender].symbolsList().length;
-
-        while (ln != 0) {
-            bytes32 symbol = fundedPerInvestor[msg.sender].symbolsList()[--ln];
-            uint amount = fundedPerInvestor[msg.sender].amountOf(symbol);
-
-            if (amount == 0) continue;
-
-            // get source amount
-            uint sourceAmount = Utils.safeMulDiv(
-                tokenAmount,
-                amount,
-                tokenBoughtPerInvestor[msg.sender]
-            );
-
-            require(sourceAmount > 0);
-
-            // get released tranche amount in current currency
-            uint releasedTranche = totalFunded
-                .amountOf(symbol)
-                .safePercent(totalTranchePercentReleased);
-
-            // get amount minus released tranche
-            amount = Utils.safeMulDiv(
-                totalFunded.amountOf(symbol).sub(releasedTranche),
-                sourceAmount,
-                totalFunded.amountOf(symbol)
-            );
-
-            require(amount > 0);
-
-            totalFundedReleased[symbol] = totalFundedReleased[symbol].add(amount);
-            fundedPerInvestor[msg.sender].withdrawal(symbol, sourceAmount);
-
-            if (symbol == METHOD_USD) continue;
-
-            if (symbol != METHOD_ETH) {
-                require(rates.isToken(symbol));
-                require(ERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= amount);
-            } else {
-                require(address(this).balance >= amount);
-            }
-
-            if (symbol == METHOD_ETH) {
-                msg.sender.transfer(amount);
-            } else {
-                require(ERC20(rates.getTokenAddress(symbol)).transfer(msg.sender, amount));
-            }
-
-            emit AssetRefunded(msg.sender, symbol, amount);
-        }
+        Fund.refundAssets(
+            state,
+            tokenAmount,
+            rates
+        );
     }
 
     function tokenRefundAllowed() public view returns (bool) {

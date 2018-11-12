@@ -1,9 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "../../crowdsale/IW12Crowdsale.sol";
 import "../../crowdsale/IW12Fund.sol";
@@ -11,7 +10,7 @@ import "../../token/IWToken.sol";
 import "../../libs/Percent.sol";
 import "../../versioning/Versionable.sol";
 
-contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Ownable, ReentrancyGuard {
+contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
     uint _currentMilestoneIndex;
     bool _currentMilestoneIndexFound;
     uint _lastMilestoneIndex;

@@ -18,7 +18,7 @@ contract W12FundFactory is Versionable, IW12FundFactory {
 
         result.setSwap(swap);
         result.setServiceWallet(serviceWallet);
-        result.transferOwnership(msg.sender);
+        result.transferPrimary(msg.sender);
 
         emit FundCreated(result);
     }

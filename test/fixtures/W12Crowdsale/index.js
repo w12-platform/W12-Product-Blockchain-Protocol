@@ -77,10 +77,10 @@ async function generateW12CrowdsaleStubWithDifferentToken(
             rates.address,
             {from: owner}
         );
-        const wtokenOwner = await wtoken.owner();
-        const originTokenOwner = await originToken.owner();
+        const wtokenOwner = await wtoken.primary();
+        const originTokenOwner = await originToken.primary();
 
-        await wtoken.addTrustedAccount(crowdsale.address, { from: wtokenOwner });
+        await wtoken.addAdmin(crowdsale.address, { from: wtokenOwner });
         await wtoken.mint(crowdsale.address, ten.pow(wtokenDecimals).mul(mint), 0, {from: wtokenOwner});
         await originToken.mint(swap, ten.pow(originTokenDecimals).mul(mint), 0, {from: originTokenOwner});
         await originToken.approve(

@@ -6,7 +6,7 @@ library PaymentMethods {
         mapping (bytes32 => bool) _allowed;
     }
 
-    function update(Methods storage _methods, bytes32[] _list) internal {
+    function update(Methods storage _methods, bytes32[] _list) public {
         uint i;
 
         if (_methods._list.length != 0) {
@@ -24,11 +24,11 @@ library PaymentMethods {
         }
     }
 
-    function isAllowed(Methods storage _methods, bytes32 _method) internal view returns(bool) {
+    function isAllowed(Methods storage _methods, bytes32 _method) public view returns(bool) {
         return _methods._allowed[_method];
     }
 
-    function list(Methods storage _methods) internal view returns(bytes32[]) {
+    function list(Methods storage _methods) public view returns(bytes32[]) {
         return _methods._list;
     }
 }

@@ -447,7 +447,7 @@ contract('PurchaseProcessing', (accounts) => {
                 await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
 
                 await ctx.Token3.approve(ctx.lib.address, invoice[1], {from: investor1Address});
-                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+                await ctx.Token2.addAdmin(ctx.lib.address);
 
                 ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
@@ -484,7 +484,7 @@ contract('PurchaseProcessing', (accounts) => {
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
                 await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
 
-                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+                await ctx.Token2.addAdmin(ctx.lib.address);
 
                 ctx.Tx = subCtx.Tx = () => ctx.lib.transferPurchase(
                     invoice,
@@ -509,7 +509,7 @@ contract('PurchaseProcessing', (accounts) => {
                 await ctx.Token2.mint(ctx.lib.address, oneToken.mul(mint), 0);
                 await ctx.Token3.mint(investor1Address, oneToken.mul(mint), 0);
                 await ctx.Token3.approve(ctx.lib.address, oneToken.mul(mint), { from: investor1Address });
-                await ctx.Token2.addTrustedAccount(ctx.lib.address);
+                await ctx.Token2.addAdmin(ctx.lib.address);
             });
 
             it('should revert if project token address is zero', async () => {

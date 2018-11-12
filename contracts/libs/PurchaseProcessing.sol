@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./Percent.sol";
 import "./Utils.sol";
 import "../token/IWToken.sol";
@@ -20,7 +20,7 @@ library PurchaseProcessing {
         uint currentBalanceInTokens,
         uint tokenDecimals,
         uint methodDecimals
-    ) internal pure returns(bool result) {
+    ) public pure returns(bool result) {
         result = amount > 0
             && methodUSDRate > 0
             && tokenUSDRate > 0
@@ -66,7 +66,7 @@ library PurchaseProcessing {
         uint methodDecimals,
         uint currentBalanceInTokens
     )
-        internal view returns(uint[5] result)
+        public view returns(uint[5] result)
     {
         require(checkInvoiceInput(
             method,
@@ -164,7 +164,7 @@ library PurchaseProcessing {
         uint methodDecimals,
         uint currentBalanceInTokens
     )
-        internal view returns (uint[4] result)
+        public view returns (uint[4] result)
     {
         require(checkInvoiceInput(
             method,
@@ -215,7 +215,7 @@ library PurchaseProcessing {
         }
     }
 
-    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) internal pure returns(uint[2] result) {
+    function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) public pure returns(uint[2] result) {
         if (tokenFee > 0) result[0] = tokenAmount.safePercent(tokenFee);
         if (purchaseFee > 0) result[1] = cost.safePercent(purchaseFee);
     }
@@ -228,7 +228,7 @@ library PurchaseProcessing {
         address originToken,
         address exchanger,
         address serviceWallet
-    ) internal {
+    ) public {
         require(originToken != address(0));
         require(token != address(0));
         require(exchanger != address(0));
@@ -239,16 +239,16 @@ library PurchaseProcessing {
         }
 
         if (_fee[0] > 0) {
-            require(ERC20(originToken).transferFrom(exchanger, serviceWallet, _fee[0]));
-            require(ERC20(token).transfer(exchanger, _fee[0]));
+            require(IERC20(originToken).transferFrom(exchanger, serviceWallet, _fee[0]));
+            require(IERC20(token).transfer(exchanger, _fee[0]));
         }
 
         if (_fee[1] > 0) {
             if (method == METHOD_ETH()) {
                 serviceWallet.transfer(_fee[1]);
             } else {
-                require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _fee[1]);
-                require(ERC20(methodToken).transferFrom(msg.sender, serviceWallet, _fee[1]));
+                require(IERC20(methodToken).allowance(msg.sender, address(this)) >= _fee[1]);
+                require(IERC20(methodToken).transferFrom(msg.sender, serviceWallet, _fee[1]));
             }
         }
     }
@@ -260,7 +260,7 @@ library PurchaseProcessing {
         bytes32 method,
         address methodToken,
         address token
-    ) internal {
+    ) public {
         require(token != address(0));
         require(_invoice[0] != 0);
         require(_invoice[1] != 0);
@@ -273,8 +273,8 @@ library PurchaseProcessing {
 
         if (method != METHOD_ETH()) {
             require(methodToken != address(0));
-            require(ERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1].sub(_fee[1]));
-            require(ERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1].sub(_fee[1])));
+            require(IERC20(methodToken).allowance(msg.sender, address(this)) >= _invoice[1].sub(_fee[1]));
+            require(IERC20(methodToken).transferFrom(msg.sender, address(this), _invoice[1].sub(_fee[1])));
         }
 
         require(IWToken(token).vestingTransfer(msg.sender, _invoice[0], vesting));
@@ -286,7 +286,7 @@ library PurchaseProcessing {
         }
     }
 
-    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) internal view returns(uint bonus) {
+    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) public view returns(uint bonus) {
         for (uint i = 0; i < volumeBoundaries.length; i++) {
             if (value >= volumeBoundaries[i]) {
                 bonus = volumeBonuses[i];

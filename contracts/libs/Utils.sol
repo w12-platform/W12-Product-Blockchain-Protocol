@@ -12,7 +12,7 @@ library Utils {
      *      This a workaround avoids overflow in some case.
      */
     function safeConversionByRate(uint value, uint decimals, uint rate) public pure returns (uint) {
-        return value.div(10 ** decimals).mul(rate).add((value % (10 ** decimals)).mul(rate).div(10 ** decimals));
+        return value.div(10 ** decimals).mul(rate).add(value.mod(10 ** decimals).mul(rate).div(10 ** decimals));
     }
 
     /**
@@ -20,14 +20,14 @@ library Utils {
      *      This a workaround avoids overflow in some case.
      */
     function safeReverseConversionByRate(uint value, uint decimals, uint rate) public pure returns (uint) {
-        return value.div(rate).mul(10 ** decimals).add((value % rate).mul(10 ** decimals).div(rate));
+        return value.div(rate).mul(10 ** decimals).add(value.mod(rate).mul(10 ** decimals).div(rate));
     }
 
     /**
      * @dev Doing multiplying `a` by `b` and then divide by `c`. In some case it avoids overflow.
      *      (2^256-1) * 2 / 2 = (2^256-1) - no overflow when (2^256-1) * 2
      */
-    function safeMulDiv(uint a, uint b, uint c) internal pure returns(uint result) {
+    function safeMulDiv(uint a, uint b, uint c) public pure returns(uint result) {
         uint fractionsSum;
 
         assert(c != 0);
@@ -45,7 +45,7 @@ library Utils {
             uint aPartByBProd = aPart.mul(b);
 
             result = result.add(aPartByBProd.div(c));
-            fractionsSum = fractionsSum.add(aPartByBProd % c);
+            fractionsSum = fractionsSum.add(aPartByBProd.mod(c));
 
             a = a.sub(aPart);
         }
