@@ -57,6 +57,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             require(owners[i] != address(0));
 
             result.addProjectOwner(owners[i]);
+            fund.addProjectOwner(owners[i]);
         }
 
         // transfer all permissions to sender
