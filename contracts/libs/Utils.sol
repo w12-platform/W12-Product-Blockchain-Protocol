@@ -12,7 +12,7 @@ library Utils {
      *      This a workaround avoids overflow in some case.
      */
     function safeConversionByRate(uint value, uint decimals, uint rate) public pure returns (uint) {
-        return value.div(10 ** decimals).mul(rate).add((value % (10 ** decimals)).mul(rate).div(10 ** decimals));
+        return value.div(10 ** decimals).mul(rate).add(value.mod(10 ** decimals).mul(rate).div(10 ** decimals));
     }
 
     /**
@@ -20,7 +20,7 @@ library Utils {
      *      This a workaround avoids overflow in some case.
      */
     function safeReverseConversionByRate(uint value, uint decimals, uint rate) public pure returns (uint) {
-        return value.div(rate).mul(10 ** decimals).add((value % rate).mul(10 ** decimals).div(rate));
+        return value.div(rate).mul(10 ** decimals).add(value.mod(rate).mul(10 ** decimals).div(rate));
     }
 
     /**
@@ -45,7 +45,7 @@ library Utils {
             uint aPartByBProd = aPart.mul(b);
 
             result = result.add(aPartByBProd.div(c));
-            fractionsSum = fractionsSum.add(aPartByBProd % c);
+            fractionsSum = fractionsSum.add(aPartByBProd.mod(c));
 
             a = a.sub(aPart);
         }

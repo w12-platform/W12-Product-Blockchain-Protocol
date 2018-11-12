@@ -48,10 +48,9 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             rates
         );
 
-        result.transferOwnership(owner);
-
+        result.transferPrimary(owner);
         fund.setCrowdsale(result);
-        fund.transferOwnership(owner);
+        fund.transferPrimary(owner);
 
         emit CrowdsaleCreated(owner, wTokenAddress, address(result), fund);
     }

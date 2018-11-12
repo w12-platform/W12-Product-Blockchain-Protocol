@@ -10,11 +10,11 @@ contract W12ListerStub is W12Lister {
     /**
     * @dev Allows for any account besides the owner.
     */
-    modifier onlyOwner() {
+    modifier onlyPrimary() {
         _;
     }
 
-    modifier onlyRole(string _role) {
+    modifier onlyAdmin {
         _;
     }
 

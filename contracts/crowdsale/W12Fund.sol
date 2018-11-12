@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./IW12Crowdsale.sol";
 import "./IW12Fund.sol";
 import "../rates/IRates.sol";
@@ -14,7 +14,7 @@ import "../libs/Fund.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
 
-contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
+contract W12Fund is Versionable, IW12Fund, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using FundAccount for FundAccount.Account;
@@ -46,7 +46,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         rates = _rates;
     }
 
-    function setCrowdsale(IW12Crowdsale _crowdsale) onlyOwner external {
+    function setCrowdsale(IW12Crowdsale _crowdsale) onlyPrimary external {
         require(_crowdsale != address(0));
         require(_crowdsale.getWToken() != address(0));
 
@@ -54,13 +54,13 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
         wToken = IWToken(_crowdsale.getWToken());
     }
 
-    function setSwap(address _swap) onlyOwner external {
+    function setSwap(address _swap) onlyPrimary external {
         require(_swap != address(0));
 
         swap = _swap;
     }
 
-    function setServiceWallet(address _serviceWallet) onlyOwner external {
+    function setServiceWallet(address _serviceWallet) onlyPrimary external {
         require(_serviceWallet != address(0));
 
         serviceWallet = _serviceWallet;
@@ -153,7 +153,7 @@ contract W12Fund is Versionable, IW12Fund, Ownable, ReentrancyGuard {
     /**
      * @notice Realise project tranche
      */
-    function tranche() external onlyOwner nonReentrant {
+    function tranche() external onlyPrimary nonReentrant {
         require(trancheTransferAllowed());
 
         uint[3] memory trancheInvoice = getTrancheInvoice();

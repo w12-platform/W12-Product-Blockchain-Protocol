@@ -2,17 +2,16 @@ pragma solidity ^0.4.24;
 
 import "./WToken.sol";
 
-
 contract WTokenStub is WToken {
 
     /**
     * @dev Allows for any account besides the owner.
     */
-    modifier onlyOwner() {
+    modifier onlyPrimary() {
         _;
     }
 
-    modifier onlyTrusted(address caller) {
+    modifier onlyAdmin {
         _;
     }
 

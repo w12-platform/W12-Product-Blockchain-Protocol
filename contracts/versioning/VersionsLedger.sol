@@ -2,9 +2,9 @@ pragma solidity ^0.4.24;
 
 // https://semver.org. Version represent as decimal number, 4 decimals per part, max 9999 9999 9999
 // 1.1.1 => 100010001
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 
-contract VersionsLedger is Ownable {
+contract VersionsLedger is Secondary {
     // all versions in net
     uint[] public versions;
 
@@ -12,7 +12,7 @@ contract VersionsLedger is Ownable {
     mapping(uint => address) public addressByVersion;
     mapping(address => uint) public versionByAddress;
 
-    function setVersion(address _address, uint version) public onlyOwner {
+    function setVersion(address _address, uint version) public onlyPrimary {
         require(addressByVersion[version] == address(0));
 
         (uint lastV, ) = getLastVersion();
