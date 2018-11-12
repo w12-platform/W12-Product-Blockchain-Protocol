@@ -1,8 +1,15 @@
 pragma solidity ^0.4.24;
 
 import "../../crowdsale/IW12Crowdsale.sol";
+import "../../crowdsale/IW12Fund.sol";
+import "./W12Lister__W12FundMock.sol";
 
 contract W12Lister__W12CrowdsaleMock is IW12Crowdsale {
+    IW12Fund private _fund;
+
+    constructor() public {
+        _fund = new W12Lister__W12FundMock();
+    }
 
     function isAdmin(address account) public view returns (bool) {}
 
@@ -23,6 +30,10 @@ contract W12Lister__W12CrowdsaleMock is IW12Crowdsale {
     function renounceProjectOwner() public {}
 
     function removeProjectOwner(address account) public {}
+
+    function getFund() external view returns (IW12Fund) {
+        return _fund;
+    }
 
     function setParameters(uint price) external {}
 

@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../token/IWToken.sol";
+import "./IW12Fund.sol";
 import "../access/roles/IAdminRole.sol";
 import "../access/roles/IProjectOwnerRole.sol";
 
@@ -17,6 +18,8 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     ) external;
 
     function getWToken() external view returns(IWToken);
+
+    function getFund() external view returns(IW12Fund);
 
     function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes);
 

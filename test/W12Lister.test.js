@@ -10,6 +10,7 @@ const Rates = artifacts.require('Rates');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const W12Lister__W12CrowdsaleFactoryMock = artifacts.require('W12Lister__W12CrowdsaleFactoryMock');
 const W12Lister__W12CrowdsaleMock = artifacts.require('W12Lister__W12CrowdsaleMock');
+const W12Lister__W12FundMock = artifacts.require('W12Lister__W12FundMock');
 const WToken = artifacts.require('WToken');
 const Wallets = artifacts.require('Wallets');
 
@@ -657,12 +658,21 @@ contract('W12Lister', async (accounts) => {
                 await ctx.Lister.placeToken(0, oneToken.mul(10), {from: ctx.owners1[0]});
             });
 
-            it('should call addAdmin on crowdsale', async () => {
+            it('should call addAdmin on the crowdsale', async () => {
                 const owner = ctx.owners1[0];
                 await ctx.Lister.initCrowdsale(0, ctx.oneToken.mul(5), utils.toInternalUSD(1), {from: owner});
                 const callResult = await (W12Lister__W12CrowdsaleMock.at(await ctx.Lister.getTokenCrowdsale(0)))._addAdminCall();
 
-                callResult.should.to.deep.equal(owner);
+                callResult.should.to.equal(owner);
+            });
+
+            it('should call addAdmin on the fund', async () => {
+                const owner = ctx.owners1[0];
+                const crowdsale = W12Lister__W12CrowdsaleMock.at(await ctx.Lister.getTokenCrowdsale(0));
+                const fund = W12Lister__W12FundMock.at(await crowdsale.getFund());
+                const callResult = await fund._addAdminCall();
+
+                callResult.should.to.equal(owner);
             });
         });
 
