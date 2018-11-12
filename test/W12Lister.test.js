@@ -8,13 +8,14 @@ const TokenExchanger = artifacts.require('TokenExchanger');
 const W12FundFactory = artifacts.require('W12FundFactory');
 const Rates = artifacts.require('Rates');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
-const W12CrowdsaleFactoryMock = artifacts.require('W12CrowdsaleFactoryMock');
+const W12Lister__W12CrowdsaleFactoryMock = artifacts.require('W12Lister__W12CrowdsaleFactoryMock');
+const W12Lister__W12CrowdsaleMock = artifacts.require('W12Lister__W12CrowdsaleMock');
 const WToken = artifacts.require('WToken');
 const Wallets = artifacts.require('Wallets');
 
 contract('W12Lister', async (accounts) => {
 
-    describe.skip('old test suit', () => {
+    describe('old test suit', () => {
         let sut;
         let token;
         let factory;
@@ -49,70 +50,7 @@ contract('W12Lister', async (accounts) => {
                 actualWalletAddress.should.be.equal(wallet);
             });
 
-            it('should add token to listing', async () => {
-                const whitelistedTokensCountBefore = await sut.approvedTokensLength().should.be.fulfilled;
-
-                const receipt = await sut.whitelistToken(
-                    accounts[1],
-                    token.address,
-                    "TestTokenForSale",
-                    "TTFS",
-                    18,
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                ).should.be.fulfilled;
-
-                (await sut.approvedTokensLength()).should.bignumber.equal(whitelistedTokensCountBefore + 1);
-
-                receipt.logs[0].event.should.be.equal('OwnerWhitelisted');
-                receipt.logs[0].args.tokenAddress.should.be.equal(token.address);
-                receipt.logs[0].args.tokenOwner.should.be.equal(accounts[1]);
-                receipt.logs[0].args.name.should.be.equal("TestTokenForSale");
-                receipt.logs[0].args.symbol.should.be.equal("TTFS");
-            });
-
-            it('should check that input addresses are not zeros', async () => {
-                await sut.whitelistToken(
-                    accounts[1],
-                    utils.ZERO_ADDRESS,
-                    "TestTokenForSale",
-                    "TTFS",
-                    18,
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5)
-                ).should.be.rejected;
-
-                await sut.whitelistToken(
-                    utils.ZERO_ADDRESS,
-                    token.address,
-                    "TestTokenForSale",
-                    "TTFS",
-                    18,
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5)
-                ).should.be.rejected;
-
-                await sut.whitelistToken(
-                    utils.ZERO_ADDRESS,
-                    utils.ZERO_ADDRESS,
-                    "TestTokenForSale",
-                    "TTFS",
-                    18,
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5),
-                    utils.toInternalPercent(5)
-                ).should.be.rejected;
-            });
-
             describe('when whitelisting a token with valid properties', async () => {
-                // oh my god
                 for (const validName of literals)
                     for (const validSymbol of literals)
                         for (const validDecimals of validDecimalsArray)
@@ -121,12 +59,15 @@ contract('W12Lister', async (accounts) => {
                 Address: ${accounts[1]}, Name: ${validName}, Symbol: ${validSymbol}, Decimals: ${validDecimals}, Percent: ${validPercent}`, async () => {
                                     const testToken = await WToken.new(validName, validSymbol, validDecimals);
 
-                                    await sut.whitelistToken(accounts[1], testToken.address, validName, validSymbol, validDecimals, validPercent, validPercent, validPercent, validPercent)
+                                    await sut.whitelistToken(
+                                        testToken.address, validName, validSymbol, validDecimals, [accounts[1]],
+                                        validPercent, validPercent, validPercent, validPercent
+                                    )
                                         .should.be.fulfilled;
 
                                     await testToken.mint(accounts[1], 1, 0).should.be.fulfilled;
                                     await testToken.approve(sut.address, 1, {from: accounts[1]}).should.be.fulfilled;
-                                    await sut.placeToken(testToken.address, 1, {from: accounts[1]}).should.be.fulfilled;
+                                    await sut.placeToken(0, 1, {from: accounts[1]}).should.be.fulfilled;
 
                                     const actualWTokenAddress = await exchanger.getWTokenByToken(testToken.address).should.be.fulfilled;
 
@@ -148,11 +89,11 @@ contract('W12Lister', async (accounts) => {
 
                 beforeEach(async () => {
                     await sut.whitelistToken(
-                        tokenOwner1,
                         token.address,
                         "TestTokenz1",
                         "TT1",
                         18,
+                        [tokenOwner1],
                         utils.toInternalPercent(30),
                         utils.toInternalPercent(30),
                         utils.toInternalPercent(5),
@@ -160,11 +101,11 @@ contract('W12Lister', async (accounts) => {
                     );
 
                     await sut.whitelistToken(
-                        tokenOwner2,
                         token.address,
                         "TestTokenz2",
                         "TT2",
                         18,
+                        [tokenOwner2],
                         utils.toInternalPercent(40),
                         utils.toInternalPercent(40),
                         utils.toInternalPercent(5),
@@ -180,7 +121,7 @@ contract('W12Lister', async (accounts) => {
 
                 it('should place token to exchange for owner 1', async () => {
                     const placementReceipt = await sut.placeToken(
-                        token.address,
+                        0,
                         oneToken.mul(10),
                         {from: tokenOwner1}
                     ).should.be.fulfilled;
@@ -188,10 +129,11 @@ contract('W12Lister', async (accounts) => {
                     const last = placementReceipt.logs.length - 1;
 
                     placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
-                    placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
-                    placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner1);
+                    placementReceipt.logs[last].args.originalToken.should.be.equal(token.address);
+                    placementReceipt.logs[last].args.index.should.bignumber.equal(0);
+                    placementReceipt.logs[last].args.sender.should.be.equal(tokenOwner1);
                     placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
-                    placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                    placementReceipt.logs[last].args.placedToken.should.not.be.equal(utils.ZERO_ADDRESS);
 
                     const exchangerAddress = await sut.getExchanger();
                     const serviceWalletAddress = await sut.serviceWallet();
@@ -204,7 +146,7 @@ contract('W12Lister', async (accounts) => {
 
                 it('should place token to exchange for owner 2', async () => {
                     const placementReceipt = await sut.placeToken(
-                        token.address,
+                        1,
                         oneToken.mul(10),
                         {from: tokenOwner2}
                     ).should.be.fulfilled;
@@ -212,10 +154,11 @@ contract('W12Lister', async (accounts) => {
                     const last = placementReceipt.logs.length - 1;
 
                     placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
-                    placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
-                    placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner2);
+                    placementReceipt.logs[last].args.originalToken.should.be.equal(token.address);
+                    placementReceipt.logs[last].args.index.should.bignumber.equal(1);
+                    placementReceipt.logs[last].args.sender.should.be.equal(tokenOwner2);
                     placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
-                    placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                    placementReceipt.logs[last].args.placedToken.should.not.be.equal(utils.ZERO_ADDRESS);
 
                     const exchangerAddress = await sut.getExchanger();
                     const serviceWalletAddress = await sut.serviceWallet();
@@ -234,8 +177,9 @@ contract('W12Lister', async (accounts) => {
 
             it('should reject whitelisting a token', async () => {
                 await sut.whitelistToken(
-                    utils.generateRandomAddress(), utils.generateRandomAddress()
+                    utils.generateRandomAddress()
                     , "", "", 1
+                    , [utils.generateRandomAddress()]
                     , utils.toInternalPercent(1), utils.toInternalPercent(1)
                     , utils.toInternalPercent(1), utils.toInternalPercent(1)
                     , {from: accounts[2]}).should.be.rejected;
@@ -248,8 +192,9 @@ contract('W12Lister', async (accounts) => {
 
                 beforeEach(async () => {
                     await sut.whitelistToken(
-                        fromTokenOwner.from, token.address
+                        token.address
                         , "TestTokenz", "TT", 18
+                        , [fromTokenOwner.from]
                         , placeCommissionInTokens, utils.toInternalPercent(30)
                         , buyCommissionInTokens, utils.toInternalPercent(10)
                         , fromSystemAccount);
@@ -257,7 +202,7 @@ contract('W12Lister', async (accounts) => {
                     await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);
                     await token.approve(sut.address, oneToken.mul(10000), fromTokenOwner);
 
-                    await sut.placeToken(token.address, placedAmount, fromTokenOwner).should.be.fulfilled;
+                    await sut.placeToken(0, placedAmount, fromTokenOwner).should.be.fulfilled;
                 });
 
                 describe('initialization', async () => {
@@ -268,7 +213,7 @@ contract('W12Lister', async (accounts) => {
 
                     beforeEach(async () => {
                         txReceipt = await sut.initCrowdsale(
-                            token.address,
+                            0,
                             saleAmount,
                             price,
                             fromTokenOwner
@@ -278,14 +223,14 @@ contract('W12Lister', async (accounts) => {
                     });
 
                     it('should be initialized', async () => {
-                        const crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from)
+                        const crowdsaleAddress = await sut.getTokenCrowdsale(0)
                             .should.be.fulfilled;
 
                         crowdsaleAddress.should.not.be.equal(utils.ZERO_ADDRESS);
                     });
 
                     it('should be approved to spend token from swap address for commission', async () => {
-                        const crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
+                        const crowdsaleAddress = await sut.getTokenCrowdsale(0);
 
                         const expectedCrowdsaleSwapAllowance = utils.percent(saleAmount, buyCommissionInTokens);
 
@@ -296,8 +241,9 @@ contract('W12Lister', async (accounts) => {
                     it('should emmit `CrowdsaleTokenMinted`', async () => {
                         const event = await utils.expectEvent.inLogs(logs, 'CrowdsaleTokenMinted');
 
-                        event.args.tokenAddress.should.eq(token.address);
-                        event.args.tokenOwner.should.eq(fromTokenOwner.from);
+                        event.args.token.should.eq(token.address);
+                        event.args.index.should.bignumber.eq(0);
+                        event.args.sender.should.eq(fromTokenOwner.from);
                         event.args.amount.should.be.bignumber.equal(saleAmount);
                     });
 
@@ -311,7 +257,7 @@ contract('W12Lister', async (accounts) => {
                         for (const amount of invalidAmounts) {
                             it(`when amount is equal to ${amount.toNumber()}`, async () => {
                                 await sut.initCrowdsale(
-                                    token.address,
+                                    0,
                                     amount,
                                     oneToken,
                                     fromTokenOwner
@@ -326,32 +272,32 @@ contract('W12Lister', async (accounts) => {
 
                     beforeEach(async () => {
                         await sut.initCrowdsale(
-                            token.address,
+                            0,
                             oneToken.mul(6.9),
                             oneToken,
                             fromTokenOwner
                         ).should.be.fulfilled;
 
-                        crowdsaleAddress = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
+                        crowdsaleAddress = await sut.getTokenCrowdsale(0);
                     });
 
                     it('should be able to add tokens to existed crowdsale', async () => {
                         const crowdsaleAddressBefore = crowdsaleAddress;
 
                         await sut.addTokensToCrowdsale(
-                            token.address,
+                            0,
                             oneToken.mul(0.1),
                             fromTokenOwner
                         ).should.be.fulfilled;
 
-                        const crowdsaleAddressAfter = await sut.getTokenCrowdsale(token.address, fromTokenOwner.from);
+                        const crowdsaleAddressAfter = await sut.getTokenCrowdsale(0);
 
                         crowdsaleAddressBefore.should.be.equal(crowdsaleAddressAfter);
                     });
 
                     it('shouldn\'t be able to re-initialize crowdsale', async () => {
                         await sut.initCrowdsale(
-                            token.address,
+                            0,
                             oneToken.mul(1),
                             oneToken,
                             fromTokenOwner
@@ -383,11 +329,11 @@ contract('W12Lister', async (accounts) => {
                 it('whitelist token when call from a admin', async () => {
                     await sut.addAdmin(admin);
                     await sut.whitelistToken(
-                        accounts[1],
                         utils.generateRandomAddress(),
                         "TestTokenForSale",
                         "TTFS",
                         18,
+                        [accounts[1]],
                         utils.toInternalPercent(5),
                         utils.toInternalPercent(5),
                         utils.toInternalPercent(5),
@@ -401,11 +347,11 @@ contract('W12Lister', async (accounts) => {
 
                 it('when whitelisting token from not a admin', async () => {
                     await sut.whitelistToken(
-                        accounts[1],
                         utils.generateRandomAddress(),
                         "TestTokenForSale",
                         "TTFS",
                         18,
+                        [accounts[1]],
                         utils.toInternalPercent(5),
                         utils.toInternalPercent(5),
                         utils.toInternalPercent(5),
@@ -417,15 +363,6 @@ contract('W12Lister', async (accounts) => {
         });
     });
 
-    // [x] Whitelist input validation
-    // [x] When whitelist new owners should not be added to active crowdsales
-    // [x] When whitelist new owners should be added to not active crowdsales
-    // [x] ]When whitelist owners list length must be greater then 0 if added token previous was not added
-    // [x] When whitelist owners list should not contain zero addresses
-    // [x] Whitelist should revert for not admin account
-    // [x] Check all input provided to crowdsale creation
-    // [] When whitelist should create new records not overwrite parameters of any of existing records with the same token address
-
     const ctx = {};
     const createLister = async (wallet) => {
         const result = {};
@@ -434,8 +371,7 @@ contract('W12Lister', async (accounts) => {
         result.Exchanger = await TokenExchanger.new(0);
         result.FundFactory = await W12FundFactory.new(0, result.Rates.address);
         result.Wallets = await Wallets.new({from: wallet});
-        result.CrowdsaleFactory = await W12CrowdsaleFactoryMock.new();
-        await result.CrowdsaleFactory._createCrowdsaleReturn(result.CrowdsaleFactory.address);
+        result.CrowdsaleFactory = await W12Lister__W12CrowdsaleFactoryMock.new();
         result.Lister = await W12Lister.new(0, result.Wallets.address, result.CrowdsaleFactory.address, result.Exchanger.address);
 
         await result.Exchanger.transferPrimary(result.Lister.address);
@@ -504,6 +440,77 @@ contract('W12Lister', async (accounts) => {
             });
         });
 
+        describe('adding', () => {
+            const ctx = {};
+
+            before(async () => {
+                ctx.Lister = (await createLister(accounts[0])).Lister;
+                ctx.Token1 = await ERC20Mock.new('1', '1', 18);
+                ctx.Token2 = await ERC20Mock.new('2', '2', 18);
+                ctx.owners1 = [utils.generateRandomAddress()];
+                ctx.owners2 = [utils.generateRandomAddress()];
+                ctx.owners3 = [utils.generateRandomAddress()];
+
+                ctx.Tx = await ctx.Lister.whitelistToken(
+                    ctx.Token1.address, '1', '1', 18, ctx.owners1, 0, 0, 0, 0
+                );
+            });
+
+            it('should add token to listing', async () => {
+                const actualRecord = await ctx.Lister.getListedToken(0);
+
+                actualRecord[0].should.to.equal(await ctx.Token1.name());
+                actualRecord[1].should.to.equal(await ctx.Token1.symbol());
+                actualRecord[2].should.bignumber.eq(await ctx.Token1.decimals());
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
+                actualRecord[5].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
+                actualRecord[6].should.to.deep.equal([utils.ZERO_ADDRESS, ctx.Token1.address]);
+            });
+
+            it('should emit event', async () => {
+                await utils.expectEvent.inLogs(ctx.Tx.logs, 'TokenWhitelisted', {
+                    token: ctx.Token1.address,
+                    index: new BigNumber(0),
+                    sender: accounts[0],
+                    name: await ctx.Token1.name(),
+                    symbol: await ctx.Token1.symbol()
+                });
+            });
+
+            it('should add new record for the same token address and not overwrite parameters of existing record', async () => {
+                await ctx.Lister.whitelistToken(
+                    ctx.Token1.address, '1', '1', 18, ctx.owners2, 0, 0, 0, 0
+                );
+
+                const actualRecord = await ctx.Lister.getListedToken(1);
+
+                actualRecord[0].should.to.equal(await ctx.Token1.name());
+                actualRecord[1].should.to.equal(await ctx.Token1.symbol());
+                actualRecord[2].should.bignumber.eq(await ctx.Token1.decimals());
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
+                actualRecord[5].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
+                actualRecord[6].should.to.deep.equal([utils.ZERO_ADDRESS, ctx.Token1.address]);
+            });
+
+            it('should add new record for another token', async () => {
+                await ctx.Lister.whitelistToken(
+                    ctx.Token2.address, '2', '2', 18, ctx.owners1, 0, 0, 0, 0
+                );
+
+                const actualRecord = await ctx.Lister.getListedToken(2);
+
+                actualRecord[0].should.to.equal(await ctx.Token2.name());
+                actualRecord[1].should.to.equal(await ctx.Token2.symbol());
+                actualRecord[2].should.bignumber.equal(await ctx.Token2.decimals());
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
+                actualRecord[5].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
+                actualRecord[6].should.to.deep.equal([utils.ZERO_ADDRESS, ctx.Token2.address]);
+            });
+        });
+
         describe('owners list', () => {
             before(async () => {
                 ctx.Lister = (await createLister(accounts[0])).Lister;
@@ -561,9 +568,11 @@ contract('W12Lister', async (accounts) => {
                 actualOwners.length.should.to.equal(0);
             });
         });
+
+
     });
 
-    describe('placing tokens', () => {});
+    describe.skip('placing tokens', () => {});
 
     describe('initialize crowdsale', () => {
 
@@ -619,6 +628,44 @@ contract('W12Lister', async (accounts) => {
             });
         });
 
+        describe('restrictions', () => {
+            const ctx = {};
+
+            before(async () => {
+                const oneToken = ctx.oneToken = BigNumber.TEN.pow(18);
+
+                ctx.owners1 = [accounts[1], accounts[2]];
+                ctx.owners2 = [accounts[3], accounts[4]];
+                const result = await createLister(accounts[0]);
+                ctx.Lister = result.Lister;
+                ctx.CrowdsaleFactory = result.CrowdsaleFactory;
+                ctx.Token1 = await ERC20Mock.new('1', '1', 18);
+                ctx.Token2 = await ERC20Mock.new('2', '2', 18);
+
+                await ctx.Token1.mint(accounts[1], oneToken.mul(100));
+                await ctx.Token1.mint(accounts[2], oneToken.mul(100));
+                await ctx.Token1.mint(accounts[3], oneToken.mul(100));
+                await ctx.Token1.mint(accounts[4], oneToken.mul(100));
+                await ctx.Token1.approve(ctx.Lister.address, oneToken.mul(100), {from: accounts[1]});
+                await ctx.Token1.approve(ctx.Lister.address, oneToken.mul(100), {from: accounts[2]});
+                await ctx.Token1.approve(ctx.Lister.address, oneToken.mul(100), {from: accounts[3]});
+                await ctx.Token1.approve(ctx.Lister.address, oneToken.mul(100), {from: accounts[4]});
+
+                await ctx.Lister.whitelistToken(
+                    ctx.Token1.address, '1', '1', 18, ctx.owners1, 0, 0, 0, 0
+                );
+                await ctx.Lister.placeToken(0, oneToken.mul(10), {from: ctx.owners1[0]});
+            });
+
+            it('should call addAdmin on crowdsale', async () => {
+                const owner = ctx.owners1[0];
+                await ctx.Lister.initCrowdsale(0, ctx.oneToken.mul(5), utils.toInternalUSD(1), {from: owner});
+                const callResult = await (W12Lister__W12CrowdsaleMock.at(await ctx.Lister.getTokenCrowdsale(0)))._addAdminCall();
+
+                callResult.should.to.deep.equal(owner);
+            });
+        });
+
         describe('owners list', () => {
             const ctx = {};
 
@@ -650,7 +697,6 @@ contract('W12Lister', async (accounts) => {
 
             it('should call crowdsale factory with owners', async () => {
                 const owner = ctx.owners1[0];
-                await ctx.CrowdsaleFactory._createCrowdsaleReturn(utils.generateRandomAddress());
                 await ctx.Lister.initCrowdsale(0, ctx.oneToken.mul(5), utils.toInternalUSD(1), { from: owner });
                 const callResult = await ctx.CrowdsaleFactory._createCrowdsaleCall();
 
@@ -670,7 +716,6 @@ contract('W12Lister', async (accounts) => {
                     ctx.Token1.address, '1', '1', 18, ctx.owners2, 0, 0, 0, 0
                 );
                 await ctx.Lister.placeToken(1, ctx.oneToken.mul(10), {from: owner});
-                await ctx.CrowdsaleFactory._createCrowdsaleReturn(utils.generateRandomAddress());
                 await ctx.Lister.initCrowdsale(1, ctx.oneToken.mul(5), utils.toInternalUSD(1), {from: owner});
 
                 const callResult = await ctx.CrowdsaleFactory._createCrowdsaleCall();

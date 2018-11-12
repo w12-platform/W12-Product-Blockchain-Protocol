@@ -46,8 +46,15 @@ contract W12FundStub is W12Fund {
         }
     }
 
-    // allow any sender
-    modifier onlyFrom(address sender) {
+    modifier onlyCrowdsale {
+        _;
+    }
+
+    modifier onlyAdmin {
+        _;
+    }
+
+    modifier onlyProjectOwner {
         _;
     }
 }

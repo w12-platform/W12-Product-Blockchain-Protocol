@@ -15,6 +15,22 @@ contract W12CrowdsaleFundStub is IW12Fund {
 
     function transferPrimary(address _address) public {}
 
+    function isAdmin(address account) public view returns (bool) {}
+
+    function addAdmin(address account) public {}
+
+    function renounceAdmin() public {}
+
+    function removeAdmin(address account) public {}
+
+    function isProjectOwner(address account) public view returns (bool) {}
+
+    function addProjectOwner(address account) public {}
+
+    function renounceProjectOwner() public {}
+
+    function removeProjectOwner(address account) public {}
+
     struct RecordPurchaseCallResult {
         address investor;
         uint tokenAmount;

@@ -2,10 +2,9 @@ pragma solidity ^0.4.24;
 
 import "../../crowdsale/IW12Crowdsale.sol";
 import "../../crowdsale/factories/IW12CrowdsaleFactory.sol";
+import "./W12Lister__W12CrowdsaleMock.sol";
 
-contract W12CrowdsaleFactoryMock is IW12CrowdsaleFactory {
-    address private __createCrowdsaleReturn;
-
+contract W12Lister__W12CrowdsaleFactoryMock is IW12CrowdsaleFactory {
     struct CreateCrowdsaleCall {
         address tokenAddress;
         address _wTokenAddress;
@@ -16,10 +15,6 @@ contract W12CrowdsaleFactoryMock is IW12CrowdsaleFactory {
         uint trancheFeePercent;
         address swap;
         address[] owners;
-    }
-
-    function _createCrowdsaleReturn(address _address) {
-        __createCrowdsaleReturn = _address;
     }
 
     CreateCrowdsaleCall __createCrowdsaleCall;
@@ -59,6 +54,6 @@ contract W12CrowdsaleFactoryMock is IW12CrowdsaleFactory {
         __createCrowdsaleCall.swap = swap;
         __createCrowdsaleCall.owners = owners;
 
-        return IW12Crowdsale(__createCrowdsaleReturn);
+        return new W12Lister__W12CrowdsaleMock();
     }
 }
