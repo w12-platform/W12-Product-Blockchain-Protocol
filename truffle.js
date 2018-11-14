@@ -24,6 +24,7 @@ module.exports = {
             provider () {
                 return new PrivateKeyProvider(deployConfig.mainnetAccountPK, `https://mainnet.infura.io/v3/${deployConfig.infuraKey}`)
             },
+            gasPrice: 6000000000,
             network_id: 1
         }
     },

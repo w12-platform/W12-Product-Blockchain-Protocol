@@ -10,6 +10,7 @@ const utils = require('../shared/utils');
 module.exports = function (deployer, network, accounts) {
     if (network === 'test' || network === 'mainnet') {
         deployer.then(async () => {
+            const Lister = network === 'test' ? W12ListerStub : W12Lister;
             const owner = accounts[0];
             const serviceWallet = accounts[0];
 
@@ -21,7 +22,7 @@ module.exports = function (deployer, network, accounts) {
                 await utils.deploy(
                     network,
                     deployer,
-                    W12Lister,
+                    Lister,
                     semint.encode(version, 4),
                     W12CrowdsaleFactory.address,
                     TokenExchanger.address);
@@ -29,7 +30,7 @@ module.exports = function (deployer, network, accounts) {
                 await utils.deploy(
                     network,
                     deployer,
-                    W12Lister,
+                    Lister,
                     semint.encode(version, 4),
                     serviceWallet,
                     W12CrowdsaleFactory.address,
@@ -37,12 +38,19 @@ module.exports = function (deployer, network, accounts) {
             }
 
 
-            utils.migrateLog.addAddress(W12Lister.contractName, W12Lister.address);
+            utils.migrateLog.addAddress(W12Lister.contractName, Lister.address);
             utils.migrateLog.addAddress('Owner', owner);
             utils.migrateLog.addAddress('Service wallet', serviceWallet);
 
-            await (await TokenExchanger.deployed()).transferOwnership(W12Lister.address);
-            await (await Versions.deployed()).setVersion(W12Lister.address, semint.encode(version, 4));
+            const tokenExchanger = await TokenExchanger.deployed();
+            const versions = await Versions.deployed();
+
+            await tokenExchanger.transferOwnership(Lister.address, {
+                gas: await tokenExchanger.transferOwnership.estimateGas(Lister.address)
+            });
+            await versions.setVersion(Lister.address, semint.encode(version, 4), {
+                gas: await versions.setVersion.estimateGas(Lister.address, semint.encode(version, 4))
+            });
         });
     }
 };
