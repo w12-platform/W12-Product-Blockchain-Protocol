@@ -30,10 +30,11 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
 
     TokenListing.Whitelist whitelist;
 
-    event TokenWhitelisted(address indexed token, uint indexed index, address indexed sender, string name, string symbol);
-    event TokenPlaced(address indexed originalToken, uint indexed index, address indexed sender, uint tokenAmount, address placedToken);
-    event CrowdsaleInitialized(address indexed token, uint indexed index, address indexed sender, uint amountForSale);
-    event CrowdsaleTokenMinted(address indexed token, uint indexed index, address indexed sender, uint amount);
+    event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner);
+    event TokenWhitelisted(address indexed token, address indexed sender, address[] owners, string name, string symbol);
+    event TokenPlaced(address indexed originalToken, address indexed sender, address crowdsale, uint tokenAmount, address placedToken);
+    event CrowdsaleInitialized(address indexed token, address indexed sender, address crowdsale, uint amountForSale);
+    event CrowdsaleTokenMinted(address indexed token, address indexed sender, address crowdsale, uint amount);
 
     constructor(
         uint version,
@@ -71,7 +72,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     )
         external onlyAdmin
     {
-        uint index = whitelist.add(
+        whitelist.addOrUpdate(
             token,
             name,
             symbol,
@@ -83,44 +84,48 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
             trancheFeePercent
         );
 
-        emit TokenWhitelisted(token, index, msg.sender, name, symbol);
+        emit TokenWhitelisted(token, msg.sender, owners, name, symbol);
     }
 
     /**
      * @notice Place token for sale
-     * @param index Token index in whitelist
+     * @param token Token address
+     * @param crowdsale Crowdsale address
      * @param amount Token amount to place
      */
-    function placeToken(uint index, uint amount) external nonReentrant {
+    function placeToken(address token, address crowdsale, uint amount) external nonReentrant {
         require(serviceWallet() != address(0));
         require(amount > 0);
-        require(whitelist.isExist(index));
-        require(whitelist.hasOwner(whitelist.getPointerByIndex(index).token, msg.sender));
+        require(whitelist.isTokenWhitelisted(token));
+        require(whitelist.hasTokenOwner(token, msg.sender));
+        require(whitelist.hasCrowdsaleWithAddress(token, crowdsale));
 
-        TokenListing.WhitelistedToken storage listedToken = whitelist.getPointerByIndex(index);
+        TokenListing.WhitelistedToken storage listedToken = whitelist.getToken(token);
 
-        ERC20Detailed token = ERC20Detailed(listedToken.token);
+        ERC20Detailed tokenInstance = ERC20Detailed(token);
 
-        require(token.allowance(msg.sender, address(this)) >= amount);
-        require(token.decimals() == listedToken.decimals);
+        require(tokenInstance.allowance(msg.sender, address(this)) >= amount);
+        require(tokenInstance.decimals() == listedToken.decimals);
 
         uint fee = listedToken.feePercent > 0
             ? amount.percent(listedToken.feePercent)
             : 0;
         uint amountWithoutFee = amount.sub(fee);
 
-        _secureTokenTransfer(IERC20(token), exchanger, amountWithoutFee);
-        _secureTokenTransfer(IERC20(token), serviceWallet(), fee);
+        _secureTokenTransfer(IERC20(tokenInstance), exchanger, amountWithoutFee);
+        _secureTokenTransfer(IERC20(tokenInstance), serviceWallet(), fee);
 
-        listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
+        whitelist.getCrowdsaleByAddress(token, crowdsale).tokensForSaleAmount = whitelist
+            .getCrowdsaleByAddress(token, crowdsale)
+                .tokensForSaleAmount.add(amountWithoutFee);
 
-        if (address(exchanger.getWTokenByToken(listedToken.token)) == address(0)) {
+        if (address(exchanger.getWTokenByToken(token)) == address(0)) {
             IWToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
-            exchanger.addTokenToListing(ERC20Detailed(listedToken.token), wToken);
+            exchanger.addTokenToListing(ERC20Detailed(token), wToken);
         }
 
-        emit TokenPlaced(listedToken.token, index, msg.sender, amountWithoutFee, address(exchanger.getWTokenByToken(listedToken.token)));
+        emit TokenPlaced(token, msg.sender, crowdsale, amountWithoutFee, address(exchanger.getWTokenByToken(token)));
     }
 
     /**
@@ -136,17 +141,17 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         assert(token.balanceOf(to) == expectedBalance);
     }
 
-    function initCrowdsale(uint index, uint amountForSale, uint price) external nonReentrant {
+    function initCrowdsale(address token, uint amountForSale, uint price) external nonReentrant {
         require(serviceWallet() != address(0));
-        require(whitelist.isExist(index));
-        require(whitelist.hasOwner(whitelist.getPointerByIndex(index).token, msg.sender));
-        require(whitelist.getCrowdsaleStatus(index) == TokenListing.CrowdsaleStatus.NotInitialized);
+        require(whitelist.isTokenWhitelisted(token));
+        require(whitelist.hasTokenOwner(token, msg.sender));
+        require(whitelist.hasNotInitialisedCrowdsale(token));
         require(
-            whitelist.getPointerByIndex(index).tokensForSaleAmount
-                >= whitelist.getPointerByIndex(index).wTokensIssuedAmount.add(amountForSale)
+            whitelist.getNotInitialisedCrowdsale(token).tokensForSaleAmount
+                >= whitelist.getNotInitialisedCrowdsale(token).wTokensIssuedAmount.add(amountForSale)
         );
 
-        TokenListing.WhitelistedToken storage listedToken = whitelist.getPointerByIndex(index);
+        TokenListing.WhitelistedToken storage listedToken = whitelist.getToken(token);
         IWToken wtoken = exchanger.getWTokenByToken(listedToken.token);
 
         IW12Crowdsale crowdsale = factory.createCrowdsale(
@@ -158,99 +163,126 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
             listedToken.WTokenSaleFeePercent,
             listedToken.trancheFeePercent,
             address(exchanger),
-            whitelist.owners(listedToken.token)
+            listedToken.owners
         );
 
         crowdsale.addAdmin(msg.sender);
         crowdsale.getFund().addAdmin(msg.sender);
-
-        listedToken.crowdsale = address(crowdsale);
-        listedToken.owners = whitelist.owners(listedToken.token);
         wtoken.addAdmin(address(crowdsale));
+
+        whitelist.initializeCrowdsale(token, address(crowdsale));
 
         if (listedToken.WTokenSaleFeePercent > 0) {
             exchanger.approve(
                 IERC20(listedToken.token),
                 address(crowdsale),
-                listedToken.tokensForSaleAmount
+                whitelist.getCrowdsaleByAddress(token, address(crowdsale)).tokensForSaleAmount
                     .percent(listedToken.WTokenSaleFeePercent)
             );
         }
 
-        addTokensToCrowdsale(index, amountForSale);
+        addTokensToCrowdsale(token, address(crowdsale), amountForSale);
 
-        emit CrowdsaleInitialized(listedToken.token, index, msg.sender, amountForSale);
+        emit CrowdsaleInitialized(listedToken.token, msg.sender, address(crowdsale), amountForSale);
     }
 
-    function addTokensToCrowdsale(uint index, uint amountForSale) public {
+    function addTokensToCrowdsale(address token, address crowdsale, uint amountForSale) public {
         require(amountForSale > 0);
-        require(whitelist.isExist(index));
-        require(whitelist.hasOwner(whitelist.getPointerByIndex(index).token, msg.sender));
-        require(whitelist.getCrowdsaleStatus(index) == TokenListing.CrowdsaleStatus.Initialized);
-        require(address(exchanger.getWTokenByToken(whitelist.getPointerByIndex(index).token)) != address(0));
+        require(whitelist.isTokenWhitelisted(token));
+        require(whitelist.hasTokenOwner(token, msg.sender));
+        require(whitelist.hasCrowdsaleWithAddress(token, crowdsale));
+        require(address(exchanger.getWTokenByToken(token)) != address(0));
         require(
-            whitelist.getPointerByIndex(index).tokensForSaleAmount
-                >= whitelist.getPointerByIndex(index).wTokensIssuedAmount.add(amountForSale)
+            whitelist.getCrowdsaleByAddress(token, crowdsale).tokensForSaleAmount
+                >= whitelist.getCrowdsaleByAddress(token, crowdsale).wTokensIssuedAmount.add(amountForSale)
         );
 
-        TokenListing.WhitelistedToken storage listedToken = whitelist.getPointerByIndex(index);
-        IWToken token = exchanger.getWTokenByToken(listedToken.token);
+        IWToken wtoken = exchanger.getWTokenByToken(token);
 
-        listedToken.wTokensIssuedAmount = listedToken
-            .wTokensIssuedAmount.add(amountForSale);
+        whitelist.getCrowdsaleByAddress(token, crowdsale).wTokensIssuedAmount = whitelist
+            .getCrowdsaleByAddress(token, crowdsale)
+                .wTokensIssuedAmount.add(amountForSale);
 
-        token.mint(listedToken.crowdsale, amountForSale, 0);
+        wtoken.mint(crowdsale, amountForSale, 0);
 
-        emit CrowdsaleTokenMinted(listedToken.token, index, msg.sender, amountForSale);
+        emit CrowdsaleTokenMinted(token, msg.sender, address(crowdsale), amountForSale);
     }
 
-    function getTokenCrowdsale(uint index) view external returns (address) {
-        return whitelist.getPointerByIndex(index).crowdsale;
+    function getTokenOwners(address token) external view returns (address[]) {
+        return whitelist.getToken(token).owners;
     }
 
-    function getTokenCrowdsaleStatus(uint index) view external returns (TokenListing.CrowdsaleStatus) {
-        return whitelist.getCrowdsaleStatus(index);
-    }
-
-    function getTokenOwners(address token) public view returns (address[]) {
-        return whitelist.owners(token);
+    function getCrowdsaleOwners(address token, address crowdsale) external view returns (address[]) {
+        return whitelist.getCrowdsaleByAddress(token, crowdsale).owners;
     }
 
     function getExchanger() view external returns (ITokenExchanger) {
         return exchanger;
     }
 
-    function getListedToken(uint index)
-        external view returns (string, string, uint8, address[], uint[4], uint[2], address[2])
+    function getToken(address token)
+        external view returns (string name, string symbol, uint8 decimals, address[] owners, uint[4] commissions)
     {
-        require(whitelist.isExist(index));
+        require(whitelist.isTokenWhitelisted(token));
 
-        uint[4] memory commissions = [
-            whitelist.getPointerByIndex(index).feePercent,
-            whitelist.getPointerByIndex(index).ethFeePercent,
-            whitelist.getPointerByIndex(index).WTokenSaleFeePercent,
-            whitelist.getPointerByIndex(index).trancheFeePercent
-        ];
+        name = whitelist.getToken(token).name;
+        symbol = whitelist.getToken(token).symbol;
+        decimals = whitelist.getToken(token).decimals;
+        owners = whitelist.getToken(token).owners;
+        commissions[0] = whitelist.getToken(token).feePercent;
+        commissions[1] = whitelist.getToken(token).ethFeePercent;
+        commissions[2] = whitelist.getToken(token).WTokenSaleFeePercent;
+        commissions[3] = whitelist.getToken(token).trancheFeePercent;
+    }
 
-        uint[2] memory amounts = [
-            whitelist.getPointerByIndex(index).tokensForSaleAmount,
-            whitelist.getPointerByIndex(index).wTokensIssuedAmount
-        ];
+    function getTokens() external view returns (address[]) {
+        address[] memory result = new address[](whitelist.getTokens().length);
 
-        address[2] memory addresses = [
-            whitelist.getPointerByIndex(index).crowdsale,
-            whitelist.getPointerByIndex(index).token
-        ];
+        for (uint i = 0; i < whitelist.getTokens().length; i++) {
+            result[i] = whitelist.getTokens()[i].token;
+        }
 
-        return (
-            whitelist.getPointerByIndex(index).name,
-            whitelist.getPointerByIndex(index).symbol,
-            whitelist.getPointerByIndex(index).decimals,
-            whitelist.getPointerByIndex(index).owners,
-            commissions,
-            amounts,
-            addresses
-        );
+        return result;
+    }
+
+    function isTokenWhitelisted(address token) external view returns (bool) {
+        return whitelist.isTokenWhitelisted(token);
+    }
+
+    function hasTokenOwner(address token, address owner) external view returns (bool) {
+        return whitelist.hasTokenOwner(token, owner);
+    }
+
+    function getCrowdsales(address token) external view returns (address[]) {
+        address[] memory result = new address[](whitelist.getCrowdsales(token).length);
+
+        for (uint i = 0; i < whitelist.getCrowdsales(token).length; i++) {
+            result[i] = whitelist.getCrowdsales(token)[i].crowdsale;
+        }
+
+        return result;
+    }
+
+    function hasCrowdsaleWithAddress(address token, address crowdsale) external view returns (bool) {
+        return whitelist.hasCrowdsaleWithAddress(token, crowdsale);
+    }
+
+    function hasNotInitialisedCrowdsale(address token) public view returns (bool) {
+        return whitelist.hasNotInitialisedCrowdsale(token);
+    }
+
+    function getCrowdsale(address token, address crowdsale)
+        external view returns (uint[4] commissions, uint[2] amounts, address[] owners)
+    {
+        require(whitelist.hasCrowdsaleWithAddress(token, crowdsale));
+
+        commissions[0] = whitelist.getCrowdsaleByAddress(token, crowdsale).feePercent;
+        commissions[1] = whitelist.getCrowdsaleByAddress(token, crowdsale).ethFeePercent;
+        commissions[2] = whitelist.getCrowdsaleByAddress(token, crowdsale).WTokenSaleFeePercent;
+        commissions[3] = whitelist.getCrowdsaleByAddress(token, crowdsale).trancheFeePercent;
+        amounts[0] = whitelist.getCrowdsaleByAddress(token, crowdsale).tokensForSaleAmount;
+        amounts[1] = whitelist.getCrowdsaleByAddress(token, crowdsale).wTokensIssuedAmount;
+        owners = whitelist.getCrowdsaleByAddress(token, crowdsale).owners;
     }
 
     function serviceWallet() public view returns(address) {
