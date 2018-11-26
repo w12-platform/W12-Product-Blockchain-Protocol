@@ -41,4 +41,12 @@ contract W12CrowdsaleStub is W12Crowdsale {
     function _setState(uint _WTokenSaleFeePercent) external {
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
     }
+
+    modifier onlyAdmin {
+        _;
+    }
+
+    modifier onlyProjectOwner {
+        _;
+    }
 }

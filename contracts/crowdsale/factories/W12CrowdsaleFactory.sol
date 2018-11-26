@@ -10,7 +10,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;
     IRates private rates;
 
-    event CrowdsaleCreated(address indexed owner, address indexed token, address crowdsaleAddress, address fundAddress);
+    event CrowdsaleCreated(address indexed token, address crowdsaleAddress, address fundAddress);
 
     constructor(uint version, IW12FundFactory _fundFactory, IRates _rates) Versionable(version) public {
         require(_fundFactory != address(0));
@@ -29,7 +29,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
         uint WTokenSaleFeePercent,
         uint trancheFeePercent,
         address swap,
-        address owner
+        address[] owners
     )
         external returns (IW12Crowdsale result)
     {
@@ -48,10 +48,30 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             rates
         );
 
-        result.transferPrimary(owner);
         fund.setCrowdsale(result);
-        fund.transferPrimary(owner);
+        // make crowdsale a admin
+        fund.addAdmin(address(result));
 
-        emit CrowdsaleCreated(owner, wTokenAddress, address(result), fund);
+        // give the project owner role to addresses from owners list
+        for(uint i = 0; i < owners.length; i++) {
+            require(owners[i] != address(0));
+
+            result.addProjectOwner(owners[i]);
+            fund.addProjectOwner(owners[i]);
+        }
+
+        // transfer all permissions to sender
+        fund.addAdmin(msg.sender);
+        fund.transferPrimary(msg.sender);
+        fund.renounceAdmin();
+        fund.renounceProjectOwner();
+
+        // transfer all permissions to sender
+        result.addAdmin(msg.sender);
+        result.transferPrimary(msg.sender);
+        result.renounceAdmin();
+        result.renounceProjectOwner();
+
+        emit CrowdsaleCreated(wTokenAddress, address(result), address(fund));
     }
 }

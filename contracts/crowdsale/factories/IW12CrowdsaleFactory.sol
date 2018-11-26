@@ -13,7 +13,7 @@ interface IW12CrowdsaleFactory {
         uint WTokenSaleFeePercent,
         uint trancheFeePercent ,
         address swap,
-        address owner
+        address[] owners
     )
         external returns (IW12Crowdsale);
 }
