@@ -1,3 +1,5 @@
+const {isBigNumber} = require('./common');
+
 function inLogs(logs, eventName, eventArgs = {}) {
     const event = logs.find(function (e) {
         if (e.event === eventName) {
@@ -26,12 +28,6 @@ function contains(args, key, value) {
     } else {
         args[key].should.be.equal(value);
     }
-}
-
-function isBigNumber(object) {
-    return object.isBigNumber ||
-        object instanceof BigNumber ||
-        (object.constructor && object.constructor.name === 'BigNumber');
 }
 
 module.exports = {
