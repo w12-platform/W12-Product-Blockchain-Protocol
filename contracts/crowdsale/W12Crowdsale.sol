@@ -173,7 +173,8 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
         bytes nameAndDescriptionsOfMilestones,
-        bytes32[] paymentMethodsList
+        bytes32[] paymentMethodsSymbols,
+        uint[] paymentMethodsPurchaseFee
     )
         external onlyProjectOwner beforeSaleStart
     {
@@ -187,10 +188,10 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         require(parametersOfMilestones.length <= nameAndDescriptionsOfMilestones.length / 2);
 
         // check payment methods list
-        require(paymentMethodsList.length != 0);
+        require(paymentMethodsSymbols.length != 0);
 
-        for (uint i = 0; i < paymentMethodsList.length; i++) {
-            require(rates.hasSymbol(paymentMethodsList[i]));
+        for (uint i = 0; i < paymentMethodsSymbols.length; i++) {
+            require(rates.hasSymbol(paymentMethodsSymbols[i]));
         }
 
         _setStages(
@@ -204,7 +205,10 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
             nameAndDescriptionsOfMilestones
         );
 
-        paymentMethods.update(paymentMethodsList);
+        _setPaymentMethods(
+            paymentMethodsSymbols,
+            paymentMethodsPurchaseFee
+        );
 
         emit CrowdsaleSetUpDone();
     }
@@ -254,7 +258,51 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         emit MilestonesUpdated();
     }
 
+    /**
+     * @dev Update payment methods list
+     * @param paymentSymbols List of symbols of payment methods
+     * @param purchaseFee List of custom purchase fee
+     * [[<index in paymentSymbols>, <fee volume>]...]
+     * For example:
+     * paymentSymbols: [0x0, 0x1, 0x2]
+     * purchaseFee: [1, 0, 2, 1]
+     */
+    function _setPaymentMethods(
+        bytes32[] paymentSymbols,
+        uint[] purchaseFee
+    )
+        internal
+    {
+        require(paymentSymbols.length > 0);
+        require(purchaseFee.length % 2 == 0);
+        require(purchaseFee.length / 2 <= paymentSymbols.length);
+
+        PaymentMethods.Method[] memory list = new PaymentMethods.Method[](paymentSymbols.length);
+
+        uint i;
+
+        for(i = 0; i < paymentSymbols.length; i++) {
+            list[i].symbol = paymentSymbols[i];
+        }
+
+        for (i = 0; i < purchaseFee.length; i+=2) {
+            require(purchaseFee[i] < paymentSymbols.length);
+            require(!list[purchaseFee[i]].hasPurchaseFee);
+            require(purchaseFee[i + 1].isPercent() && purchaseFee[i + 1] < Percent.MAX());
+            list[purchaseFee[i]].hasPurchaseFee = true;
+            list[purchaseFee[i]].purchaseFee = purchaseFee[i + 1];
+        }
+
+        paymentMethods.clear();
+
+        for(i = 0; i < list.length; i++) {
+            paymentMethods.add(list[i]);
+        }
+    }
+
     function buyTokens(bytes32 method, uint amount) payable public nonReentrant onlyWhenSaleActive {
+        require(paymentMethods.isAllowed(method));
+
         if (PurchaseProcessing.METHOD_ETH() != method) {
             require(rates.getTokenAddress(method) != address(0));
         }
@@ -262,7 +310,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         (uint index, /*bool found*/) = getCurrentStageIndex();
 
         uint[5] memory invoice = getInvoice(method, amount);
-        uint[2] memory fee = getFee(invoice[0], invoice[1]);
+        uint[2] memory fee = getFee(invoice[0], invoice[1], method);
 
         _transferFee(fee, method);
         _transferPurchase(invoice, fee, stages[index].vesting, method);
@@ -312,14 +360,33 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     }
 
     function getPaymentMethodsList() external view returns(bytes32[]) {
-        return paymentMethods.list();
+        return paymentMethods.symbols();
     }
 
     function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
         return paymentMethods.isAllowed(_method);
     }
 
+    function getPaymentMethodParameters(bytes32 method) public view returns (bool, uint) {
+        require(paymentMethods.isAllowed(method));
+        return (
+            paymentMethods.bySymbol(method).hasPurchaseFee,
+            paymentMethods.bySymbol(method).purchaseFee
+        );
+    }
+
+    function getPurchaseFeeForMethod(bytes32 method) public view returns (uint) {
+        require(paymentMethods.isAllowed(method));
+        return (
+            paymentMethods.bySymbol(method).hasPurchaseFee
+                ? paymentMethods.bySymbol(method).purchaseFee
+                : WTokenSaleFeePercent
+        );
+    }
+
     function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
+        require(paymentMethods.isAllowed(method));
+
         (uint index, bool found) = getCurrentStageIndex();
 
         if (!found) return;
@@ -357,6 +424,8 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     }
 
     function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
+        require(paymentMethods.isAllowed(method));
+
         (uint index, bool found) = getCurrentStageIndex();
 
         if (!found) return;
@@ -393,8 +462,15 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         result[4] = token.balanceOf(address(this));
     }
 
-    function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
-        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, WTokenSaleFeePercent);
+    function getFee(uint tokenAmount, uint cost, bytes32 method) public view returns(uint[2]) {
+        require(paymentMethods.isAllowed(method));
+
+        return PurchaseProcessing.fee(
+            tokenAmount,
+            cost,
+            serviceFee,
+            getPurchaseFeeForMethod(method)
+        );
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {

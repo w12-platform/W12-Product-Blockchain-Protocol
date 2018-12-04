@@ -14,7 +14,8 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
         bytes nameAndDescriptionsOfMilestones,
-        bytes32[] paymentMethodsList
+        bytes32[] paymentMethodsSymbols,
+        uint[] paymentMethodsPurchaseFee
     ) external;
 
     function getWToken() external view returns(IWToken);

@@ -45,7 +45,8 @@ contract W12Lister__W12CrowdsaleMock is IW12Crowdsale {
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
         bytes nameAndDescriptionsOfMilestones,
-        bytes32[] paymentMethodsList
+        bytes32[] paymentMethodsSymbols,
+        uint[] paymentMethodsPurchaseFee
     ) external {}
 
     function getWToken() external view returns (IWToken) {}

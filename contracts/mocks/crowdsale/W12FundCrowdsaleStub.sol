@@ -55,7 +55,8 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, Reentran
         uint[4][] parametersOfMilestones,
         uint32[] nameAndDescriptionsOffsetOfMilestones,
         bytes nameAndDescriptionsOfMilestones,
-        bytes32[] paymentMethodsList
+        bytes32[] paymentMethodsSymbols,
+        uint[] paymentMethodsPurchaseFee
     ) external {}
 
     function getWToken() external view returns (IWToken) {
