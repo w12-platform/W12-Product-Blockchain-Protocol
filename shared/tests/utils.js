@@ -245,7 +245,7 @@ function percent(val, percent) {
     );
 }
 
-function packSetupCrowdsaleParameters(stages, milestones, paymentMethods) {
+function packSetupCrowdsaleParameters(stages, milestones, paymentMethods, purchaseFee = []) {
     const [pack1, pack2] = stages.reduce((result, stage, idx) => {
         const pack1 = [...stage.dates, stage.discount, stage.vestingTime];
 
@@ -281,7 +281,7 @@ function packSetupCrowdsaleParameters(stages, milestones, paymentMethods) {
             return result;
         }, [[], [], '0x']);
 
-    return [pack1, pack2, pack3, pack4, pack5, paymentMethods];
+    return [pack1, pack2, pack3, pack4, pack5, paymentMethods, purchaseFee];
 }
 
 function createStagesGenerator(defaults) {

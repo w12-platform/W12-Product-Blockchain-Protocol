@@ -216,15 +216,6 @@ contract('W12Crowdsale', async (accounts) => {
                     actualMilestone[5].should.be.eq(encoded.descriptionHex);
                 }
             });
-
-            it('should set payment methods', async () => {
-                const actual = await sut.getPaymentMethodsList();
-
-                actual.should.to.be.a('array');
-                actual.length.should.to.be.eq(2);
-                web3.toUtf8(actual[0]).should.to.be.eq(paymentMethods[0]);
-                web3.toUtf8(actual[1]).should.to.be.eq(paymentMethods[1]);
-            });
         });
 
         it('should revert if stages is not in ascending order', async () => {
@@ -594,6 +585,221 @@ contract('W12Crowdsale', async (accounts) => {
                 }
             });
         });
+
+        describe('payment methods', () => {
+            let stages, milestones, params, txOut;
+
+            beforeEach(async () => {
+                stages = defaultStagesGenerator([
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(40),
+                            startDate + utils.time.duration.minutes(60),
+                        ],
+                        volumeBoundaries: [
+                            oneToken,
+                            oneToken.mul(2),
+                            oneToken.mul(10)
+                        ],
+                        volumeBonuses: [
+                            utils.toInternalPercent(1),
+                            utils.toInternalPercent(2),
+                            utils.toInternalPercent(3)
+                        ],
+                    },
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(70),
+                            startDate + utils.time.duration.minutes(90),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(210),
+                        discount: utils.toInternalPercent(5)
+                    },
+                    {
+                        dates: [
+                            startDate + utils.time.duration.minutes(100),
+                            startDate + utils.time.duration.minutes(120),
+                        ],
+                        vestingTime: startDate + utils.time.duration.minutes(180),
+                        discount: utils.toInternalPercent(10),
+                        volumeBoundaries: [
+                            oneToken,
+                            oneToken.mul(2),
+                            oneToken.mul(10)
+                        ],
+                        volumeBonuses: [
+                            utils.toInternalPercent(1),
+                            utils.toInternalPercent(2),
+                            utils.toInternalPercent(3)
+                        ],
+                    }
+                ]);
+                milestones = defaultMilestonesGenerator([
+                    {
+                        name: "Milestone 1",
+                        description: "Milestone 1",
+                        endDate: startDate + utils.time.duration.minutes(200),
+                        voteEndDate: startDate + utils.time.duration.minutes(230),
+                        withdrawalWindow: startDate + utils.time.duration.minutes(240),
+                        tranchePercent: utils.toInternalPercent(50)
+                    },
+                    {
+                        name: "Milestone 2",
+                        description: "Milestone 2",
+                        endDate: startDate + utils.time.duration.minutes(260),
+                        voteEndDate: startDate + utils.time.duration.minutes(280),
+                        withdrawalWindow: startDate + utils.time.duration.minutes(300),
+                        tranchePercent: utils.toInternalPercent(50)
+                    }
+                ]);
+            });
+
+            it('should accept a few payment methods of all available', async () => {
+                const params = utils.packSetupCrowdsaleParameters(stages, milestones, paymentMethodsBytes32List.slice(0, 1), []);
+
+                await sut.setup(...params, {from: owner})
+                    .should.to.be.fulfilled;
+
+                const actual = (await sut.getPaymentMethodsList())
+                    .map(i => web3.toUtf8(i));
+
+                actual.should.to.deep.eq(paymentMethods.slice(0, 1));
+            });
+
+            it('should accept all available payment methods', async () => {
+                const params = utils.packSetupCrowdsaleParameters(stages, milestones, paymentMethodsBytes32List, []);
+
+                await sut.setup(...params, {from: owner})
+                    .should.to.be.fulfilled;
+
+                const actual = (await sut.getPaymentMethodsList())
+                    .map(i => web3.toUtf8(i));
+
+                actual.should.to.deep.eq(paymentMethods);
+            });
+
+            it('should`t accept payment methods that is not allowed', async () => {
+                const methods = paymentMethodsBytes32List.concat([web3.fromUtf8('not_allowed')]);
+                const params = utils.packSetupCrowdsaleParameters(stages, milestones, methods, []);
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should`t accept empty list', async () => {
+                const params = utils.packSetupCrowdsaleParameters(stages, milestones, [], []);
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should set up purchase fee for several methods', async () => {
+                const params = utils.packSetupCrowdsaleParameters(stages, milestones, paymentMethodsBytes32List, [1, 0]);
+
+                await sut.setup(...params, {from: owner})
+                    .should.to.be.fulfilled;
+
+                const actualParametersForMethod1 = await sut.getPaymentMethodParameters(paymentMethodsBytes32List[0]);
+                const actualParametersForMethod2 = await sut.getPaymentMethodParameters(paymentMethodsBytes32List[1]);
+                actualParametersForMethod1[0].should.to.be.false;
+                actualParametersForMethod2[0].should.to.be.true;
+                actualParametersForMethod2[1].should.bignumber.eq(0);
+                const actualFeeForMethod1 = await sut.getPurchaseFeeForMethod(paymentMethodsBytes32List[0]);
+                const actualFeeForMethod2 = await sut.getPurchaseFeeForMethod(paymentMethodsBytes32List[1]);
+                actualFeeForMethod1.should.bignumber.eq(utils.toInternalPercent(saleFee));
+                actualFeeForMethod2.should.bignumber.eq(0);
+            });
+
+            it('should set up purchase fee for all methods', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [1, 0, 0, utils.toInternalPercent(99.99)]
+                );
+
+                await sut.setup(...params, {from: owner})
+                    .should.to.be.fulfilled;
+
+                const actualParametersForMethod1 = await sut.getPaymentMethodParameters(paymentMethodsBytes32List[0]);
+                const actualParametersForMethod2 = await sut.getPaymentMethodParameters(paymentMethodsBytes32List[1]);
+                actualParametersForMethod1[0].should.to.be.true;
+                actualParametersForMethod1[1].should.bignumber.eq(utils.toInternalPercent(99.99));
+                actualParametersForMethod2[0].should.to.be.true;
+                actualParametersForMethod2[1].should.bignumber.eq(0);
+                const actualFeeForMethod1 = await sut.getPurchaseFeeForMethod(paymentMethodsBytes32List[0]);
+                const actualFeeForMethod2 = await sut.getPurchaseFeeForMethod(paymentMethodsBytes32List[1]);
+                actualFeeForMethod1.should.bignumber.eq(utils.toInternalPercent(99.99));
+                actualFeeForMethod2.should.bignumber.eq(0);
+            });
+
+            it('should revert if purchase fee greater then 99.99%', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [1, 0, 0, utils.toInternalPercent(100)]
+                );
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should revert if purchase fee list contains two or more the same indexes', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [1, 0, 1, 0]
+                );
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should revert if purchase fee list miss a required parameter', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [1, 0, 1]
+                );
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should revert if purchase fee list contain index that is not in range of payment symbols indexes list', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [2, 0]
+                );
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+
+            it('should revert if purchase fee list length greater then expected', async () => {
+                const params = utils.packSetupCrowdsaleParameters(
+                    stages,
+                    milestones,
+                    paymentMethodsBytes32List,
+                    [0, 0, 1, 0, 0, 1]
+                );
+
+                await utils.shouldFail.reverting(
+                    sut.setup(...params, {from: owner})
+                );
+            });
+        });
     });
 
     describe('token purchase process', async () => {
@@ -666,7 +872,13 @@ contract('W12Crowdsale', async (accounts) => {
 
                 for (const item of crowdsales) {
                     const { crowdsale, rates } = item;
-                    const params = utils.packSetupCrowdsaleParameters(discountStages, milestonesDefaultFixture(startDate), paymentMethodsBytes32List);
+                    const params = utils.packSetupCrowdsaleParameters(
+                        discountStages,
+                        milestonesDefaultFixture(startDate),
+                        paymentMethodsBytes32List,
+                        // set custom purchase fee for token
+                        [1, utils.toInternalPercent(10)]
+                    );
                     await rates.addSymbol(paymentMethodsBytes32List[0]);
                     await rates.addSymbolWithTokenAddress(paymentMethodsBytes32List[1], paymentToken.address);
                     await rates.set(paymentMethodsBytes32List[0], utils.toInternalUSD(paymentETHPrice));
@@ -713,7 +925,7 @@ contract('W12Crowdsale', async (accounts) => {
                                     ctx.fund = crowdsale.fund;
                                     ctx.expectedFee = [
                                         utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
-                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
+                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(10))
                                     ];
                                     ctx.expectedPaymentTokenAmount = ctx.invoice.cost.minus(ctx.expectedFee[1]);
                                     ctx.expectedWTokenAmount = ctx.invoice.tokenAmount;
@@ -867,6 +1079,17 @@ contract('W12Crowdsale', async (accounts) => {
 
                 await firstCrowdsale.buyTokens(paymentMethodsBytes32List[0], ten.pow(18), {value: ten.pow(18), from: buyer})
                     .should.be.rejectedWith(utils.EVMRevert);
+            });
+
+            it('should revert if payment methods is not allowed', async () => {
+                const stage = discountStages[0];
+                await utils.time.increaseTimeTo(stage.dates[0]);
+                await utils.shouldFail.reverting(
+                    firstCrowdsale.buyTokens(web3.fromUtf8('not_allowed'), ten.pow(18), {
+                        value: ten.pow(18),
+                        from: buyer
+                    })
+                );
             });
         });
 
