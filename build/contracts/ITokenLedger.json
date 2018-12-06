@@ -53,7 +53,7 @@
       "name": "getWTokenByToken",
       "outputs": [
         {
-          "name": "wTokenAddress",
+          "name": "",
           "type": "address"
         }
       ],
@@ -72,7 +72,7 @@
       "name": "getTokenByWToken",
       "outputs": [
         {
-          "name": "tokenAddress",
+          "name": "",
           "type": "address"
         }
       ],
@@ -85,20 +85,20 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.24;\n\nimport \"openzeppelin-solidity/contracts/token/ERC20/ERC20.sol\";\nimport \"../WToken.sol\";\n\ncontract ITokenLedger {\n    function addTokenToListing(ERC20 token, WToken wToken) external;\n\n    function hasPair(ERC20 token1, ERC20 token2) public view returns (bool);\n\n    function getWTokenByToken(address token) public view returns (WToken wTokenAddress);\n\n    function getTokenByWToken(address wToken) public view returns (ERC20 tokenAddress);\n}\n",
+  "source": "pragma solidity ^0.4.24;\n\nimport \"openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol\";\nimport \"../IWToken.sol\";\n\ncontract ITokenLedger {\n    function addTokenToListing(ERC20Detailed token, IWToken wToken) external;\n\n    function hasPair(ERC20Detailed token1, ERC20Detailed token2) public view returns (bool);\n\n    function getWTokenByToken(address token) public view returns (IWToken);\n\n    function getTokenByWToken(address wToken) public view returns (ERC20Detailed);\n}\n",
   "sourcePath": "/home/circleci/code/contracts/token/exchanger/ITokenLedger.sol",
   "ast": {
     "absolutePath": "/home/circleci/code/contracts/token/exchanger/ITokenLedger.sol",
     "exportedSymbols": {
       "ITokenLedger": [
-        9229
+        11525
       ]
     },
-    "id": 9230,
+    "id": 11526,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9196,
+        "id": 11492,
         "literals": [
           "solidity",
           "^",
@@ -106,27 +106,27 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:35"
+        "src": "0:24:46"
       },
       {
-        "absolutePath": "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol",
-        "file": "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol",
-        "id": 9197,
+        "absolutePath": "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol",
+        "file": "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol",
+        "id": 11493,
         "nodeType": "ImportDirective",
-        "scope": 9230,
-        "sourceUnit": 10212,
-        "src": "26:63:35",
+        "scope": 11526,
+        "sourceUnit": 12987,
+        "src": "26:71:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/token/WToken.sol",
-        "file": "../WToken.sol",
-        "id": 9198,
+        "absolutePath": "/home/circleci/code/contracts/token/IWToken.sol",
+        "file": "../IWToken.sol",
+        "id": 11494,
         "nodeType": "ImportDirective",
-        "scope": 9230,
-        "sourceUnit": 8751,
-        "src": "90:23:35",
+        "scope": 11526,
+        "sourceUnit": 10486,
+        "src": "98:24:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -136,9 +136,9 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 9229,
+        "id": 11525,
         "linearizedBaseContracts": [
-          9229
+          11525
         ],
         "name": "ITokenLedger",
         "nodeType": "ContractDefinition",
@@ -146,7 +146,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9205,
+            "id": 11501,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -154,32 +154,32 @@
             "name": "addTokenToListing",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9203,
+              "id": 11499,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9200,
+                  "id": 11496,
                   "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9205,
-                  "src": "170:11:35",
+                  "scope": 11501,
+                  "src": "179:19:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9199,
-                    "name": "ERC20",
+                    "id": 11495,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "170:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "179:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
@@ -187,44 +187,44 @@
                 },
                 {
                   "constant": false,
-                  "id": 9202,
+                  "id": 11498,
                   "name": "wToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9205,
-                  "src": "183:13:35",
+                  "scope": 11501,
+                  "src": "200:14:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_WToken_$8750",
-                    "typeString": "contract WToken"
+                    "typeIdentifier": "t_contract$_IWToken_$10485",
+                    "typeString": "contract IWToken"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9201,
-                    "name": "WToken",
+                    "id": 11497,
+                    "name": "IWToken",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 8750,
-                    "src": "183:6:35",
+                    "referencedDeclaration": 10485,
+                    "src": "200:7:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_WToken_$8750",
-                      "typeString": "contract WToken"
+                      "typeIdentifier": "t_contract$_IWToken_$10485",
+                      "typeString": "contract IWToken"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "169:28:35"
+              "src": "178:37:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9204,
+              "id": 11500,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "206:0:35"
+              "src": "224:0:46"
             },
-            "scope": 9229,
-            "src": "143:64:35",
+            "scope": 11525,
+            "src": "152:73:46",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
@@ -232,7 +232,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9214,
+            "id": 11510,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -240,32 +240,32 @@
             "name": "hasPair",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9210,
+              "id": 11506,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9207,
+                  "id": 11503,
                   "name": "token1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "230:12:35",
+                  "scope": 11510,
+                  "src": "248:20:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9206,
-                    "name": "ERC20",
+                    "id": 11502,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "230:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "248:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
@@ -273,47 +273,47 @@
                 },
                 {
                   "constant": false,
-                  "id": 9209,
+                  "id": 11505,
                   "name": "token2",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "244:12:35",
+                  "scope": 11510,
+                  "src": "270:20:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9208,
-                    "name": "ERC20",
+                    "id": 11504,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "244:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "270:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "229:28:35"
+              "src": "247:44:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9213,
+              "id": 11509,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9212,
+                  "id": 11508,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "279:4:35",
+                  "scope": 11510,
+                  "src": "313:4:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -321,10 +321,10 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 9211,
+                    "id": 11507,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
-                    "src": "279:4:35",
+                    "src": "313:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
@@ -334,10 +334,10 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "278:6:35"
+              "src": "312:6:46"
             },
-            "scope": 9229,
-            "src": "213:72:35",
+            "scope": 11525,
+            "src": "231:88:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
@@ -345,7 +345,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9221,
+            "id": 11517,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -353,16 +353,16 @@
             "name": "getWTokenByToken",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9217,
+              "id": 11513,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9216,
+                  "id": 11512,
                   "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9221,
-                  "src": "317:13:35",
+                  "scope": 11517,
+                  "src": "351:13:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -370,10 +370,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9215,
+                    "id": 11511,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "317:7:35",
+                    "src": "351:7:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -383,46 +383,46 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "316:15:35"
+              "src": "350:15:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9220,
+              "id": 11516,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9219,
-                  "name": "wTokenAddress",
+                  "id": 11515,
+                  "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9221,
-                  "src": "353:20:35",
+                  "scope": 11517,
+                  "src": "387:7:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_WToken_$8750",
-                    "typeString": "contract WToken"
+                    "typeIdentifier": "t_contract$_IWToken_$10485",
+                    "typeString": "contract IWToken"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9218,
-                    "name": "WToken",
+                    "id": 11514,
+                    "name": "IWToken",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 8750,
-                    "src": "353:6:35",
+                    "referencedDeclaration": 10485,
+                    "src": "387:7:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_WToken_$8750",
-                      "typeString": "contract WToken"
+                      "typeIdentifier": "t_contract$_IWToken_$10485",
+                      "typeString": "contract IWToken"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "352:22:35"
+              "src": "386:9:46"
             },
-            "scope": 9229,
-            "src": "291:84:35",
+            "scope": 11525,
+            "src": "325:71:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
@@ -430,7 +430,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9228,
+            "id": 11524,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -438,16 +438,16 @@
             "name": "getTokenByWToken",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9224,
+              "id": 11520,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9223,
+                  "id": 11519,
                   "name": "wToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9228,
-                  "src": "407:14:35",
+                  "scope": 11524,
+                  "src": "428:14:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -455,10 +455,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9222,
+                    "id": 11518,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "407:7:35",
+                    "src": "428:7:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -468,69 +468,69 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "406:16:35"
+              "src": "427:16:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9227,
+              "id": 11523,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9226,
-                  "name": "tokenAddress",
+                  "id": 11522,
+                  "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9228,
-                  "src": "444:18:35",
+                  "scope": 11524,
+                  "src": "465:13:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9225,
-                    "name": "ERC20",
+                    "id": 11521,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "444:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "465:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "443:20:35"
+              "src": "464:15:46"
             },
-            "scope": 9229,
-            "src": "381:83:35",
+            "scope": 11525,
+            "src": "402:78:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 9230,
-        "src": "115:351:35"
+        "scope": 11526,
+        "src": "124:358:46"
       }
     ],
-    "src": "0:467:35"
+    "src": "0:483:46"
   },
   "legacyAST": {
     "absolutePath": "/home/circleci/code/contracts/token/exchanger/ITokenLedger.sol",
     "exportedSymbols": {
       "ITokenLedger": [
-        9229
+        11525
       ]
     },
-    "id": 9230,
+    "id": 11526,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9196,
+        "id": 11492,
         "literals": [
           "solidity",
           "^",
@@ -538,27 +538,27 @@
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:35"
+        "src": "0:24:46"
       },
       {
-        "absolutePath": "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol",
-        "file": "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol",
-        "id": 9197,
+        "absolutePath": "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol",
+        "file": "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol",
+        "id": 11493,
         "nodeType": "ImportDirective",
-        "scope": 9230,
-        "sourceUnit": 10212,
-        "src": "26:63:35",
+        "scope": 11526,
+        "sourceUnit": 12987,
+        "src": "26:71:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/token/WToken.sol",
-        "file": "../WToken.sol",
-        "id": 9198,
+        "absolutePath": "/home/circleci/code/contracts/token/IWToken.sol",
+        "file": "../IWToken.sol",
+        "id": 11494,
         "nodeType": "ImportDirective",
-        "scope": 9230,
-        "sourceUnit": 8751,
-        "src": "90:23:35",
+        "scope": 11526,
+        "sourceUnit": 10486,
+        "src": "98:24:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -568,9 +568,9 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 9229,
+        "id": 11525,
         "linearizedBaseContracts": [
-          9229
+          11525
         ],
         "name": "ITokenLedger",
         "nodeType": "ContractDefinition",
@@ -578,7 +578,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9205,
+            "id": 11501,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
@@ -586,32 +586,32 @@
             "name": "addTokenToListing",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9203,
+              "id": 11499,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9200,
+                  "id": 11496,
                   "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9205,
-                  "src": "170:11:35",
+                  "scope": 11501,
+                  "src": "179:19:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9199,
-                    "name": "ERC20",
+                    "id": 11495,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "170:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "179:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
@@ -619,44 +619,44 @@
                 },
                 {
                   "constant": false,
-                  "id": 9202,
+                  "id": 11498,
                   "name": "wToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9205,
-                  "src": "183:13:35",
+                  "scope": 11501,
+                  "src": "200:14:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_WToken_$8750",
-                    "typeString": "contract WToken"
+                    "typeIdentifier": "t_contract$_IWToken_$10485",
+                    "typeString": "contract IWToken"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9201,
-                    "name": "WToken",
+                    "id": 11497,
+                    "name": "IWToken",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 8750,
-                    "src": "183:6:35",
+                    "referencedDeclaration": 10485,
+                    "src": "200:7:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_WToken_$8750",
-                      "typeString": "contract WToken"
+                      "typeIdentifier": "t_contract$_IWToken_$10485",
+                      "typeString": "contract IWToken"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "169:28:35"
+              "src": "178:37:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9204,
+              "id": 11500,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "206:0:35"
+              "src": "224:0:46"
             },
-            "scope": 9229,
-            "src": "143:64:35",
+            "scope": 11525,
+            "src": "152:73:46",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
@@ -664,7 +664,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9214,
+            "id": 11510,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -672,32 +672,32 @@
             "name": "hasPair",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9210,
+              "id": 11506,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9207,
+                  "id": 11503,
                   "name": "token1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "230:12:35",
+                  "scope": 11510,
+                  "src": "248:20:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9206,
-                    "name": "ERC20",
+                    "id": 11502,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "230:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "248:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
@@ -705,47 +705,47 @@
                 },
                 {
                   "constant": false,
-                  "id": 9209,
+                  "id": 11505,
                   "name": "token2",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "244:12:35",
+                  "scope": 11510,
+                  "src": "270:20:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9208,
-                    "name": "ERC20",
+                    "id": 11504,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "244:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "270:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "229:28:35"
+              "src": "247:44:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9213,
+              "id": 11509,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9212,
+                  "id": 11508,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9214,
-                  "src": "279:4:35",
+                  "scope": 11510,
+                  "src": "313:4:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -753,10 +753,10 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 9211,
+                    "id": 11507,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
-                    "src": "279:4:35",
+                    "src": "313:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
@@ -766,10 +766,10 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "278:6:35"
+              "src": "312:6:46"
             },
-            "scope": 9229,
-            "src": "213:72:35",
+            "scope": 11525,
+            "src": "231:88:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
@@ -777,7 +777,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9221,
+            "id": 11517,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -785,16 +785,16 @@
             "name": "getWTokenByToken",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9217,
+              "id": 11513,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9216,
+                  "id": 11512,
                   "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9221,
-                  "src": "317:13:35",
+                  "scope": 11517,
+                  "src": "351:13:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -802,10 +802,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9215,
+                    "id": 11511,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "317:7:35",
+                    "src": "351:7:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -815,46 +815,46 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "316:15:35"
+              "src": "350:15:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9220,
+              "id": 11516,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9219,
-                  "name": "wTokenAddress",
+                  "id": 11515,
+                  "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9221,
-                  "src": "353:20:35",
+                  "scope": 11517,
+                  "src": "387:7:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_WToken_$8750",
-                    "typeString": "contract WToken"
+                    "typeIdentifier": "t_contract$_IWToken_$10485",
+                    "typeString": "contract IWToken"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9218,
-                    "name": "WToken",
+                    "id": 11514,
+                    "name": "IWToken",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 8750,
-                    "src": "353:6:35",
+                    "referencedDeclaration": 10485,
+                    "src": "387:7:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_WToken_$8750",
-                      "typeString": "contract WToken"
+                      "typeIdentifier": "t_contract$_IWToken_$10485",
+                      "typeString": "contract IWToken"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "352:22:35"
+              "src": "386:9:46"
             },
-            "scope": 9229,
-            "src": "291:84:35",
+            "scope": 11525,
+            "src": "325:71:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
@@ -862,7 +862,7 @@
           {
             "body": null,
             "documentation": null,
-            "id": 9228,
+            "id": 11524,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -870,16 +870,16 @@
             "name": "getTokenByWToken",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9224,
+              "id": 11520,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9223,
+                  "id": 11519,
                   "name": "wToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9228,
-                  "src": "407:14:35",
+                  "scope": 11524,
+                  "src": "428:14:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -887,10 +887,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9222,
+                    "id": 11518,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "407:7:35",
+                    "src": "428:7:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -900,56 +900,56 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "406:16:35"
+              "src": "427:16:46"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9227,
+              "id": 11523,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9226,
-                  "name": "tokenAddress",
+                  "id": 11522,
+                  "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9228,
-                  "src": "444:18:35",
+                  "scope": 11524,
+                  "src": "465:13:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_ERC20_$10211",
-                    "typeString": "contract ERC20"
+                    "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                    "typeString": "contract ERC20Detailed"
                   },
                   "typeName": {
                     "contractScope": null,
-                    "id": 9225,
-                    "name": "ERC20",
+                    "id": 11521,
+                    "name": "ERC20Detailed",
                     "nodeType": "UserDefinedTypeName",
-                    "referencedDeclaration": 10211,
-                    "src": "444:5:35",
+                    "referencedDeclaration": 12986,
+                    "src": "465:13:46",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$10211",
-                      "typeString": "contract ERC20"
+                      "typeIdentifier": "t_contract$_ERC20Detailed_$12986",
+                      "typeString": "contract ERC20Detailed"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "443:20:35"
+              "src": "464:15:46"
             },
-            "scope": 9229,
-            "src": "381:83:35",
+            "scope": 11525,
+            "src": "402:78:46",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 9230,
-        "src": "115:351:35"
+        "scope": 11526,
+        "src": "124:358:46"
       }
     ],
-    "src": "0:467:35"
+    "src": "0:483:46"
   },
   "compiler": {
     "name": "solc",
@@ -957,5 +957,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-10-27T04:51:45.342Z"
+  "updatedAt": "2018-12-06T13:14:33.229Z"
 }
