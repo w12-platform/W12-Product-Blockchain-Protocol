@@ -6,10 +6,28 @@ function wait(ms) {
 }
 
 // https://github.com/trufflesuite/truffle-migrate/issues/29#issuecomment-389649903
+const MAX_ATTEMPTS = 3;
+
 async function deploy(net, deployer, contract, ...args) {
-    await deployer.deploy(contract, ...args);
-    await contract.deployed();
-    await wait(net === 'development' ? 0 : 5000);
+    let count = MAX_ATTEMPTS;
+    let error;
+
+    while(count) {
+        try {
+            return await deployer.deploy(contract, ...args);
+        } catch (e) {
+            error = e;
+            if (net !== 'test') {
+                break;
+            }
+            console.log(`Deploy attempt number ${count} was failed for contract ${contract.contractName}`);
+        }
+        count--;
+    }
+
+    if(error) {
+        throw error;
+    }
 }
 
 const migrateLog = {
