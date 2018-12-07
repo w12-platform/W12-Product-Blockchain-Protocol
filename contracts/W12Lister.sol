@@ -31,7 +31,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     TokenListing.Whitelist whitelist;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner);
-    event TokenWhitelisted(address indexed token, address indexed sender, address[] owners, string name, string symbol);
+    event TokenWhitelisted(address indexed token, address indexed sender, address[] owners);
     event TokenPlaced(address indexed originalToken, address indexed sender, address crowdsale, uint tokenAmount, address placedToken);
     event CrowdsaleInitialized(address indexed token, address indexed sender, address crowdsale, uint amountForSale);
     event CrowdsaleTokenMinted(address indexed token, address indexed sender, address crowdsale, uint amount);
@@ -65,10 +65,9 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         string symbol,
         uint8 decimals,
         address[] owners,
-        uint feePercent,
-        uint ethFeePercent,
-        uint WTokenSaleFeePercent,
-        uint trancheFeePercent
+        uint[4] commissions, // [feePercent, ethFeePercent, WTokenSaleFeePercent, trancheFeePercent]
+        bytes32[] paymentMethods,
+        uint[] paymentMethodsPurchaseFee
     )
         external onlyAdmin
     {
@@ -78,13 +77,12 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
             symbol,
             decimals,
             owners,
-            feePercent,
-            ethFeePercent,
-            WTokenSaleFeePercent,
-            trancheFeePercent
+            commissions,
+            paymentMethods,
+            paymentMethodsPurchaseFee
         );
 
-        emit TokenWhitelisted(token, msg.sender, owners, name, symbol);
+        emit TokenWhitelisted(token, msg.sender, owners);
     }
 
     /**
@@ -171,19 +169,29 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         wtoken.addAdmin(address(crowdsale));
 
         whitelist.initializeCrowdsale(token, address(crowdsale));
+        _setPaymentMethodPurchaseFeeForCrowdsale(crowdsale, listedToken);
 
-        if (listedToken.WTokenSaleFeePercent > 0) {
-            exchanger.approve(
-                IERC20(listedToken.token),
-                address(crowdsale),
-                whitelist.getCrowdsaleByAddress(token, address(crowdsale)).tokensForSaleAmount
-                    .percent(listedToken.WTokenSaleFeePercent)
-            );
-        }
+        // give approve to spend entire tokens sale amount because there may be
+        // individual purchase fee value for a payment method and it may be changed in the future.
+        exchanger.approve(
+            IERC20(listedToken.token),
+            address(crowdsale),
+            whitelist.getCrowdsaleByAddress(token, address(crowdsale)).tokensForSaleAmount
+        );
 
         addTokensToCrowdsale(token, address(crowdsale), amountForSale);
 
         emit CrowdsaleInitialized(listedToken.token, msg.sender, address(crowdsale), amountForSale);
+    }
+
+    function _setPaymentMethodPurchaseFeeForCrowdsale(IW12Crowdsale crowdsale, TokenListing.WhitelistedToken storage listedToken) private {
+        for(uint i = 0; i < listedToken.paymentMethods.length; i++) {
+            crowdsale.updatePurchaseFeeParameterForPaymentMethod(
+                listedToken.paymentMethods[i],
+                true,
+                listedToken.paymentMethodsPurchaseFee[i]
+            );
+        }
     }
 
     function addTokensToCrowdsale(address token, address crowdsale, uint amountForSale) public {
@@ -221,7 +229,15 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     }
 
     function getToken(address token)
-        external view returns (string name, string symbol, uint8 decimals, address[] owners, uint[4] commissions)
+        external view returns (
+            string name,
+            string symbol,
+            uint8 decimals,
+            address[] owners,
+            uint[4] commissions,
+            bytes32[] paymentMethods,
+            uint[] paymentMethodsPurchaseFee
+        )
     {
         require(whitelist.isTokenWhitelisted(token));
 
@@ -233,6 +249,8 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         commissions[1] = whitelist.getToken(token).ethFeePercent;
         commissions[2] = whitelist.getToken(token).WTokenSaleFeePercent;
         commissions[3] = whitelist.getToken(token).trancheFeePercent;
+        paymentMethods = whitelist.getToken(token).paymentMethods;
+        paymentMethodsPurchaseFee = whitelist.getToken(token).paymentMethodsPurchaseFee;
     }
 
     function getTokens() external view returns (address[]) {
@@ -272,7 +290,13 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     }
 
     function getCrowdsale(address token, address crowdsale)
-        external view returns (uint[4] commissions, uint[2] amounts, address[] owners)
+        external view returns (
+            uint[4] commissions,
+            uint[2] amounts,
+            address[] owners,
+            bytes32[] paymentMethods,
+            uint[] paymentMethodsPurchaseFee
+        )
     {
         require(whitelist.hasCrowdsaleWithAddress(token, crowdsale));
 
@@ -283,6 +307,8 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         amounts[0] = whitelist.getCrowdsaleByAddress(token, crowdsale).tokensForSaleAmount;
         amounts[1] = whitelist.getCrowdsaleByAddress(token, crowdsale).wTokensIssuedAmount;
         owners = whitelist.getCrowdsaleByAddress(token, crowdsale).owners;
+        paymentMethods = whitelist.getCrowdsaleByAddress(token, crowdsale).paymentMethods;
+        paymentMethodsPurchaseFee = whitelist.getCrowdsaleByAddress(token, crowdsale).paymentMethodsPurchaseFee;
     }
 
     function serviceWallet() public view returns(address) {

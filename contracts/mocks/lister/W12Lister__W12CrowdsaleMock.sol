@@ -37,6 +37,36 @@ contract W12Lister__W12CrowdsaleMock is IW12Crowdsale {
 
     function setParameters(uint price) external {}
 
+    struct UpdatePurchaseFeeParameterForPaymentMethodCall {
+        bytes32 method;
+        bool has;
+        uint value;
+    }
+
+    UpdatePurchaseFeeParameterForPaymentMethodCall[] public __updatePurchaseFeeParameterForPaymentMethodCalls;
+
+    function _updatePurchaseFeeParameterForPaymentMethodCallsLength() public view returns(uint) {
+        return __updatePurchaseFeeParameterForPaymentMethodCalls.length;
+    }
+
+    function _updatePurchaseFeeParameterForPaymentMethodCall(uint index) public view returns (bytes32, bool, uint) {
+        return (
+            __updatePurchaseFeeParameterForPaymentMethodCalls[index].method,
+            __updatePurchaseFeeParameterForPaymentMethodCalls[index].has,
+            __updatePurchaseFeeParameterForPaymentMethodCalls[index].value
+        );
+    }
+
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public {
+        __updatePurchaseFeeParameterForPaymentMethodCalls.push(
+            UpdatePurchaseFeeParameterForPaymentMethodCall(method, has, value)
+        );
+    }
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns (bool, uint) {}
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns (uint) {}
+
     function transferPrimary(address _address) public {}
 
     function setup(

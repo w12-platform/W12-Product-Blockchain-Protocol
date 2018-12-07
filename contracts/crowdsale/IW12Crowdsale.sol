@@ -39,6 +39,12 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
 
     function isSaleActive() public view returns (bool);
 
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public;
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns (bool, uint);
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns (uint);
+
     function buyTokens(bytes32 method, uint amount) payable public;
 
     function transferPrimary(address _address) public;
