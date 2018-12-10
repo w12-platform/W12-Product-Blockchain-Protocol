@@ -184,7 +184,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         if (paymentMethodsPurchaseFee[method].has) {
             return paymentMethodsPurchaseFee[method].value;
         }
-        return WTokenSaleFeePercent;
+        return serviceFee;
     }
 
     /**
@@ -424,7 +424,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
 
     function getFee(uint tokenAmount, uint cost, bytes32 method) public view returns(uint[2]) {
         require(paymentMethods.isAllowed(method));
-        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, getPurchaseFeeForPaymentMethod(method));
+        return PurchaseProcessing.fee(tokenAmount, cost, WTokenSaleFeePercent, getPurchaseFeeForPaymentMethod(method));
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {

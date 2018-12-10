@@ -39,7 +39,7 @@ contract('W12Crowdsale', async (accounts) => {
     const serviceWallet = accounts[6];
     const owner = accounts[0];
     const WTokenPrice = 0.05; // USD
-    const serviceFee = 10;
+    const serviceFee = 8;
     const tranchePercent = 5;
     const saleFee = 10;
     const mint = new BigNumber(100000);
@@ -733,7 +733,7 @@ contract('W12Crowdsale', async (accounts) => {
             await ctx.Target.updatePurchaseFeeParameterForPaymentMethod(method, false, 0);
             const actualFee = await ctx.Target.getPurchaseFeeForPaymentMethod(method);
             const actualParams = await ctx.Target.getPurchaseFeeParameterForPaymentMethod(method);
-            actualFee.should.bignumber.eq(utils.toInternalPercent(saleFee));
+            actualFee.should.bignumber.eq(utils.toInternalPercent(serviceFee));
             actualParams[0].should.to.be.false;
             actualParams[1].should.bignumber.eq(0);
         });
@@ -779,7 +779,7 @@ contract('W12Crowdsale', async (accounts) => {
         });
 
         describe('buy', async () => {
-
+            const purchaseFeeForPaymentWithToken = utils.toInternalPercent(9);
             beforeEach(async () => {
                 paymentToken = await Token.new(paymentMethods[1], paymentMethods[1], paymentTokenDecimals);
                 discountStages = defaultStagesGenerator([
@@ -824,7 +824,7 @@ contract('W12Crowdsale', async (accounts) => {
                     await crowdsale.updatePurchaseFeeParameterForPaymentMethod(
                         paymentMethodsBytes32List[1],
                         true,
-                        utils.toInternalPercent(saleFee + 10)
+                        purchaseFeeForPaymentWithToken
                     );
                 }
             });
@@ -866,8 +866,8 @@ contract('W12Crowdsale', async (accounts) => {
                                     );
                                     ctx.fund = crowdsale.fund;
                                     ctx.expectedFee = [
-                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
-                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee + 10))
+                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(saleFee)),
+                                        utils.percent(ctx.invoice.cost, purchaseFeeForPaymentWithToken)
                                     ];
                                     ctx.expectedPaymentTokenAmount = ctx.invoice.cost.minus(ctx.expectedFee[1]);
                                     ctx.expectedWTokenAmount = ctx.invoice.tokenAmount;
@@ -959,8 +959,8 @@ contract('W12Crowdsale', async (accounts) => {
                                     );
                                     ctx.fund = crowdsale.fund;
                                     ctx.expectedFee = [
-                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(serviceFee)),
-                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(saleFee))
+                                        utils.percent(ctx.invoice.tokenAmount, utils.toInternalPercent(saleFee)),
+                                        utils.percent(ctx.invoice.cost, utils.toInternalPercent(serviceFee))
                                     ];
                                     ctx.expectedPaymentETHAmount = ctx.invoice.cost.minus(ctx.expectedFee[1]);
                                     ctx.expectedWTokenAmount = ctx.invoice.tokenAmount;
