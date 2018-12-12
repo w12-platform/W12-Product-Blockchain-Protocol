@@ -376,7 +376,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
                         last = i;
                     } else if (table[i] == table[last]) {
                         // take most recent by timestamp or by add/update order
-                        if (suggestion[suggestors[i]].timestamp >= suggestion[suggestors[last]].timestamp) {
+                        if (suggestions[suggestors[i]].timestamp >= suggestions[suggestors[last]].timestamp) {
                             last = i;
                         }
                     }
