@@ -17,7 +17,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         uint timestamp;
     }
 
-    mapping(address => Suggestion) private suggestion;
+    mapping(address => Suggestion) private suggestions;
     address[] private suggestors;
 
     IRates public rates;
