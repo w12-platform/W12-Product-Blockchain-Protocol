@@ -389,7 +389,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
 
         if (found) {
             suggestor = suggestors[last];
-            result = suggestion[suggestor];
+            result = suggestions[suggestor];
         }
     }
 
