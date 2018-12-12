@@ -215,7 +215,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
             suggestions[suggestor].has[suggestions[suggestor].symbols[i]] = false;
         }
 
-        suggestion[suggestor].symbols = symbols;
+        suggestions[suggestor].symbols = symbols;
         suggestion[suggestor].timestamp = now;
 
         for (i = 0; i < symbols.length; i++) {
