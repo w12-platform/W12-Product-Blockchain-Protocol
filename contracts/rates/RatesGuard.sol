@@ -336,7 +336,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         if (expireTimeout != 0) {
             uint lncut = 0;
             for(uint i = 0; i < suggestors.length; i++) {
-                uint diff = now - suggestion[suggestors[i]].timestamp + 1;
+                uint diff = now - suggestions[suggestors[i]].timestamp + 1;
                 if (expireTimeout >= diff) {
                     if (i != suggestors.length - 1) {
                         suggestors[i] = suggestors[suggestors.length - 1];
