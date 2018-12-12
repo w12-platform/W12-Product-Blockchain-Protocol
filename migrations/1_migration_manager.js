@@ -34,7 +34,7 @@ module.exports = function(deployer, network, accounts) {
 
             utils.migrateLog.addAddress(Migrations.contractName, Migrations.address);
 
-            await utils.deploy(network, deployer, Wallets, {overwrite: false});;
+            await utils.deploy(network, deployer, Wallets, {overwrite: false});
 
             utils.migrateLog.addAddress(Wallets.contractName, Wallets.address);
         });
