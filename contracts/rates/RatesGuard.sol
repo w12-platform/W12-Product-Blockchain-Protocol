@@ -357,7 +357,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         for(i = 0; i < suggestors.length - 1; i++) {
             Suggestion storage current = suggestions[suggestors[i]];
             for (uint ii = i + 1; ii < suggestors.length; ii++) {
-                Suggestion storage next = suggestion[suggestors[ii]];
+                Suggestion storage next = suggestions[suggestors[ii]];
                 if (_isMatch(current, next)) {
                     table[i]++;
                     table[ii]++;
