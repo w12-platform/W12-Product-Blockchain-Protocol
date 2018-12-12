@@ -327,11 +327,13 @@ module.exports = {
         increaseTime: time.increase,
         increaseTimeTo: time.increaseTo
     },
+    common: require('./utils/common'),
     expectEvent: require('./utils/events'),
     EVMRevert: 'revert',
     round,
     shouldFail,
     ZERO_ADDRESS,
+    ZERO_BYTES32: web3.padRight('0x', 66),
     ONE_TOKEN_18,
     generateRandomAddress,
     calculateRefundAmount,
