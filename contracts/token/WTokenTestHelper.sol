@@ -15,6 +15,7 @@ contract WTokenTestHelper {
         require(amountToIssue > 99 && amountToIssue <= (uint(-1) / 10 ** uint(_decimals)));
 
         token = new WToken(_name, _symbol, _decimals);
+        token.addAdmin(msg.sender);
         token.transferPrimary(msg.sender);
 
         tokenIndexes[address(token)] = tokens.length;

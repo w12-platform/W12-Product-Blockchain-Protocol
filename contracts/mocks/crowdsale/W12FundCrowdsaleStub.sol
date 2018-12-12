@@ -49,6 +49,12 @@ contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, Reentran
 
     function setParameters(uint price) external {}
 
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public {}
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns (bool, uint) {}
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns (uint) {}
+
     function setup(
         uint[6][] parametersOfStages,
         uint[] bonusConditionsOfStages,

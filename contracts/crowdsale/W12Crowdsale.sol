@@ -23,6 +23,11 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     using Percent for uint;
     using PaymentMethods for PaymentMethods.Methods;
 
+    struct PaymentMethodPurchaseFee {
+        bool has;
+        uint value;
+    }
+
     IWToken public token;
     IERC20 public originToken;
     IW12Fund public fund;
@@ -35,6 +40,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
 
     // list of payment methods
     PaymentMethods.Methods paymentMethods;
+    mapping(bytes32 => PaymentMethodPurchaseFee) private paymentMethodsPurchaseFee;
 
     Crowdsale.Stage[] public stages;
     Crowdsale.Milestone[] public milestones;
@@ -164,6 +170,23 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         __setParameters(_price, serviceWallet);
     }
 
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public onlyAdmin {
+        require(value.isPercent() && value < Percent.MAX());
+        paymentMethodsPurchaseFee[method].has = has;
+        paymentMethodsPurchaseFee[method].value = value;
+    }
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns(bool, uint) {
+        return (paymentMethodsPurchaseFee[method].has, paymentMethodsPurchaseFee[method].value);
+    }
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns(uint) {
+        if (paymentMethodsPurchaseFee[method].has) {
+            return paymentMethodsPurchaseFee[method].value;
+        }
+        return serviceFee;
+    }
+
     /**
      * @dev Setup all crowdsale parameters at a time
      */
@@ -255,6 +278,8 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     }
 
     function buyTokens(bytes32 method, uint amount) payable public nonReentrant onlyWhenSaleActive {
+        require(paymentMethods.isAllowed(method));
+
         if (PurchaseProcessing.METHOD_ETH() != method) {
             require(rates.getTokenAddress(method) != address(0));
         }
@@ -262,7 +287,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         (uint index, /*bool found*/) = getCurrentStageIndex();
 
         uint[5] memory invoice = getInvoice(method, amount);
-        uint[2] memory fee = getFee(invoice[0], invoice[1]);
+        uint[2] memory fee = getFee(invoice[0], invoice[1], method);
 
         _transferFee(fee, method);
         _transferPurchase(invoice, fee, stages[index].vesting, method);
@@ -320,6 +345,8 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     }
 
     function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
+        require(paymentMethods.isAllowed(method));
+
         (uint index, bool found) = getCurrentStageIndex();
 
         if (!found) return;
@@ -357,6 +384,8 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     }
 
     function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
+        require(paymentMethods.isAllowed(method));
+
         (uint index, bool found) = getCurrentStageIndex();
 
         if (!found) return;
@@ -393,8 +422,9 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
         result[4] = token.balanceOf(address(this));
     }
 
-    function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
-        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, WTokenSaleFeePercent);
+    function getFee(uint tokenAmount, uint cost, bytes32 method) public view returns(uint[2]) {
+        require(paymentMethods.isAllowed(method));
+        return PurchaseProcessing.fee(tokenAmount, cost, WTokenSaleFeePercent, getPurchaseFeeForPaymentMethod(method));
     }
 
     function getSaleVolumeBonus(uint value) public view returns(uint bonus) {

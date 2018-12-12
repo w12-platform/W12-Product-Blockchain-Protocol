@@ -21,6 +21,8 @@ library TokenListing {
         uint WTokenSaleFeePercent;
         uint trancheFeePercent;
         address token;
+        bytes32[] paymentMethods;
+        uint[] paymentMethodsPurchaseFee;
         mapping(address => bool) _hasOwner;
     }
 
@@ -33,6 +35,8 @@ library TokenListing {
         uint tokensForSaleAmount;
         uint wTokensIssuedAmount;
         address[] owners;
+        bytes32[] paymentMethods;
+        uint[] paymentMethodsPurchaseFee;
     }
 
     struct Whitelist {
@@ -144,7 +148,9 @@ library TokenListing {
                 trancheFeePercent : 0,
                 tokensForSaleAmount : 0,
                 wTokensIssuedAmount : 0,
-                owners : new address[](0)
+                owners : new address[](0),
+                paymentMethods: new bytes32[](0),
+                paymentMethodsPurchaseFee: new uint[](0)
             })
         );
     }
@@ -160,6 +166,29 @@ library TokenListing {
         emit OwnerWhitelisted(token, owner);
     }
 
+    function _validatePaymentMethodsParameters(
+        bytes32[] paymentMethods,
+        uint[] paymentMethodsPurchaseFee
+    )
+        private pure returns(bool)
+    {
+        if(paymentMethods.length == paymentMethodsPurchaseFee.length) {
+            for(uint i = 0; i < paymentMethods.length; i++) {
+                if (!paymentMethodsPurchaseFee[i].isPercent() || paymentMethodsPurchaseFee[i] > Percent.MAX()) {
+                    return false;
+                }
+                // this better way then having mapping in some case
+                for(uint ii = i + 1; ii < paymentMethods.length; ii++) {
+                    if (paymentMethods[i] == paymentMethods[ii]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     function addOrUpdate(
         Whitelist storage whitelist,
         address token,
@@ -167,19 +196,19 @@ library TokenListing {
         string symbol,
         uint8 decimals,
         address[] tokenOwners,
-        uint feePercent,
-        uint ethFeePercent,
-        uint WTokenSaleFeePercent,
-        uint trancheFeePercent
+        uint[4] commissions, // [feePercent, ethFeePercent, WTokenSaleFeePercent, trancheFeePercent]
+        bytes32[] paymentMethods,
+        uint[] paymentMethodsPurchaseFee
     )
         internal returns(uint)
     {
         require(token != address(0));
         require(tokenOwners.length > 0);
-        require(feePercent.isPercent() && feePercent.fromPercent() < 100);
-        require(ethFeePercent.isPercent() && ethFeePercent.fromPercent() < 100);
-        require(WTokenSaleFeePercent.isPercent() && WTokenSaleFeePercent.fromPercent() < 100);
-        require(trancheFeePercent.isPercent() && trancheFeePercent.fromPercent() < 100);
+        require(commissions[0].isPercent() && commissions[0].fromPercent() < 100);
+        require(commissions[1].isPercent() && commissions[1].fromPercent() < 100);
+        require(commissions[2].isPercent() && commissions[2].fromPercent() < 100);
+        require(commissions[3].isPercent() && commissions[3].fromPercent() < 100);
+        require(_validatePaymentMethodsParameters(paymentMethods, paymentMethodsPurchaseFee));
 
         if (!isTokenWhitelisted(whitelist, token)) {
             whitelist._index[token] = whitelist._list.length;
@@ -190,11 +219,13 @@ library TokenListing {
                     symbol: symbol,
                     decimals: decimals,
                     owners: new address[](0),
-                    feePercent: feePercent,
-                    ethFeePercent: ethFeePercent,
-                    WTokenSaleFeePercent: WTokenSaleFeePercent,
-                    trancheFeePercent: trancheFeePercent,
-                    token: token
+                    feePercent: commissions[0],
+                    ethFeePercent: commissions[1],
+                    WTokenSaleFeePercent: commissions[2],
+                    trancheFeePercent: commissions[3],
+                    token: token,
+                    paymentMethods: paymentMethods,
+                    paymentMethodsPurchaseFee: paymentMethodsPurchaseFee
                 })
             );
         } else {
@@ -202,10 +233,12 @@ library TokenListing {
             getToken(whitelist, token).name = name;
             getToken(whitelist, token).symbol = symbol;
             getToken(whitelist, token).decimals = decimals;
-            getToken(whitelist, token).feePercent = feePercent;
-            getToken(whitelist, token).ethFeePercent = ethFeePercent;
-            getToken(whitelist, token).WTokenSaleFeePercent = WTokenSaleFeePercent;
-            getToken(whitelist, token).trancheFeePercent = trancheFeePercent;
+            getToken(whitelist, token).feePercent = commissions[0];
+            getToken(whitelist, token).ethFeePercent = commissions[1];
+            getToken(whitelist, token).WTokenSaleFeePercent = commissions[2];
+            getToken(whitelist, token).trancheFeePercent = commissions[3];
+            getToken(whitelist, token).paymentMethods = paymentMethods;
+            getToken(whitelist, token).paymentMethodsPurchaseFee = paymentMethodsPurchaseFee;
         }
 
         for (uint i = 0; i < tokenOwners.length; i++) {
@@ -231,6 +264,8 @@ library TokenListing {
         getNotInitialisedCrowdsale(whitelist, token).WTokenSaleFeePercent = getToken(whitelist, token).WTokenSaleFeePercent;
         getNotInitialisedCrowdsale(whitelist, token).trancheFeePercent = getToken(whitelist, token).trancheFeePercent;
         getNotInitialisedCrowdsale(whitelist, token).owners = getToken(whitelist, token).owners;
+        getNotInitialisedCrowdsale(whitelist, token).paymentMethods = getToken(whitelist, token).paymentMethods;
+        getNotInitialisedCrowdsale(whitelist, token).paymentMethodsPurchaseFee = getToken(whitelist, token).paymentMethodsPurchaseFee;
 
         whitelist._hasCrowdsaleIndex[token][crowdsale] = true;
         whitelist._crowdsaleIndex[token][crowdsale] = getCrowdsaleIndexByAddress(whitelist, token, address(0));

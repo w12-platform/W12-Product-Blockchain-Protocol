@@ -62,7 +62,8 @@ contract('W12Lister', async (accounts) => {
 
                                     await sut.whitelistToken(
                                         testToken.address, validName, validSymbol, validDecimals, [accounts[1]],
-                                        validPercent, validPercent, validPercent, validPercent
+                                        [validPercent, validPercent, validPercent, validPercent],
+                                        [], []
                                     )
                                         .should.be.fulfilled;
 
@@ -95,10 +96,13 @@ contract('W12Lister', async (accounts) => {
                         "TT1",
                         18,
                         [tokenOwner1],
-                        utils.toInternalPercent(30),
-                        utils.toInternalPercent(30),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5)
+                        [
+                            utils.toInternalPercent(30),
+                            utils.toInternalPercent(30),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5)
+                        ],
+                        [], []
                     );
 
                     await token.mint(tokenOwner1, oneToken.mul(10000), 0);
@@ -140,10 +144,13 @@ contract('W12Lister', async (accounts) => {
                         "TT2",
                         18,
                         [tokenOwner2],
-                        utils.toInternalPercent(40),
-                        utils.toInternalPercent(40),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5)
+                        [
+                            utils.toInternalPercent(40),
+                            utils.toInternalPercent(40),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5)
+                        ],
+                        [], []
                     );
 
                     const placementReceipt = await sut.placeToken(
@@ -181,8 +188,10 @@ contract('W12Lister', async (accounts) => {
                     utils.generateRandomAddress()
                     , "", "", 1
                     , [utils.generateRandomAddress()]
-                    , utils.toInternalPercent(1), utils.toInternalPercent(1)
-                    , utils.toInternalPercent(1), utils.toInternalPercent(1)
+                    , [
+                        utils.toInternalPercent(1), utils.toInternalPercent(1)
+                        , utils.toInternalPercent(1), utils.toInternalPercent(1)
+                    ], [], []
                     , {from: accounts[2]}).should.be.rejected;
             });
 
@@ -196,8 +205,10 @@ contract('W12Lister', async (accounts) => {
                         token.address
                         , "TestTokenz", "TT", 18
                         , [fromTokenOwner.from]
-                        , placeCommissionInTokens, utils.toInternalPercent(30)
-                        , buyCommissionInTokens, utils.toInternalPercent(10)
+                        , [
+                            placeCommissionInTokens, utils.toInternalPercent(30)
+                            , buyCommissionInTokens, utils.toInternalPercent(10)
+                        ], [], []
                         , fromSystemAccount);
 
                     await token.mint(fromTokenOwner.from, oneToken.mul(10000), 0, fromSystemAccount);
@@ -226,10 +237,8 @@ contract('W12Lister', async (accounts) => {
                     it('should be approved to spend token from swap address for commission', async () => {
                         const [crowdsaleAddress] = await sut.getCrowdsales(token.address);
 
-                        const expectedCrowdsaleSwapAllowance = utils.percent(saleAmount, buyCommissionInTokens);
-
                         (await token.allowance(exchanger.address, crowdsaleAddress))
-                            .should.bignumber.eq(expectedCrowdsaleSwapAllowance);
+                            .should.bignumber.eq(saleAmount);
                     });
 
                     it('should emmit `CrowdsaleTokenMinted`', async () => {
@@ -321,10 +330,12 @@ contract('W12Lister', async (accounts) => {
                         "TTFS",
                         18,
                         [accounts[1]],
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
+                        [
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                        ], [], [],
                         {from: admin}
                     ).should.be.fulfilled;
                 });
@@ -339,10 +350,12 @@ contract('W12Lister', async (accounts) => {
                         "TTFS",
                         18,
                         [accounts[1]],
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
-                        utils.toInternalPercent(5),
+                        [
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                            utils.toInternalPercent(5),
+                        ], [], [],
                         {from: admin}
                     ).should.be.rejectedWith(utils.EVMRevert);
                 });
@@ -365,6 +378,26 @@ contract('W12Lister', async (accounts) => {
 
         return result;
     };
+    const getUpdatePurchaseFeeParameterCalls = async (crowdsale) => {
+        const result = [];
+        const length = (await crowdsale._updatePurchaseFeeParameterForPaymentMethodCallsLength()).toNumber();
+        for(let i = 0; i < length; i++) {
+            const [symbol, has, value] = await crowdsale._updatePurchaseFeeParameterForPaymentMethodCall(i);
+            result.push({
+                symbol: web3.toUtf8(symbol),
+                has,
+                value
+            });
+        }
+        return result;
+    };
+    const paymentMethodA = web3.fromUtf8('A');
+    const paymentMethodB = web3.fromUtf8('B');
+    const paymentMethodC = web3.fromUtf8('C');
+    const purchaseFeeA = utils.toInternalPercent(10);
+    const purchaseFeeZero = utils.toInternalPercent(0);
+    const purchaseFeeMax = utils.toInternalPercent(99.99);
+    const purchaseFeeGreaterThenMax = utils.toInternalPercent(100);
 
     describe('whitelisting tokens', () => {
 
@@ -379,21 +412,43 @@ contract('W12Lister', async (accounts) => {
             it('should revert if owners list is empty', async () => {
                 await utils.shouldFail.reverting(
                     ctx.Lister.whitelistToken(
-                        ctx.Token1.address, '1', '1', 18, [], 0, 0, 0, 0
+                        ctx.Token1.address, '1', '1', 18, [], [0, 0, 0, 0], [], []
                     ));
             });
 
             it('should revert if owners list contains zero addresses', async () => {
                 await utils.shouldFail.reverting(
                     ctx.Lister.whitelistToken(
-                        ctx.Token1.address, '1', '1', 18, [utils.ZERO_ADDRESS, utils.generateRandomAddress()], 0, 0, 0, 0
+                        ctx.Token1.address, '1', '1', 18, [utils.ZERO_ADDRESS, utils.generateRandomAddress()], [0, 0, 0, 0], [], []
                     ));
             });
 
             it('should revert for zero token address', async () => {
                 await utils.shouldFail.reverting(
                     ctx.Lister.whitelistToken(
-                        utils.ZERO_ADDRESS, '1', '1', 18, [utils.generateRandomAddress()], 0, 0, 0, 0
+                        utils.ZERO_ADDRESS, '1', '1', 18, [utils.generateRandomAddress()], [0, 0, 0, 0], [], []
+                    ));
+            });
+
+            it('should revert if payment methods list length is not equal payment methods purchase fee list', async () => {
+                await utils.shouldFail.reverting(
+                    ctx.Lister.whitelistToken(
+                        utils.ZERO_ADDRESS, '1', '1', 18, [utils.generateRandomAddress()], [0, 0, 0, 0], [paymentMethodA], []
+                    ));
+            });
+
+            it('should revert if purchase fee greater then 99.99%', async () => {
+                await utils.shouldFail.reverting(
+                    ctx.Lister.whitelistToken(
+                        utils.ZERO_ADDRESS, '1', '1', 18, [utils.generateRandomAddress()], [0, 0, 0, 0], [paymentMethodA], [purchaseFeeGreaterThenMax]
+                    ));
+            });
+
+            it('should revert payment methods list with duplicates', async () => {
+                await utils.shouldFail.reverting(
+                    ctx.Lister.whitelistToken(
+                        utils.ZERO_ADDRESS, '1', '1', 18, [utils.generateRandomAddress()], [0, 0, 0, 0],
+                        [paymentMethodA, paymentMethodA], [purchaseFeeA, purchaseFeeA]
                     ));
             });
         });
@@ -410,7 +465,7 @@ contract('W12Lister', async (accounts) => {
                 const notAnAdmin = accounts[1];
                 await utils.shouldFail.reverting(
                     ctx.Lister.whitelistToken(
-                        ctx.Token1.address, '1', '1', 18, [utils.generateRandomAddress()], 0, 0, 0, 0,
+                        ctx.Token1.address, '1', '1', 18, [utils.generateRandomAddress()], [0, 0, 0, 0], [], [],
                         { from: notAnAdmin }
                     ));
             });
@@ -429,7 +484,7 @@ contract('W12Lister', async (accounts) => {
                 ctx.owners3 = [utils.generateRandomAddress(), utils.generateRandomAddress()];
 
                 ctx.Tx = await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners1, 0, 0, 0, 0
+                    ctx.Token1.address, '1', '1', 18, ctx.owners1, [0, 0, 0, 0], [paymentMethodA], [purchaseFeeA]
                 );
             });
 
@@ -473,6 +528,8 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[2].should.bignumber.eq(await ctx.Token1.decimals());
                 actualRecord[3].should.to.deep.equal(ctx.owners1);
                 actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
+                actualRecord[5].map(i => web3.toUtf8(i)).should.to.deep.equal([web3.toUtf8(paymentMethodA)]);
+                actualRecord[6].map(i => i.toNumber()).should.to.deep.equal([purchaseFeeA]);
             });
 
             it('should correctly fill all parameters of not initialized crowdsale', async () => {
@@ -481,15 +538,15 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[0].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
                 actualRecord[1].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
                 actualRecord[2].should.to.deep.equal([]);
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].should.to.deep.equal([]);
             });
 
             it('should emit event', async () => {
                 await utils.expectEvent.inLogs(ctx.Tx.logs, 'TokenWhitelisted', {
                     token: ctx.Token1.address,
                     sender: accounts[0],
-                    owners: ctx.owners1,
-                    name: await ctx.Token1.name(),
-                    symbol: await ctx.Token1.symbol()
+                    owners: ctx.owners1
                 });
             });
 
@@ -516,11 +573,11 @@ contract('W12Lister', async (accounts) => {
                 ctx.owners3 = [utils.generateRandomAddress(), utils.generateRandomAddress()];
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners1, 0, 0, 0, 0
+                    ctx.Token1.address, '1', '1', 18, ctx.owners1, [0, 0, 0, 0], [], []
                 );
 
                 ctx.Tx = await ctx.Lister.whitelistToken(
-                    ctx.Token2.address, '2', '2', 18, ctx.owners2, 0, 0, 0, 0
+                    ctx.Token2.address, '2', '2', 18, ctx.owners2, [0, 0, 0, 0], [paymentMethodA], [purchaseFeeA]
                 );
             });
 
@@ -529,12 +586,12 @@ contract('W12Lister', async (accounts) => {
                 actualList.should.to.deep.equal([ctx.Token1.address, ctx.Token2.address]);
             });
 
-            it('should confirm whitelisting of token', async () => {
+            it('should confirm whitelisting a token', async () => {
                 const actualResult = await ctx.Lister.isTokenWhitelisted(ctx.Token2.address);
                 actualResult.should.to.be.true;
             });
 
-            it('should confirm whitelisting of owners', async () => {
+            it('should confirm whitelisting owners', async () => {
                 for (const owner of ctx.owners2) {
                     const actualResult = await ctx.Lister.hasTokenOwner(ctx.Token2.address, owner);
                     actualResult.should.to.be.true;
@@ -564,6 +621,8 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[2].should.bignumber.eq(await ctx.Token2.decimals());
                 actualRecord[3].should.to.deep.equal(ctx.owners2);
                 actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
+                actualRecord[5].map(i => web3.toUtf8(i)).should.to.deep.equal([web3.toUtf8(paymentMethodA)]);
+                actualRecord[6].map(i => i.toNumber()).should.to.deep.equal([purchaseFeeA]);
             });
 
             it('should correctly fill all parameters of not initialized crowdsale', async () => {
@@ -572,6 +631,8 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[0].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
                 actualRecord[1].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
                 actualRecord[2].should.to.deep.equal([]);
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].should.to.deep.equal([]);
             });
         });
 
@@ -587,11 +648,12 @@ contract('W12Lister', async (accounts) => {
                 ctx.owners3 = [utils.generateRandomAddress(), utils.generateRandomAddress()];
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners1, 0, 0, 0, 0
+                    ctx.Token1.address, '1', '1', 18, ctx.owners1, [0, 0, 0, 0], [], []
                 );
 
                 ctx.Tx = await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '2', '2', 18, ctx.owners2, 100, 100, 100, 100
+                    ctx.Token1.address, '2', '2', 18, ctx.owners2, [100, 100, 100, 100],
+                    [paymentMethodA], [purchaseFeeA]
                 );
             });
 
@@ -627,6 +689,8 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[2].should.bignumber.eq(await ctx.Token1.decimals());
                 actualRecord[3].should.to.deep.equal(ctx.owners2);
                 actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([100, 100, 100, 100]);
+                actualRecord[5].map(i => web3.toUtf8(i)).should.to.deep.equal([web3.toUtf8(paymentMethodA)]);
+                actualRecord[6].map(i => i.toNumber()).should.to.deep.equal([purchaseFeeA]);
             });
 
             it('should`t update parameters of not initialized crowdsale', async () => {
@@ -635,15 +699,15 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[0].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
                 actualRecord[1].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
                 actualRecord[2].should.to.deep.equal([]);
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].should.to.deep.equal([]);
             });
 
             it('should emit event', async () => {
                 await utils.expectEvent.inLogs(ctx.Tx.logs, 'TokenWhitelisted', {
                     token: ctx.Token1.address,
                     sender: accounts[0],
-                    owners: ctx.owners2,
-                    name: '2',
-                    symbol: '2'
+                    owners: ctx.owners2
                 });
             });
 
@@ -682,7 +746,7 @@ contract('W12Lister', async (accounts) => {
                 await mintAndApprove(ctx.Token1, ctx.owners, ctx.Lister.address, oneToken.mul(100));
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners, 0, 0, 0, 0
+                    ctx.Token1.address, '1', '1', 18, ctx.owners, [0, 0, 0, 0], [], []
                 );
                 await ctx.Lister.placeToken(ctx.Token1.address, 0, oneToken.mul(50), { from: ctx.owners[0] });
             });
@@ -725,7 +789,7 @@ contract('W12Lister', async (accounts) => {
                 await mintAndApprove(ctx.Token1, ctx.owners, ctx.Lister.address, oneToken.mul(100));
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners, 0, 0, 0, 0
+                    ctx.Token1.address, '1', '1', 18, ctx.owners, [0, 0, 0, 0], [], []
                 );
                 await ctx.Lister.placeToken(ctx.Token1.address, 0, oneToken.mul(10), {from: ctx.owners[0]});
             });
@@ -767,7 +831,9 @@ contract('W12Lister', async (accounts) => {
                 const owner = ctx.owners[0];
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners, 0, 100, 100, 100
+                    ctx.Token1.address, '1', '1', 18, ctx.owners, [0, 100, 100, 100],
+                    [paymentMethodA, paymentMethodB],
+                    [purchaseFeeZero, purchaseFeeMax]
                 );
                 await ctx.Lister.placeToken(ctx.Token1.address, 0, oneToken.mul(10), {from: ctx.owners[0]});
                 await ctx.Lister.initCrowdsale(ctx.Token1.address, ctx.oneToken.mul(5), utils.toInternalUSD(1), {from: owner});
@@ -795,12 +861,28 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[0].map(i => i.toNumber()).should.to.deep.equal([0, 100, 100, 100]);
                 actualRecord[1].map(i => i.toNumber()).should.to.deep.equal([ctx.oneToken.mul(10).toNumber(), ctx.oneToken.mul(5).toNumber()]);
                 actualRecord[2].should.to.deep.equal(ctx.owners);
+                actualRecord[3].map(i => web3.toUtf8(i)).should.to.deep.equal([web3.toUtf8(paymentMethodA), web3.toUtf8(paymentMethodB)]);
+                actualRecord[4].map(i => i.toNumber()).should.to.deep.equal([purchaseFeeZero, purchaseFeeMax]);
             });
 
             it('should call crowdsale factory with owners', async () => {
                 const callResult = await ctx.CrowdsaleFactory._createCrowdsaleCall();
 
                 callResult[8].should.to.deep.equal(ctx.owners);
+            });
+
+            it('should call update purchase fee parameters on crowdsale', async () => {
+                const [crowdsaleAddress] = await ctx.Lister.getCrowdsales(ctx.Token1.address);
+                const crowdsale = W12Lister__W12CrowdsaleMock.at(crowdsaleAddress);
+                const callResults = await getUpdatePurchaseFeeParameterCalls(crowdsale);
+
+                callResults.length.should.to.equal(2);
+                callResults[0].symbol.should.to.eq(web3.toUtf8(paymentMethodA));
+                callResults[0].has.should.to.be.true;
+                callResults[0].value.should.bignumber.eq(purchaseFeeZero);
+                callResults[1].symbol.should.to.eq(web3.toUtf8(paymentMethodB));
+                callResults[1].has.should.to.be.true;
+                callResults[1].value.should.bignumber.eq(purchaseFeeMax);
             });
         });
 
@@ -821,13 +903,13 @@ contract('W12Lister', async (accounts) => {
                 const owner = ctx.owners[0];
 
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners, 0, 100, 100, 100
+                    ctx.Token1.address, '1', '1', 18, ctx.owners, [0, 100, 100, 100], [], []
                 );
                 await ctx.Lister.placeToken(ctx.Token1.address, 0, oneToken.mul(10), {from: ctx.owners[0]});
                 await ctx.Lister.initCrowdsale(ctx.Token1.address, ctx.oneToken.mul(5), utils.toInternalUSD(1), {from: owner});
                 ctx.crowdsales = await ctx.Lister.getCrowdsales(ctx.Token1.address);
                 await ctx.Lister.whitelistToken(
-                    ctx.Token1.address, '1', '1', 18, ctx.owners, 0, 100, 100, 100
+                    ctx.Token1.address, '1', '1', 18, ctx.owners, [0, 100, 100, 100], [], []
                 );
             });
 
@@ -853,6 +935,8 @@ contract('W12Lister', async (accounts) => {
                 actualRecord[0].map(i => i.toNumber()).should.to.deep.equal([0, 0, 0, 0]);
                 actualRecord[1].map(i => i.toNumber()).should.to.deep.equal([0, 0]);
                 actualRecord[2].should.to.deep.equal([]);
+                actualRecord[3].should.to.deep.equal([]);
+                actualRecord[4].should.to.deep.equal([]);
             });
         });
     });
