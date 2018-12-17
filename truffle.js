@@ -18,20 +18,18 @@ module.exports = {
             provider() {
                 return new HDWalletProvider(deployConfig.mnemonic, `https://rinkeby.infura.io/v3/${deployConfig.infuraKey}`)
             },
-            network_id: 4,
-            gasPrice: 10000000000,
+            network_id: 4
         },
         mainnet: {
             provider () {
                 return new PrivateKeyProvider(deployConfig.mainnetAccountPK, `https://mainnet.infura.io/v3/${deployConfig.infuraKey}`)
             },
-            network_id: 1,
             gasPrice: 6000000000,
+            network_id: 1
         }
     },
     mocha: {
-        grep: '',
-        bail: true
+        // grep: ''
     },
     solc: {
         optimizer: {

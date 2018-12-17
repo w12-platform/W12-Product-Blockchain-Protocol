@@ -5,10 +5,8 @@ const utils = require('../shared/tests/utils.js');
 const W12Lister = artifacts.require('W12Lister');
 const TokenExchanger = artifacts.require('TokenExchanger');
 const W12FundFactory = artifacts.require('W12FundFactory');
-const Rates = artifacts.require('Rates');
 const W12CrowdsaleFactory = artifacts.require('W12CrowdsaleFactory');
 const WToken = artifacts.require('WToken');
-const Wallets = artifacts.require('Wallets');
 
 contract('W12Lister', async (accounts) => {
     let sut;
@@ -16,20 +14,16 @@ contract('W12Lister', async (accounts) => {
     let factory;
     let fundFactory;
     let exchanger;
-    let rates;
-    let wallets;
     const wallet = accounts[9];
     const oneToken = new BigNumber(10).pow(18);
 
     beforeEach(async () => {
-        rates = await Rates.new();
         exchanger = await TokenExchanger.new(0);
-        fundFactory = await W12FundFactory.new(0, rates.address);
-        wallets = await Wallets.new({ from: wallet });
-        factory = await W12CrowdsaleFactory.new(0, fundFactory.address, rates.address);
-        sut = await W12Lister.new(0, wallets.address, factory.address, exchanger.address);
+        fundFactory = await W12FundFactory.new(0);
+        factory = await W12CrowdsaleFactory.new(0, fundFactory.address);
+        sut = await W12Lister.new(0, wallet, factory.address, exchanger.address);
 
-        await exchanger.transferPrimary(sut.address);
+        await exchanger.transferOwnership(sut.address);
 
         token = await WToken.new('TestToken', 'TT', 18);
     });
@@ -259,13 +253,11 @@ contract('W12Lister', async (accounts) => {
                     {from: tokenOwner1}
                 ).should.be.fulfilled;
 
-                const last = placementReceipt.logs.length -1;
-
-                placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
-                placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
-                placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner1);
-                placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
-                placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
+                placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
+                placementReceipt.logs[0].args.tokenOwner.should.be.equal(tokenOwner1);
+                placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(7));
+                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
@@ -283,13 +275,11 @@ contract('W12Lister', async (accounts) => {
                     {from: tokenOwner2}
                 ).should.be.fulfilled;
 
-                const last = placementReceipt.logs.length - 1;
-
-                placementReceipt.logs[last].event.should.be.equal('TokenPlaced');
-                placementReceipt.logs[last].args.originalTokenAddress.should.be.equal(token.address);
-                placementReceipt.logs[last].args.tokenOwner.should.be.equal(tokenOwner2);
-                placementReceipt.logs[last].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
-                placementReceipt.logs[last].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
+                placementReceipt.logs[0].event.should.be.equal('TokenPlaced');
+                placementReceipt.logs[0].args.originalTokenAddress.should.be.equal(token.address);
+                placementReceipt.logs[0].args.tokenOwner.should.be.equal(tokenOwner2);
+                placementReceipt.logs[0].args.tokenAmount.should.bignumber.equal(oneToken.mul(6));
+                placementReceipt.logs[0].args.placedTokenAddress.should.not.be.equal(utils.ZERO_ADDRESS);
 
                 const exchangerAddress = await sut.getExchanger();
                 const serviceWalletAddress = await sut.serviceWallet();
@@ -444,14 +434,16 @@ contract('W12Lister', async (accounts) => {
             it('add admin', async () => {
                 await sut.addAdmin(admin);
 
-                (await sut.isAdmin(admin)).should.to.be.true;
+                await sut.checkRole(admin, 'admin')
+                    .should.be.fulfilled;
             });
 
             it('remove admin', async () => {
                 await sut.addAdmin(admin);
                 await sut.removeAdmin(admin);
 
-                (await sut.isAdmin(admin)).should.to.be.false;
+                await sut.checkRole(admin, 'admin')
+                    .should.be.rejectedWith(utils.EVMRevert);
             });
 
             it('whitelist token when call from a admin', async () => {

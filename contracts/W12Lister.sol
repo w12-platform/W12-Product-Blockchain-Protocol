@@ -1,39 +1,32 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "./crowdsale/factories/IW12CrowdsaleFactory.sol";
-import "./wallets/IWallets.sol";
-import "./access/roles/IAdminRole.sol";
-import "./token/IWToken.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/access/rbac/RBAC.sol";
+import "./interfaces/IW12CrowdsaleFactory.sol";
 import "./libs/Percent.sol";
 import "./token/WToken.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 import "./versioning/Versionable.sol";
-import "./access/roles/AdminRole.sol";
-import "./rates/Rates.sol";
 
 
-contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyGuard {
+contract W12Lister is Versionable, RBAC, Ownable, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
 
-    Rates rates = new Rates();
-
-    uint8 constant SERVICE_WALLET_ID = 1;
+    string public ROLE_ADMIN = "admin";
 
     ITokenExchanger public exchanger;
     IW12CrowdsaleFactory public factory;
-    IWallets public wallets;
     // get token index in approvedTokens list by token address and token owner address
     mapping (address => mapping (address => uint16)) public approvedTokensIndex;
     ListedToken[] public approvedTokens;
     // return owners by token address
     mapping ( address => address[] ) approvedOwnersList;
     uint16 public approvedTokensLength;
+    address public serviceWallet;
 
     event OwnerWhitelisted(address indexed tokenAddress, address indexed tokenOwner, string name, string symbol);
     event TokenPlaced(address indexed originalTokenAddress, address indexed tokenOwner, uint tokenAmount, address placedTokenAddress);
@@ -57,25 +50,28 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
 
     constructor(
         uint version,
-        IWallets _wallets,
+        address _serviceWallet,
         IW12CrowdsaleFactory _factory,
         ITokenExchanger _exchanger
     ) Versionable(version) public {
+        require(_serviceWallet != address(0));
         require(_factory != address(0));
         require(_exchanger != address(0));
 
         exchanger = _exchanger;
-        wallets = _wallets;
+        serviceWallet = _serviceWallet;
         factory = _factory;
         approvedTokens.length++; // zero-index element should never be used
+
+        addRole(msg.sender, ROLE_ADMIN);
     }
 
-    function addAdmin(address _account) public onlyPrimary {
-        _addAdmin(_account);
+    function addAdmin(address _operator) public onlyOwner {
+        addRole(_operator, ROLE_ADMIN);
     }
 
-    function removeAdmin(address _account) public onlyPrimary {
-        _removeAdmin(_account);
+    function removeAdmin(address _operator) public onlyOwner {
+        removeRole(_operator, ROLE_ADMIN);
     }
 
     function whitelistToken(
@@ -89,7 +85,7 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
         uint WTokenSaleFeePercent,
         uint trancheFeePercent
     )
-        external onlyAdmin
+        external onlyRole(ROLE_ADMIN)
     {
 
         require(tokenOwner != address(0));
@@ -128,13 +124,12 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
      * @param amount Token amount to place
      */
     function placeToken(address tokenAddress, uint amount) external nonReentrant {
-        require(serviceWallet() != address(0));
         require(amount > 0);
         require(tokenAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).tokenAddress == tokenAddress);
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender]);
 
-        ERC20Detailed token = ERC20Detailed(tokenAddress);
+        DetailedERC20 token = DetailedERC20(tokenAddress);
 
         require(token.allowance(msg.sender, address(this)) >= amount);
 
@@ -147,25 +142,25 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
             : 0;
         uint amountWithoutFee = amount.sub(fee);
 
-        _secureTokenTransfer(IERC20(token), exchanger, amountWithoutFee);
-        _secureTokenTransfer(IERC20(token), serviceWallet(), fee);
+        _secureTokenTransfer(token, exchanger, amountWithoutFee);
+        _secureTokenTransfer(token, serviceWallet, fee);
 
         listedToken.tokensForSaleAmount = listedToken.tokensForSaleAmount.add(amountWithoutFee);
 
-        if (address(exchanger.getWTokenByToken(tokenAddress)) == address(0)) {
-            IWToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
+        if (exchanger.getWTokenByToken(tokenAddress) == address(0)) {
+            WToken wToken = new WToken(listedToken.name, listedToken.symbol, listedToken.decimals);
 
-            exchanger.addTokenToListing(ERC20Detailed(tokenAddress), wToken);
+            exchanger.addTokenToListing(ERC20(tokenAddress), wToken);
         }
 
-        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, address(exchanger.getWTokenByToken(tokenAddress)));
+        emit TokenPlaced(tokenAddress, msg.sender, amountWithoutFee, exchanger.getWTokenByToken(tokenAddress));
     }
 
     /**
      * @dev Securely transfer token from sender to account
      */
-    function _secureTokenTransfer(IERC20 token, address to, uint value) internal {
-        // check for overflow before. we are not sure that the placed token has implemented safe math
+    function _secureTokenTransfer(ERC20 token, address to, uint value) internal {
+        // check for overflow before. we are not sure that the placed token has implemented save math
         uint expectedBalance = token.balanceOf(to).add(value);
 
         token.transferFrom(msg.sender, to, value);
@@ -175,31 +170,30 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     }
 
     function initCrowdsale(address tokenAddress, uint amountForSale, uint price) external nonReentrant {
-        require(serviceWallet() != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress == address(0));
 
-        IWToken wtoken = exchanger.getWTokenByToken(tokenAddress);
+        WToken wtoken = exchanger.getWTokenByToken(tokenAddress);
 
         IW12Crowdsale crowdsale = factory.createCrowdsale(
             address(tokenAddress),
             address(wtoken),
             price,
-            serviceWallet(),
+            serviceWallet,
             getApprovedToken(tokenAddress, msg.sender).ethFeePercent,
             getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent,
             getApprovedToken(tokenAddress, msg.sender).trancheFeePercent,
-            address(exchanger),
+            exchanger,
             msg.sender
         );
 
         getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress = crowdsale;
-        wtoken.addAdmin(crowdsale);
+        wtoken.addTrustedAccount(crowdsale);
 
         if (getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent > 0) {
             exchanger.approve(
-                IERC20(tokenAddress),
+                ERC20(tokenAddress),
                 address(crowdsale),
                 getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount
                     .percent(getApprovedToken(tokenAddress, msg.sender).WTokenSaleFeePercent)
@@ -214,12 +208,12 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
     function addTokensToCrowdsale(address tokenAddress, uint amountForSale) public {
         require(amountForSale > 0);
         require(tokenAddress != address(0));
-        require(address(exchanger.getWTokenByToken(tokenAddress)) != address(0));
+        require(exchanger.getWTokenByToken(tokenAddress) != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress != address(0));
         require(getApprovedToken(tokenAddress, msg.sender).approvedOwners[msg.sender] == true);
         require(getApprovedToken(tokenAddress, msg.sender).tokensForSaleAmount >= getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount.add(amountForSale));
 
-        IWToken token = exchanger.getWTokenByToken(tokenAddress);
+        WToken token = exchanger.getWTokenByToken(tokenAddress);
         IW12Crowdsale crowdsale = getApprovedToken(tokenAddress, msg.sender).crowdsaleAddress;
 
         getApprovedToken(tokenAddress, msg.sender).wTokensIssuedAmount = getApprovedToken(tokenAddress, msg.sender)
@@ -244,9 +238,5 @@ contract W12Lister is IAdminRole, AdminRole, Versionable, Secondary, ReentrancyG
 
     function getApprovedToken(address tokenAddress, address ownerAddress) internal view returns (ListedToken storage result) {
         return approvedTokens[approvedTokensIndex[tokenAddress][ownerAddress]];
-    }
-
-    function serviceWallet() public view returns(address) {
-        return wallets.getWallet(SERVICE_WALLET_ID);
     }
 }
