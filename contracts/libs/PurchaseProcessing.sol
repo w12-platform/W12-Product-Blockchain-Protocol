@@ -195,7 +195,7 @@ library PurchaseProcessing {
         }
     }
 
-    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) public view returns (uint bonus) {
+    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) public pure returns (uint bonus) {
         for (uint i = 0; i < volumeBoundaries.length; i++) {
             if (value >= volumeBoundaries[i]) {
                 bonus = volumeBonuses[i];
