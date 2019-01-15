@@ -1,10 +1,11 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./IW12CrowdsaleFactory.sol";
 import "./IW12FundFactory.sol";
 import "../../rates/IRates.sol";
 import "../../versioning/Versionable.sol";
 import "../W12Crowdsale.sol";
+
 
 contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;

@@ -1,7 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../crowdsale/IW12Crowdsale.sol";
 import "../../crowdsale/IW12Fund.sol";
+
 
 contract W12Lister__W12FundMock is IW12Fund {
     function setCrowdsale(IW12Crowdsale _crowdsale) external {}

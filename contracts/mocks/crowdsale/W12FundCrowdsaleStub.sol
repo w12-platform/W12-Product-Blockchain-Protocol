@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -9,6 +9,7 @@ import "../../crowdsale/IW12Fund.sol";
 import "../../token/IWToken.sol";
 import "../../libs/Percent.sol";
 import "../../versioning/Versionable.sol";
+
 
 contract W12FundCrowdsaleStub is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
     uint _currentMilestoneIndex;

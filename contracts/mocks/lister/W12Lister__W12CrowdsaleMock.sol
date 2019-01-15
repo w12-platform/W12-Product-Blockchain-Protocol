@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../crowdsale/IW12Crowdsale.sol";
 import "../../crowdsale/IW12Fund.sol";
 import "./W12Lister__W12FundMock.sol";
+
 
 contract W12Lister__W12CrowdsaleMock is IW12Crowdsale {
     IW12Fund private _fund;

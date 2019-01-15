@@ -1,11 +1,12 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./ISymbols.sol";
 
+
 contract Symbols is ISymbols {
     bytes32[] public symbolsList;
-    mapping (bytes32 => uint) symbolIndex;
-    mapping (bytes32 => bool) symbols;
+    mapping (bytes32 => uint) private symbolIndex;
+    mapping (bytes32 => bool) private symbols;
 
     function addSymbol(bytes32 symbol) public {
         require(!symbols[symbol]);

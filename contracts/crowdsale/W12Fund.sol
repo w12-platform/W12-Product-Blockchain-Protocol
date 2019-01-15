@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -16,13 +16,14 @@ import "../token/IWToken.sol";
 import "../access/roles/AdminRole.sol";
 import "../access/roles/ProjectOwnerRole.sol";
 
+
 contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
     using FundAccount for FundAccount.Account;
 
-    bytes32 constant METHOD_ETH = bytes32('ETH');
-    bytes32 constant METHOD_USD = bytes32('USD');
+    bytes32 constant internal METHOD_ETH = bytes32("ETH");
+    bytes32 constant internal METHOD_USD = bytes32("USD");
 
     IW12Crowdsale public crowdsale;
     IWToken public wToken;
@@ -32,7 +33,7 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
     // fee for realised tranche
     uint public trancheFeePercent;
 
-    Fund.State state;
+    Fund.State private state;
 
     event FundsReceived(address indexed investor, uint tokenAmount, bytes32 symbol, uint cost);
     event AssetRefunded(address indexed investor, bytes32 symbol, uint amount);
@@ -40,7 +41,7 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
     event TrancheTransferred(address indexed receiver, bytes32 symbol, uint amount);
     event TrancheReleased(address indexed receiver, uint percent);
 
-    constructor(uint version, uint _trancheFeePercent, IRates _rates) Versionable(version) public {
+    constructor(uint version, uint _trancheFeePercent, IRates _rates) public Versionable(version) {
         require(_trancheFeePercent.isPercent() && _trancheFeePercent.fromPercent() < 100);
         require(_rates != address(0));
 
@@ -48,23 +49,7 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
         rates = _rates;
     }
 
-    function addAdmin(address _account) public onlyAdmin {
-        _addAdmin(_account);
-    }
-
-    function removeAdmin(address _account) public onlyAdmin {
-        _removeAdmin(_account);
-    }
-
-    function addProjectOwner(address _account) public onlyAdmin {
-        _addProjectOwner(_account);
-    }
-
-    function removeProjectOwner(address _account) public onlyAdmin {
-        _removeProjectOwner(_account);
-    }
-
-    function setCrowdsale(IW12Crowdsale _crowdsale) onlyAdmin external {
+    function setCrowdsale(IW12Crowdsale _crowdsale) external onlyAdmin {
         require(_crowdsale != address(0));
         require(_crowdsale.getWToken() != address(0));
 
@@ -72,13 +57,13 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
         wToken = IWToken(_crowdsale.getWToken());
     }
 
-    function setSwap(address _swap) onlyAdmin external {
+    function setSwap(address _swap) external onlyAdmin {
         require(_swap != address(0));
 
         swap = _swap;
     }
 
-    function setServiceWallet(address _serviceWallet) onlyAdmin external {
+    function setServiceWallet(address _serviceWallet) external onlyAdmin {
         require(_serviceWallet != address(0));
 
         serviceWallet = _serviceWallet;
@@ -110,6 +95,61 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
             costUSD,
             rates
         );
+    }
+
+    /**
+     * @notice Realise project tranche
+     */
+    function tranche() external onlyProjectOwner nonReentrant {
+        require(trancheTransferAllowed());
+
+        uint[3] memory trancheInvoice = getTrancheInvoice();
+
+        require(trancheInvoice[0] > 0);
+        require(state.totalFunded.symbolsList().length != 0);
+
+        state.completedTranches[trancheInvoice[2]] = true;
+        state.totalTranchePercentReleased = state.totalTranchePercentReleased.add(trancheInvoice[0]);
+
+        _transferTranche(trancheInvoice);
+
+        emit TrancheReleased(msg.sender, trancheInvoice[0]);
+    }
+
+    /**
+     * @notice Refund bought tokens
+     */
+    function refund(uint tokenAmount) external nonReentrant {
+        require(tokenRefundAllowed());
+        require(tokenAmount != 0);
+        require(state.tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
+        require(wToken.balanceOf(msg.sender) >= tokenAmount);
+        require(wToken.allowance(msg.sender, address(this)) >= tokenAmount);
+
+        _refundAssets(tokenAmount);
+
+        state.totalTokenRefunded = state.totalTokenRefunded.add(tokenAmount);
+        state.tokenBoughtPerInvestor[msg.sender] = state.tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
+
+        require(wToken.transferFrom(msg.sender, swap, tokenAmount));
+
+        emit TokenRefunded(msg.sender, tokenAmount);
+    }
+
+    function addAdmin(address _account) public onlyAdmin {
+        _addAdmin(_account);
+    }
+
+    function removeAdmin(address _account) public onlyAdmin {
+        _removeAdmin(_account);
+    }
+
+    function addProjectOwner(address _account) public onlyAdmin {
+        _addProjectOwner(_account);
+    }
+
+    function removeProjectOwner(address _account) public onlyAdmin {
+        _removeProjectOwner(_account);
     }
 
     // total percent of realised project tranche
@@ -168,23 +208,34 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
         );
     }
 
-    /**
-     * @notice Realise project tranche
-     */
-    function tranche() external onlyProjectOwner nonReentrant {
-        require(trancheTransferAllowed());
+    function tokenRefundAllowed() public view returns (bool) {
+        (uint index, /* bool found */) = crowdsale.getCurrentMilestoneIndex();
 
-        uint[3] memory trancheInvoice = getTrancheInvoice();
+        // first milestone is reserved for the project to claim initial amount of payments.
+        // No refund allowed at this stage.
+        if (index == 0) return;
 
-        require(trancheInvoice[0] > 0);
-        require(state.totalFunded.symbolsList().length != 0);
+        (uint32 endDate, , , uint32 withdrawalWindow, ,) = crowdsale.getMilestone(index);
 
-        state.completedTranches[trancheInvoice[2]] = true;
-        state.totalTranchePercentReleased = state.totalTranchePercentReleased.add(trancheInvoice[0]);
+        return endDate <= now && now < withdrawalWindow;
+    }
 
-        _transferTranche(trancheInvoice);
+    function trancheTransferAllowed() public view returns (bool) {
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
 
-        emit TrancheReleased(msg.sender, trancheInvoice[0]);
+        if (!found) return;
+
+        return index == 0 || isWithdrawalWindowActive();
+    }
+
+    function isWithdrawalWindowActive() public view returns (bool) {
+        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
+
+        if (index == 0 || !found) return;
+
+        (uint32 endDate, , , uint32 lastWithdrawalWindow, ,) = crowdsale.getMilestone(index);
+
+        return endDate > now || now >= lastWithdrawalWindow;
     }
 
     function _transferTranche(uint[3] _invoice) internal {
@@ -197,26 +248,6 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
         );
     }
 
-    /**
-     * @notice Refund bought tokens
-     */
-    function refund(uint tokenAmount) external nonReentrant {
-        require(tokenRefundAllowed());
-        require(tokenAmount != 0);
-        require(state.tokenBoughtPerInvestor[msg.sender] >= tokenAmount);
-        require(wToken.balanceOf(msg.sender) >= tokenAmount);
-        require(wToken.allowance(msg.sender, address(this)) >= tokenAmount);
-
-        _refundAssets(tokenAmount);
-
-        state.totalTokenRefunded = state.totalTokenRefunded.add(tokenAmount);
-        state.tokenBoughtPerInvestor[msg.sender] = state.tokenBoughtPerInvestor[msg.sender].sub(tokenAmount);
-
-        require(wToken.transferFrom(msg.sender, swap, tokenAmount));
-
-        emit TokenRefunded(msg.sender, tokenAmount);
-    }
-
     function _refundAssets(uint tokenAmount) internal {
         Fund.refundAssets(
             state,
@@ -225,38 +256,8 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
         );
     }
 
-    function tokenRefundAllowed() public view returns (bool) {
-        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
-
-        // first milestone is reserved for the project to claim initial amount of payments. No refund allowed at this stage.
-        if(index == 0) return;
-
-        (uint32 endDate, , , uint32 withdrawalWindow, , ) = crowdsale.getMilestone(index);
-
-        return endDate <= now && now < withdrawalWindow;
-    }
-
-    function trancheTransferAllowed() public view returns (bool) {
-        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
-
-        if(!found) return;
-
-        return index == 0 || isWithdrawalWindowActive();
-    }
-
-    function isWithdrawalWindowActive() public view returns (bool) {
-        (uint index, bool found) = crowdsale.getCurrentMilestoneIndex();
-
-        if(index == 0 || !found) return;
-
-        (uint32 endDate, , ,uint32 lastWithdrawalWindow, , ) = crowdsale.getMilestone(index);
-
-        return endDate > now || now >= lastWithdrawalWindow;
-    }
-
     modifier onlyCrowdsale {
         require(msg.sender == address(crowdsale));
-
         _;
     }
 }

@@ -1,4 +1,5 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
+
 
 contract IProjectOwnerRole {
     function isProjectOwner(address account) public view returns (bool);

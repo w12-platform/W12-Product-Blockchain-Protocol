@@ -1,9 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../token/IWToken.sol";
 import "./IW12Fund.sol";
 import "../access/roles/IAdminRole.sol";
 import "../access/roles/IProjectOwnerRole.sol";
+
 
 contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function setParameters(uint price) external;
@@ -21,6 +22,8 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
 
     function getFund() external view returns(IW12Fund);
 
+    function milestonesLength() external view returns (uint);
+
     function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes);
 
     function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]);
@@ -28,8 +31,6 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function getCurrentMilestoneIndex() public view returns (uint, bool);
 
     function getLastMilestoneIndex() public view returns (uint index, bool found);
-
-    function milestonesLength() external view returns (uint);
 
     function getCurrentStageIndex() public view returns (uint index, bool found);
 
@@ -45,7 +46,7 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
 
     function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns (uint);
 
-    function buyTokens(bytes32 method, uint amount) payable public;
+    function buyTokens(bytes32 method, uint amount) public payable;
 
     function transferPrimary(address _address) public;
 }

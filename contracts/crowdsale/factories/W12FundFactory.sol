@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./IW12FundFactory.sol";
 import "../W12Fund.sol";
 import "../../versioning/Versionable.sol";
+
 
 contract W12FundFactory is Versionable, IW12FundFactory {
     IRates rates;

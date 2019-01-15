@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -8,13 +8,14 @@ import "./Utils.sol";
 import "./Percent.sol";
 import "./FundAccount.sol";
 
-library  Fund {
+
+library Fund {
     using SafeMath for uint;
     using Percent for uint;
     using FundAccount for FundAccount.Account;
 
-    bytes32 constant METHOD_ETH = bytes32('ETH');
-    bytes32 constant METHOD_USD = bytes32('USD');
+    bytes32 constant private METHOD_ETH = bytes32("ETH");
+    bytes32 constant private METHOD_USD = bytes32("USD");
 
     struct State {
         mapping(uint => bool) completedTranches;
@@ -31,6 +32,7 @@ library  Fund {
     event AssetRefunded(address indexed investor, bytes32 symbol, uint amount);
     event TrancheTransferred(address indexed receiver, bytes32 symbol, uint amount);
 
+    // solhint-disable code-complexity
     function transferTranche(
         State storage state,
         uint[3] _invoice,
@@ -84,6 +86,7 @@ library  Fund {
             emit TrancheTransferred(msg.sender, symbol, amount);
         }
     }
+    // solhint-enable code-complexity
 
     function getTrancheInvoice(
         State storage state,
@@ -95,12 +98,10 @@ library  Fund {
         (uint index, /*bool found*/) = crowdsale.getCurrentMilestoneIndex();
         (uint lastIndex, /*bool found*/) = crowdsale.getLastMilestoneIndex();
 
-        (,,, uint32 lastWithdrawalWindow,,) = crowdsale.getMilestone(lastIndex);
-
         // get percent from prev milestone
         index = index == 0 || lastIndex == index ? index : index - 1;
 
-        (, uint tranchePercent,, uint32 withdrawalWindow,,) = crowdsale.getMilestone(index);
+        (, uint tranchePercent, , , , ) = crowdsale.getMilestone(index);
 
         bool completed = state.completedTranches[index];
 
@@ -112,7 +113,7 @@ library  Fund {
         while (prevIndex > 0) {
             prevIndex--;
 
-            (, uint _tranchePercent,,,,) = crowdsale.getMilestone(prevIndex);
+            (, uint _tranchePercent, , , , ) = crowdsale.getMilestone(prevIndex);
 
             totalTranchePercentBefore = totalTranchePercentBefore.add(_tranchePercent);
         }
@@ -204,7 +205,10 @@ library  Fund {
             require(msg.value >= cost);
         } else {
             require(rates.isToken(symbol));
-            require(IERC20(rates.getTokenAddress(symbol)).balanceOf(address(this)) >= state.totalFunded.amountOf(symbol).add(cost));
+            require(
+                IERC20(rates.getTokenAddress(symbol))
+                    .balanceOf(address(this))
+                        >= state.totalFunded.amountOf(symbol).add(cost));
         }
 
         // write to investor account
