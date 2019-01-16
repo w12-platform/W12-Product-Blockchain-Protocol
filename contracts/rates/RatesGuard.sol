@@ -161,10 +161,10 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         _removeSuggestor(account);
     }
 
-    function suggest(bytes32[] symbols, uint[] rates) public onlySuggestor {
+    function suggest(bytes32[] symbols, uint[] rateValues) public onlySuggestor {
         require(!isLocked());
 
-        _addSuggestion(msg.sender, symbols, rates);
+        _addSuggestion(msg.sender, symbols, rateValues);
         _runPostProcessing();
     }
 
@@ -216,9 +216,9 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         );
     }
 
-    function _addSuggestion(address suggestor, bytes32[] symbols, uint[] rates) internal {
+    function _addSuggestion(address suggestor, bytes32[] symbols, uint[] rateValues) internal {
         require(symbols.length != 0);
-        require(symbols.length == rates.length);
+        require(symbols.length == rateValues.length);
 
         uint i;
 
@@ -231,7 +231,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
 
         for (i = 0; i < symbols.length; i++) {
             suggestions[suggestor].has[symbols[i]] = true;
-            suggestions[suggestor].rate[symbols[i]] = rates[i];
+            suggestions[suggestor].rate[symbols[i]] = rateValues[i];
         }
 
         emit SuggestionAccepted(suggestor);
