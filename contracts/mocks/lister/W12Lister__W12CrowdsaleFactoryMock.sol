@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../crowdsale/IW12Crowdsale.sol";
 import "../../crowdsale/factories/IW12CrowdsaleFactory.sol";
 import "./W12Lister__W12CrowdsaleMock.sol";
+
 
 contract W12Lister__W12CrowdsaleFactoryMock is IW12CrowdsaleFactory {
     struct CreateCrowdsaleCall {

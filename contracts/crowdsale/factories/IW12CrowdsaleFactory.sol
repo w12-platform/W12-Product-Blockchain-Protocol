@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../IW12Crowdsale.sol";
 
@@ -11,7 +11,7 @@ interface IW12CrowdsaleFactory {
         address serviceWallet,
         uint serviceFee,
         uint WTokenSaleFeePercent,
-        uint trancheFeePercent ,
+        uint trancheFeePercent,
         address swap,
         address[] owners
     )

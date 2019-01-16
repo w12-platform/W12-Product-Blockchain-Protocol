@@ -1,6 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../rates/IRates.sol";
+
 
 contract RatesGuard__RatesMock is IRates {
     function addSymbolWithTokenAddress(bytes32 symbol, address _address) public {}

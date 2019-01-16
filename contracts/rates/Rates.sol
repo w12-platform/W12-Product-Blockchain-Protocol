@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "./IRates.sol";
@@ -6,9 +6,10 @@ import "../access/roles/IPricerRole.sol";
 import "../access/roles/PricerRole.sol";
 import "./Symbols.sol";
 
+
 contract Rates is IRates, Symbols, PricerRole, Secondary {
-    mapping (bytes32 => uint) rates;
-    mapping (bytes32 => address) tokenAddress;
+    mapping (bytes32 => uint) private rates;
+    mapping (bytes32 => address) private tokenAddress;
 
     function addSymbolWithTokenAddress(bytes32 symbol, address _address) public onlyPricer {
         Symbols.addSymbol(symbol);

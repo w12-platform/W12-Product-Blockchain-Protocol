@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
@@ -6,30 +6,10 @@ import "./Percent.sol";
 import "./Utils.sol";
 import "../token/IWToken.sol";
 
+
 library PurchaseProcessing {
     using SafeMath for uint;
     using Percent for uint;
-
-    function METHOD_ETH() internal pure returns (bytes32) {return bytes32('ETH');}
-
-    function checkInvoiceInput(
-        bytes32 method,
-        uint amount,
-        uint methodUSDRate,
-        uint tokenUSDRate,
-        uint currentBalanceInTokens,
-        uint tokenDecimals,
-        uint methodDecimals
-    ) public pure returns(bool result) {
-        result = amount > 0
-            && methodUSDRate > 0
-            && tokenUSDRate > 0
-            && currentBalanceInTokens >= 10 ** tokenDecimals;
-
-        if (method == METHOD_ETH()) {
-            result = result && methodDecimals == 18;
-        }
-    }
 
     /**
      * @notice Generate invoice
@@ -215,6 +195,35 @@ library PurchaseProcessing {
         }
     }
 
+    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) public pure returns (uint bonus) {
+        for (uint i = 0; i < volumeBoundaries.length; i++) {
+            if (value >= volumeBoundaries[i]) {
+                bonus = volumeBonuses[i];
+            } else {
+                break;
+            }
+        }
+    }
+
+    function checkInvoiceInput(
+        bytes32 method,
+        uint amount,
+        uint methodUSDRate,
+        uint tokenUSDRate,
+        uint currentBalanceInTokens,
+        uint tokenDecimals,
+        uint methodDecimals
+    ) public pure returns (bool result) {
+        result = amount > 0
+        && methodUSDRate > 0
+        && tokenUSDRate > 0
+        && currentBalanceInTokens >= 10 ** tokenDecimals;
+
+        if (method == METHOD_ETH()) {
+            result = result && methodDecimals == 18;
+        }
+    }
+
     function fee(uint tokenAmount, uint cost, uint tokenFee, uint purchaseFee) public pure returns(uint[2] result) {
         if (tokenFee > 0) result[0] = tokenAmount.safePercent(tokenFee);
         if (purchaseFee > 0) result[1] = cost.safePercent(purchaseFee);
@@ -286,13 +295,8 @@ library PurchaseProcessing {
         }
     }
 
-    function getBonus(uint value, uint[] volumeBoundaries, uint[] volumeBonuses) public view returns(uint bonus) {
-        for (uint i = 0; i < volumeBoundaries.length; i++) {
-            if (value >= volumeBoundaries[i]) {
-                bonus = volumeBonuses[i];
-            } else {
-                break;
-            }
-        }
+    // solhint-disable-next-line func-name-mixedcase
+    function METHOD_ETH() internal pure returns (bytes32) {
+        return bytes32("ETH");
     }
 }

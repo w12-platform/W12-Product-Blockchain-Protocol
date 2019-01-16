@@ -1,6 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./WToken.sol";
+
 
 contract WTokenStub is WToken {
 
@@ -15,5 +16,6 @@ contract WTokenStub is WToken {
         _;
     }
 
-    constructor(string _name, string _symbol, uint8 _decimals) WToken(_name, _symbol, _decimals) public { }
+    // solhint-disable-next-line no-empty-blocks
+    constructor(string _name, string _symbol, uint8 _decimals) public WToken(_name, _symbol, _decimals) {}
 }

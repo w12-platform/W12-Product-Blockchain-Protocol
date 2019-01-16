@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "./Percent.sol";
+
 
 library Crowdsale {
     using SafeMath for uint;
@@ -56,11 +57,11 @@ library Crowdsale {
 
         for (uint8 i = 0; i < parameters.length; i++) {
             // check overflow
-            require(parameters[i][0] <= uint32(- 1));
-            require(parameters[i][1] <= uint32(- 1));
-            require(parameters[i][3] <= uint32(- 1));
-            require(parameters[i][4] <= uint8(- 1));
-            require(parameters[i][5] <= uint8(- 1));
+            require(parameters[i][0] <= uint32(-1));
+            require(parameters[i][1] <= uint32(-1));
+            require(parameters[i][3] <= uint32(-1));
+            require(parameters[i][4] <= uint8(-1));
+            require(parameters[i][5] <= uint8(-1));
 
             // check dates
             require(parameters[i][0] > now);
@@ -173,9 +174,9 @@ library Crowdsale {
 
         for (uint8 i = 0; i < parameters.length; i++) {
             // check overflow
-            require(parameters[i][0] <= uint32(- 1));
-            require(parameters[i][1] <= uint32(- 1));
-            require(parameters[i][2] <= uint32(- 1));
+            require(parameters[i][0] <= uint32(-1));
+            require(parameters[i][1] <= uint32(-1));
+            require(parameters[i][2] <= uint32(-1));
 
             // check dates
             require(parameters[i][0] > now);

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./IRates.sol";
 import "../access/roles/IAdminRole.sol";
@@ -34,8 +34,11 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
     uint public lockUntil;
 
     event Fail(FailCase indexed failCase);
+
     event SuggestionConfirmed(address indexed suggestor);
+
     event SuggestionAccepted(address indexed suggestor);
+
     event SettingUpdated(
         address indexed updater,
         address rates,
@@ -46,9 +49,13 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         uint diffTolerant,
         uint expireTimeout
     );
+
     event DiffTolerantForSymbolsUpdated(address indexed updater, bytes32 symbol, uint value);
+
     event DiffTolerantForSymbolsRemoved(address indexed remover, bytes32 symbol);
+
     event DiffPrevTolerantForSymbolsUpdated(address indexed updater, bytes32 symbol, uint value);
+
     event DiffPrevTolerantForSymbolsRemoved(address indexed remover, bytes32 symbol);
 
     constructor(
@@ -71,37 +78,6 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         _emitSettingsUpdateEvent();
         renounceSuggestor();
         bulkAddSuggestor(_suggestors);
-    }
-
-    function _setRates(IRates _rates) internal {
-        require(address(_rates) != address(0));
-        rates = _rates;
-    }
-
-    function _setValidationTriggerCondition(uint value) internal {
-        require(value > 1);
-        validationTriggerCondition = value;
-    }
-
-    function _setMinSuggestionMatch(uint value) internal {
-        require(value > 0);
-        minSuggestionMatch = value;
-    }
-
-    function _setDiffPrevTolerant(uint value) internal {
-        diffPrevTolerant = value;
-    }
-
-    function _setDiffTolerant(uint value) internal {
-        diffTolerant = value;
-    }
-
-    function _setLockOnFailTimeout(uint value) internal {
-        lockOnFailTimeout = value;
-    }
-
-    function _setExpireTimeout(uint value) internal {
-        expireTimeout = value;
     }
 
     function setRates(IRates _rates) public {
@@ -163,19 +139,6 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         _emitSettingsUpdateEvent();
     }
 
-    function _emitSettingsUpdateEvent() internal {
-        emit SettingUpdated(
-            msg.sender,
-            address(rates),
-            validationTriggerCondition,
-            minSuggestionMatch,
-            diffPrevTolerant,
-            lockOnFailTimeout,
-            diffTolerant,
-            expireTimeout
-        );
-    }
-
     function addAdmin(address account) public onlyAdmin {
         _addAdmin(account);
     }
@@ -189,7 +152,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
     }
 
     function bulkAddSuggestor(address[] _suggestors) public onlyAdmin {
-        for(uint i = 0; i < _suggestors.length; i++) {
+        for (uint i = 0; i < _suggestors.length; i++) {
             addSuggestor(_suggestors[i]);
         }
     }
@@ -198,20 +161,68 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         _removeSuggestor(account);
     }
 
-    function suggest(bytes32[] symbols, uint[] rates) public onlySuggestor {
+    function suggest(bytes32[] symbols, uint[] rateValues) public onlySuggestor {
         require(!isLocked());
 
-        _addSuggestion(msg.sender, symbols, rates);
+        _addSuggestion(msg.sender, symbols, rateValues);
         _runPostProcessing();
     }
 
-    function _addSuggestion(address suggestor, bytes32[] symbols, uint[] rates) internal {
+    function isLocked() public view returns (bool) {
+        return now < lockUntil;
+    }
+
+    function _setRates(IRates _rates) internal {
+        require(address(_rates) != address(0));
+        rates = _rates;
+    }
+
+    function _setValidationTriggerCondition(uint value) internal {
+        require(value > 1);
+        validationTriggerCondition = value;
+    }
+
+    function _setMinSuggestionMatch(uint value) internal {
+        require(value > 0);
+        minSuggestionMatch = value;
+    }
+
+    function _setDiffPrevTolerant(uint value) internal {
+        diffPrevTolerant = value;
+    }
+
+    function _setDiffTolerant(uint value) internal {
+        diffTolerant = value;
+    }
+
+    function _setLockOnFailTimeout(uint value) internal {
+        lockOnFailTimeout = value;
+    }
+
+    function _setExpireTimeout(uint value) internal {
+        expireTimeout = value;
+    }
+
+    function _emitSettingsUpdateEvent() internal {
+        emit SettingUpdated(
+            msg.sender,
+            address(rates),
+            validationTriggerCondition,
+            minSuggestionMatch,
+            diffPrevTolerant,
+            lockOnFailTimeout,
+            diffTolerant,
+            expireTimeout
+        );
+    }
+
+    function _addSuggestion(address suggestor, bytes32[] symbols, uint[] rateValues) internal {
         require(symbols.length != 0);
-        require(symbols.length == rates.length);
+        require(symbols.length == rateValues.length);
 
         uint i;
 
-        for(i = 0; i < suggestions[suggestor].symbols.length; i++) {
+        for (i = 0; i < suggestions[suggestor].symbols.length; i++) {
             suggestions[suggestor].has[suggestions[suggestor].symbols[i]] = false;
         }
 
@@ -220,12 +231,12 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
 
         for (i = 0; i < symbols.length; i++) {
             suggestions[suggestor].has[symbols[i]] = true;
-            suggestions[suggestor].rate[symbols[i]] = rates[i];
+            suggestions[suggestor].rate[symbols[i]] = rateValues[i];
         }
 
         emit SuggestionAccepted(suggestor);
 
-        for(i = 0; i < suggestors.length; i++) {
+        for (i = 0; i < suggestors.length; i++) {
             if (suggestors[i] == suggestor) {
                 // push to the and of the list and save add/update order
                 if (i != suggestors.length + 1) {
@@ -292,14 +303,11 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         lockUntil = now + lockOnFailTimeout;
     }
 
-    function isLocked() public view returns(bool) {
-        return now < lockUntil;
-    }
-
     function _confirmSuggestion(Suggestion storage _suggestion) internal returns(bool) {
         for (uint i = 0; i < _suggestion.symbols.length; i++) {
-            if(!address(rates).call(
-                bytes4(keccak256('set(bytes32,uint256)')),
+            // solhint-disable-next-line avoid-low-level-calls
+            if (!address(rates).call(
+                bytes4(keccak256("set(bytes32,uint256)")),
                 _suggestion.symbols[i],
                 _suggestion.rate[_suggestion.symbols[i]])) {
                 return false;
@@ -324,7 +332,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
     }
 
     function _isMismatchSymbols(Suggestion storage _suggestion)  internal view returns(bool) {
-        for(uint i = 0; i < _suggestion.symbols.length; i++) {
+        for (uint i = 0; i < _suggestion.symbols.length; i++) {
             if (!rates.hasSymbol(_suggestion.symbols[i])) {
                 return true;
             }
@@ -335,7 +343,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
     function _removeExpired() internal {
         if (expireTimeout != 0) {
             uint lncut = 0;
-            for(uint i = 0; i < suggestors.length; i++) {
+            for (uint i  = 0; i < suggestors.length; i++) {
                 uint diff = now - suggestions[suggestors[i]].timestamp + 1;
                 if (expireTimeout >= diff) {
                     if (i != suggestors.length - 1) {
@@ -348,13 +356,10 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
         }
     }
 
-    // event TableDebug(uint[] table);
-
-    function _findBestSuggestion() internal view returns(Suggestion storage result, address suggestor, bool found) {
+    function _getMatchingPointsTable() internal view returns (uint[]) {
         uint[] memory table = new uint[](suggestors.length);
-        uint i;
 
-        for(i = 0; i < suggestors.length - 1; i++) {
+        for (uint i = 0; i < suggestors.length - 1; i++) {
             Suggestion storage current = suggestions[suggestors[i]];
             for (uint ii = i + 1; ii < suggestors.length; ii++) {
                 Suggestion storage next = suggestions[suggestors[ii]];
@@ -365,11 +370,18 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
             }
         }
 
+        return table;
+    }
+
+    // event TableDebug(uint[] table);
+    // solhint-disable code-complexity
+    function _findBestSuggestion() internal view returns(Suggestion storage result, address suggestor, bool found) {
+        uint[] memory table = _getMatchingPointsTable();
         uint last;
 
         // emit TableDebug(table);
 
-        for(i = 0; i < table.length; i++) {
+        for (uint i = 0; i < table.length; i++) {
             if (table[i] >= minSuggestionMatch) {
                 if (found) {
                     if (table[i] > table[last]) {
@@ -392,6 +404,7 @@ contract RatesGuard is IAdminRole, ISuggestorRole, AdminRole, SuggestorRole {
             result = suggestions[suggestor];
         }
     }
+    // solhint-enable code-complexity
 
     function _isMatch(Suggestion storage a, Suggestion storage b) internal view returns(bool) {
         if (a.symbols.length == b.symbols.length) {

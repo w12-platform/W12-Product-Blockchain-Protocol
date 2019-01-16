@@ -1,6 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/access/Roles.sol";
+
 
 contract PricerRole {
     using Roles for Roles.Role;

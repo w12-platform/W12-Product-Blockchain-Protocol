@@ -1,4 +1,5 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
+
 
 contract IAdminRole {
     function isAdmin(address account) public view returns (bool);
