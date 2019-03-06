@@ -159,20 +159,6 @@
       "constant": false,
       "inputs": [
         {
-          "name": "_address",
-          "type": "address"
-        }
-      ],
-      "name": "transferPrimary",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
           "name": "investor",
           "type": "address"
         },
@@ -198,16 +184,30 @@
       "payable": true,
       "stateMutability": "payable",
       "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_address",
+          "type": "address"
+        }
+      ],
+      "name": "transferPrimary",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
     }
   ],
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.24;\n\nimport \"./IW12Crowdsale.sol\";\nimport \"../access/roles/IAdminRole.sol\";\nimport \"../access/roles/IProjectOwnerRole.sol\";\n\ncontract IW12Fund is IAdminRole, IProjectOwnerRole {\n    function setCrowdsale(IW12Crowdsale _crowdsale) external;\n\n    function setServiceWallet(address _serviceWallet) external;\n\n    function setSwap(address _swap) external;\n\n    function transferPrimary(address _address) public;\n\n    function recordPurchase(\n        address investor,\n        uint tokenAmount,\n        bytes32 symbol,\n        uint cost,\n        uint costUSD\n    ) external payable;\n}\n",
-  "sourcePath": "/home/circleci/code/contracts/crowdsale/IW12Fund.sol",
+  "source": "pragma solidity 0.4.24;\n\nimport \"./IW12Crowdsale.sol\";\nimport \"../access/roles/IAdminRole.sol\";\nimport \"../access/roles/IProjectOwnerRole.sol\";\n\n\ncontract IW12Fund is IAdminRole, IProjectOwnerRole {\n    function setCrowdsale(IW12Crowdsale _crowdsale) external;\n\n    function setServiceWallet(address _serviceWallet) external;\n\n    function setSwap(address _swap) external;\n\n    function recordPurchase(\n        address investor,\n        uint tokenAmount,\n        bytes32 symbol,\n        uint cost,\n        uint costUSD\n    ) external payable;\n\n    function transferPrimary(address _address) public;\n}\n",
+  "sourcePath": "/home/andrey/Code/w12/platform-contracts/contracts/crowdsale/IW12Fund.sol",
   "ast": {
-    "absolutePath": "/home/circleci/code/contracts/crowdsale/IW12Fund.sol",
+    "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/crowdsale/IW12Fund.sol",
     "exportedSymbols": {
       "IW12Fund": [
         2014
@@ -220,43 +220,42 @@
         "id": 1973,
         "literals": [
           "solidity",
-          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:12"
+        "src": "0:23:12"
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/crowdsale/IW12Crowdsale.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/crowdsale/IW12Crowdsale.sol",
         "file": "./IW12Crowdsale.sol",
         "id": 1974,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1972,
-        "src": "26:29:12",
+        "src": "25:29:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/access/roles/IAdminRole.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/access/roles/IAdminRole.sol",
         "file": "../access/roles/IAdminRole.sol",
         "id": 1975,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1448,
-        "src": "56:40:12",
+        "src": "55:40:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/access/roles/IProjectOwnerRole.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/access/roles/IProjectOwnerRole.sol",
         "file": "../access/roles/IProjectOwnerRole.sol",
         "id": 1976,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1494,
-        "src": "97:47:12",
+        "src": "96:47:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -488,24 +487,24 @@
           {
             "body": null,
             "documentation": null,
-            "id": 2000,
+            "id": 2008,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [],
-            "name": "transferPrimary",
+            "name": "recordPurchase",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1998,
+              "id": 2006,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
                   "id": 1997,
-                  "name": "_address",
+                  "name": "investor",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2000,
-                  "src": "403:16:12",
+                  "scope": 2008,
+                  "src": "411:16:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -516,63 +515,7 @@
                     "id": 1996,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "403:7:12",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                }
-              ],
-              "src": "402:18:12"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1999,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "427:0:12"
-            },
-            "scope": 2014,
-            "src": "378:50:12",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 2013,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "recordPurchase",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 2011,
-              "nodeType": "ParameterList",
-              "parameters": [
-                {
-                  "constant": false,
-                  "id": 2002,
-                  "name": "investor",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "467:16:12",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
-                  },
-                  "typeName": {
-                    "id": 2001,
-                    "name": "address",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "467:7:12",
+                    "src": "411:7:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -583,11 +526,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2004,
+                  "id": 1999,
                   "name": "tokenAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "493:16:12",
+                  "scope": 2008,
+                  "src": "437:16:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -595,10 +538,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2003,
+                    "id": 1998,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "493:4:12",
+                    "src": "437:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -609,11 +552,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2006,
+                  "id": 2001,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "519:14:12",
+                  "scope": 2008,
+                  "src": "463:14:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -621,10 +564,10 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2005,
+                    "id": 2000,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "519:7:12",
+                    "src": "463:7:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
                       "typeString": "bytes32"
@@ -635,11 +578,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2008,
+                  "id": 2003,
                   "name": "cost",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "543:9:12",
+                  "scope": 2008,
+                  "src": "487:9:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -647,10 +590,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2007,
+                    "id": 2002,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "543:4:12",
+                    "src": "487:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -661,11 +604,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2010,
+                  "id": 2005,
                   "name": "costUSD",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "562:12:12",
+                  "scope": 2008,
+                  "src": "506:12:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -673,10 +616,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2009,
+                    "id": 2004,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "562:4:12",
+                    "src": "506:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -686,9 +629,65 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "457:123:12"
+              "src": "401:123:12"
             },
             "payable": true,
+            "returnParameters": {
+              "id": 2007,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "541:0:12"
+            },
+            "scope": 2014,
+            "src": "378:164:12",
+            "stateMutability": "payable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 2013,
+            "implemented": false,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "transferPrimary",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2011,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2010,
+                  "name": "_address",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2013,
+                  "src": "573:16:12",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2009,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "573:7:12",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "572:18:12"
+            },
+            "payable": false,
             "returnParameters": {
               "id": 2012,
               "nodeType": "ParameterList",
@@ -696,10 +695,10 @@
               "src": "597:0:12"
             },
             "scope": 2014,
-            "src": "434:164:12",
-            "stateMutability": "payable",
+            "src": "548:50:12",
+            "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "external"
+            "visibility": "public"
           }
         ],
         "scope": 2015,
@@ -709,7 +708,7 @@
     "src": "0:601:12"
   },
   "legacyAST": {
-    "absolutePath": "/home/circleci/code/contracts/crowdsale/IW12Fund.sol",
+    "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/crowdsale/IW12Fund.sol",
     "exportedSymbols": {
       "IW12Fund": [
         2014
@@ -722,43 +721,42 @@
         "id": 1973,
         "literals": [
           "solidity",
-          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:12"
+        "src": "0:23:12"
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/crowdsale/IW12Crowdsale.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/crowdsale/IW12Crowdsale.sol",
         "file": "./IW12Crowdsale.sol",
         "id": 1974,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1972,
-        "src": "26:29:12",
+        "src": "25:29:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/access/roles/IAdminRole.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/access/roles/IAdminRole.sol",
         "file": "../access/roles/IAdminRole.sol",
         "id": 1975,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1448,
-        "src": "56:40:12",
+        "src": "55:40:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/home/circleci/code/contracts/access/roles/IProjectOwnerRole.sol",
+        "absolutePath": "/home/andrey/Code/w12/platform-contracts/contracts/access/roles/IProjectOwnerRole.sol",
         "file": "../access/roles/IProjectOwnerRole.sol",
         "id": 1976,
         "nodeType": "ImportDirective",
         "scope": 2015,
         "sourceUnit": 1494,
-        "src": "97:47:12",
+        "src": "96:47:12",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -990,24 +988,24 @@
           {
             "body": null,
             "documentation": null,
-            "id": 2000,
+            "id": 2008,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [],
-            "name": "transferPrimary",
+            "name": "recordPurchase",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1998,
+              "id": 2006,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
                   "id": 1997,
-                  "name": "_address",
+                  "name": "investor",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2000,
-                  "src": "403:16:12",
+                  "scope": 2008,
+                  "src": "411:16:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1018,63 +1016,7 @@
                     "id": 1996,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "403:7:12",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                }
-              ],
-              "src": "402:18:12"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1999,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "427:0:12"
-            },
-            "scope": 2014,
-            "src": "378:50:12",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 2013,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "recordPurchase",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 2011,
-              "nodeType": "ParameterList",
-              "parameters": [
-                {
-                  "constant": false,
-                  "id": 2002,
-                  "name": "investor",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "467:16:12",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
-                  },
-                  "typeName": {
-                    "id": 2001,
-                    "name": "address",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "467:7:12",
+                    "src": "411:7:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -1085,11 +1027,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2004,
+                  "id": 1999,
                   "name": "tokenAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "493:16:12",
+                  "scope": 2008,
+                  "src": "437:16:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1097,10 +1039,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2003,
+                    "id": 1998,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "493:4:12",
+                    "src": "437:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1111,11 +1053,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2006,
+                  "id": 2001,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "519:14:12",
+                  "scope": 2008,
+                  "src": "463:14:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1123,10 +1065,10 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2005,
+                    "id": 2000,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "519:7:12",
+                    "src": "463:7:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
                       "typeString": "bytes32"
@@ -1137,11 +1079,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2008,
+                  "id": 2003,
                   "name": "cost",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "543:9:12",
+                  "scope": 2008,
+                  "src": "487:9:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1149,10 +1091,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2007,
+                    "id": 2002,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "543:4:12",
+                    "src": "487:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1163,11 +1105,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 2010,
+                  "id": 2005,
                   "name": "costUSD",
                   "nodeType": "VariableDeclaration",
-                  "scope": 2013,
-                  "src": "562:12:12",
+                  "scope": 2008,
+                  "src": "506:12:12",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1175,10 +1117,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2009,
+                    "id": 2004,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "562:4:12",
+                    "src": "506:4:12",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1188,9 +1130,65 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "457:123:12"
+              "src": "401:123:12"
             },
             "payable": true,
+            "returnParameters": {
+              "id": 2007,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "541:0:12"
+            },
+            "scope": 2014,
+            "src": "378:164:12",
+            "stateMutability": "payable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 2013,
+            "implemented": false,
+            "isConstructor": false,
+            "isDeclaredConst": false,
+            "modifiers": [],
+            "name": "transferPrimary",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2011,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2010,
+                  "name": "_address",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2013,
+                  "src": "573:16:12",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2009,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "573:7:12",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "572:18:12"
+            },
+            "payable": false,
             "returnParameters": {
               "id": 2012,
               "nodeType": "ParameterList",
@@ -1198,10 +1196,10 @@
               "src": "597:0:12"
             },
             "scope": 2014,
-            "src": "434:164:12",
-            "stateMutability": "payable",
+            "src": "548:50:12",
+            "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "external"
+            "visibility": "public"
           }
         ],
         "scope": 2015,
@@ -1216,5 +1214,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-12-12T11:12:42.899Z"
+  "updatedAt": "2019-03-06T08:53:21.000Z"
 }
