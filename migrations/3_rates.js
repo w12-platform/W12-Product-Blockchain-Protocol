@@ -5,9 +5,9 @@ const semint = require('@redtea/semint');
 const utils = require('../shared/utils');
 
 module.exports = function (deployer, network, accounts) {
-    if(network === 'test') {
+    if(network === 'mainnet' || network === 'test') {
     	deployer.then(async () => {
-    	    if (version === '0.28.0') {
+    	    if (version === '0.29.1') {
                 await utils.deploy(network, deployer, Rates);
             } else {
     	        console.log('skip deploying Rates.sol, deployed address: ', Rates.address);
@@ -15,7 +15,7 @@ module.exports = function (deployer, network, accounts) {
 
             utils.migrateLog.addAddress(Rates.contractName, Rates.address);
 
-            if (version === '0.29.0') {
+            if (version === '0.29.1') {
                 await utils.deploy(network, deployer, RatesGuard,
                     // destination to send suggestion
                     Rates.address,
