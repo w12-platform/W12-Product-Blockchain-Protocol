@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 // https://semver.org. Version represent as decimal number, 4 decimals per part, max 9999 9999 9999
 // 1.1.1 => 100010001
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
+
 
 contract VersionsLedger is Secondary {
     // all versions in net

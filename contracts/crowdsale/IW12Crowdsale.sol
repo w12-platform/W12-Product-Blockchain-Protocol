@@ -1,13 +1,14 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../token/IWToken.sol";
+import "./IW12Fund.sol";
+import "../access/roles/IAdminRole.sol";
+import "../access/roles/IProjectOwnerRole.sol";
 
 
-interface IW12Crowdsale {
+contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function setParameters(uint price) external;
 
-    // TODO: this should be external
-    // See https://github.com/ethereum/solidity/issues/4832
     function setup(
         uint[6][] parametersOfStages,
         uint[] bonusConditionsOfStages,
@@ -19,25 +20,33 @@ interface IW12Crowdsale {
 
     function getWToken() external view returns(IWToken);
 
-    function getMilestone(uint index) external view returns (uint32, uint, uint32, uint32, bytes, bytes);
-
-    function getStage(uint index) external view returns (uint32, uint32, uint, uint32, uint[], uint[]);
-
-    function getCurrentMilestoneIndex() external view returns (uint, bool);
-
-    function getLastMilestoneIndex() external view returns (uint index, bool found);
+    function getFund() external view returns(IW12Fund);
 
     function milestonesLength() external view returns (uint);
 
-    function getCurrentStageIndex() external view returns (uint index, bool found);
+    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes);
 
-    function getSaleVolumeBonus(uint value) external view returns (uint bonus);
+    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]);
 
-    function isEnded() external view returns (bool);
+    function getCurrentMilestoneIndex() public view returns (uint, bool);
 
-    function isSaleActive() external view returns (bool);
+    function getLastMilestoneIndex() public view returns (uint index, bool found);
 
-    function buyTokens(bytes32 method, uint amount) payable external;
+    function getCurrentStageIndex() public view returns (uint index, bool found);
 
-    function transferPrimary(address _address) external;
+    function getSaleVolumeBonus(uint value) public view returns (uint bonus);
+
+    function isEnded() public view returns (bool);
+
+    function isSaleActive() public view returns (bool);
+
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public;
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns (bool, uint);
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns (uint);
+
+    function buyTokens(bytes32 method, uint amount) public payable;
+
+    function transferPrimary(address _address) public;
 }

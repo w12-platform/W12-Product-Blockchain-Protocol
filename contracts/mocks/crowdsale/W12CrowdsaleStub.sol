@@ -1,7 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../rates/IRates.sol";
 import "../../crowdsale/W12Crowdsale.sol";
+
 
 contract W12CrowdsaleStub is W12Crowdsale {
     constructor (
@@ -40,5 +41,13 @@ contract W12CrowdsaleStub is W12Crowdsale {
 
     function _setState(uint _WTokenSaleFeePercent) external {
         WTokenSaleFeePercent = _WTokenSaleFeePercent;
+    }
+
+    modifier onlyAdmin {
+        _;
+    }
+
+    modifier onlyProjectOwner {
+        _;
     }
 }

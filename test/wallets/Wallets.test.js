@@ -26,7 +26,7 @@ contract('Wallets', async (accounts) => {
     it('should emmit event', async () => {
         const event = await utils.expectEvent.inLogs(ctx.Tx.logs, 'NewWallet');
 
-        event.args.ID.should.bignumber.eq(2);
+        event.args.id.should.bignumber.eq(2);
         event.args.wallet.should.to.be.eq(randomAddress);
     });
 });

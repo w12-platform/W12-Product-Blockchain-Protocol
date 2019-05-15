@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -14,12 +14,20 @@ import "../libs/PurchaseProcessing.sol";
 import "../libs/Crowdsale.sol";
 import "../versioning/Versionable.sol";
 import "../token/IWToken.sol";
+import "../access/roles/AdminRole.sol";
+import "../access/roles/ProjectOwnerRole.sol";
 
-contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard {
+
+contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using SafeMath for uint8;
     using Percent for uint;
     using PaymentMethods for PaymentMethods.Methods;
+
+    struct PaymentMethodPurchaseFee {
+        bool has;
+        uint value;
+    }
 
     IWToken public token;
     IERC20 public originToken;
@@ -27,21 +35,28 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
     IRates public rates;
     uint public price;
     uint public serviceFee;
+    // solhint-disable-next-line var-name-mixedcase
     uint public WTokenSaleFeePercent;
     address public serviceWallet;
     address public swap;
 
     // list of payment methods
-    PaymentMethods.Methods paymentMethods;
+    PaymentMethods.Methods private paymentMethods;
+    mapping(bytes32 => PaymentMethodPurchaseFee) private paymentMethodsPurchaseFee;
 
     Crowdsale.Stage[] public stages;
     Crowdsale.Milestone[] public milestones;
 
     event TokenPurchase(address indexed buyer, uint tokensBought, uint cost, uint change);
+
     event StagesUpdated();
+
     event StageUpdated(uint index);
+
     event MilestonesUpdated();
+
     event CrowdsaleSetUpDone();
+
     event UnsoldTokenReturned(address indexed owner, uint amount);
 
     constructor (
@@ -52,16 +67,16 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         address _serviceWallet,
         address _swap,
         uint _serviceFee,
-        uint _WTokenSaleFeePercent,
+        uint _wTokenSaleFeePercent,
         IW12Fund _fund,
         IRates _rates
     )
-        Versionable(version) public
+        public Versionable(version)
     {
         require(_originToken != address(0));
         require(_token != address(0));
         require(_serviceFee.isPercent() && _serviceFee.fromPercent() < 100);
-        require(_WTokenSaleFeePercent.isPercent() && _WTokenSaleFeePercent.fromPercent() < 100);
+        require(_wTokenSaleFeePercent.isPercent() && _wTokenSaleFeePercent.fromPercent() < 100);
         require(_fund != address(0));
         require(_swap != address(0));
         require(_rates != address(0));
@@ -72,74 +87,9 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         originToken = IERC20(_originToken);
         serviceFee = _serviceFee;
         swap = _swap;
-        WTokenSaleFeePercent = _WTokenSaleFeePercent;
+        WTokenSaleFeePercent = _wTokenSaleFeePercent;
         fund = _fund;
         rates = _rates;
-    }
-
-    function stagesLength() external view returns (uint) {
-        return stages.length;
-    }
-
-    function milestonesLength() external view returns (uint) {
-        return milestones.length;
-    }
-
-    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes) {
-        return (
-            milestones[index].endDate,
-            milestones[index].tranchePercent,
-            milestones[index].voteEndDate,
-            milestones[index].withdrawalWindow,
-            milestones[index].name,
-            milestones[index].description
-        );
-    }
-
-    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]) {
-        return (
-            stages[index].startDate,
-            stages[index].endDate,
-            stages[index].discount,
-            stages[index].vesting,
-            stages[index].volumeBoundaries,
-            stages[index].volumeBonuses
-        );
-    }
-
-    function getEndDate() external view returns (uint32) {
-        require(stages.length > 0);
-
-        return stages[stages.length - 1].endDate;
-    }
-
-    /**
-     * @dev Returns index of active milestone or last milestone
-     */
-    function getCurrentMilestoneIndex() public view returns (uint index, bool found) {
-        if(milestones.length == 0 || !isEnded()) return;
-
-        found = true;
-
-        // from withdrawalWindow begins next milestone
-        while(index < milestones.length - 1 && now >= milestones[index].withdrawalWindow) {
-            index++;
-        }
-    }
-
-    function getLastMilestoneIndex() public view returns (uint index, bool found) {
-        if (milestones.length == 0 || !isEnded()) return;
-
-        found = true;
-        index = milestones.length - 1;
-    }
-
-    function __setParameters(uint _price, address _serviceWallet) internal {
-        require(_price > 0);
-        require(_serviceWallet != address(0));
-
-        price = _price;
-        serviceWallet = _serviceWallet;
     }
 
     function setParameters(uint _price) external onlyPrimary beforeSaleStart {
@@ -157,14 +107,14 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         bytes nameAndDescriptionsOfMilestones,
         bytes32[] paymentMethodsList
     )
-        external onlyPrimary beforeSaleStart
+        external onlyProjectOwner beforeSaleStart
     {
         // primary check of parameters of stages
         require(parametersOfStages.length != 0);
-        require(parametersOfStages.length <= uint8(- 1));
+        require(parametersOfStages.length <= uint8(-1));
 
         // primary check of parameters of milestones
-        require(parametersOfMilestones.length <= uint8(- 1));
+        require(parametersOfMilestones.length <= uint8(-1));
         require(parametersOfMilestones.length == nameAndDescriptionsOffsetOfMilestones.length / 2);
         require(parametersOfMilestones.length <= nameAndDescriptionsOfMilestones.length / 2);
 
@@ -189,6 +139,236 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         paymentMethods.update(paymentMethodsList);
 
         emit CrowdsaleSetUpDone();
+    }
+
+    function claimRemainingTokens() external onlyProjectOwner {
+        require(isEnded());
+
+        uint amount = token.balanceOf(address(this));
+
+        require(token.transfer(msg.sender, amount));
+
+        emit UnsoldTokenReturned(msg.sender, amount);
+    }
+
+    function stagesLength() external view returns (uint) {
+        return stages.length;
+    }
+
+    function milestonesLength() external view returns (uint) {
+        return milestones.length;
+    }
+
+    function getEndDate() external view returns (uint32) {
+        require(stages.length > 0);
+
+        return stages[stages.length - 1].endDate;
+    }
+
+    function getWToken() external view returns (IWToken) {
+        return token;
+    }
+
+    function getFund() external view returns (IW12Fund) {
+        return fund;
+    }
+
+    function getPaymentMethodsList() external view returns (bytes32[]) {
+        return paymentMethods.list();
+    }
+
+    function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
+        return paymentMethods.isAllowed(_method);
+    }
+
+    function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
+        require(paymentMethods.isAllowed(method));
+
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            if (!rates.isToken(method)) {
+                return;
+            }
+        }
+
+        uint[5] memory lastArguments = _getInvoiceLastArguments(method);
+
+        return PurchaseProcessing.invoice(
+            method,
+            amount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            lastArguments[0],
+            lastArguments[1],
+            lastArguments[2],
+            lastArguments[3],
+            lastArguments[4]
+        );
+    }
+
+    function addAdmin(address _account) public onlyAdmin {
+        _addAdmin(_account);
+    }
+
+    function removeAdmin(address _account) public onlyAdmin {
+        _removeAdmin(_account);
+    }
+
+    function addProjectOwner(address _account) public onlyAdmin {
+        _addProjectOwner(_account);
+    }
+
+    function removeProjectOwner(address _account) public onlyAdmin {
+        _removeProjectOwner(_account);
+    }
+
+    function getMilestone(uint index) public view returns (uint32, uint, uint32, uint32, bytes, bytes) {
+        return (
+            milestones[index].endDate,
+            milestones[index].tranchePercent,
+            milestones[index].voteEndDate,
+            milestones[index].withdrawalWindow,
+            milestones[index].name,
+            milestones[index].description
+        );
+    }
+
+    function getStage(uint index) public view returns (uint32, uint32, uint, uint32, uint[], uint[]) {
+        return (
+            stages[index].startDate,
+            stages[index].endDate,
+            stages[index].discount,
+            stages[index].vesting,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses
+        );
+    }
+
+    /**
+     * @dev Returns index of active milestone or last milestone
+     */
+    function getCurrentMilestoneIndex() public view returns(uint index, bool found) {
+        if (milestones.length == 0 || !isEnded()) return;
+
+        found = true;
+
+        // from withdrawalWindow begins next milestone
+        while (index < milestones.length - 1 && now >= milestones[index].withdrawalWindow) {
+            index++;
+        }
+    }
+
+    function getLastMilestoneIndex() public view returns(uint index, bool found) {
+        if (milestones.length == 0 || !isEnded()) return;
+
+        found = true;
+        index = milestones.length - 1;
+    }
+
+    function updatePurchaseFeeParameterForPaymentMethod(bytes32 method, bool has, uint value) public onlyAdmin {
+        require(value.isPercent() && value < Percent.MAX());
+        paymentMethodsPurchaseFee[method].has = has;
+        paymentMethodsPurchaseFee[method].value = value;
+    }
+
+    function getPurchaseFeeParameterForPaymentMethod(bytes32 method) public view returns(bool, uint) {
+        return (paymentMethodsPurchaseFee[method].has, paymentMethodsPurchaseFee[method].value);
+    }
+
+    function getPurchaseFeeForPaymentMethod(bytes32 method) public view returns(uint) {
+        if (paymentMethodsPurchaseFee[method].has) {
+            return paymentMethodsPurchaseFee[method].value;
+        }
+        return serviceFee;
+    }
+
+    function getFee(uint tokenAmount, uint cost, bytes32 method) public view returns (uint[2]) {
+        require(paymentMethods.isAllowed(method));
+        return PurchaseProcessing.fee(tokenAmount, cost, WTokenSaleFeePercent, getPurchaseFeeForPaymentMethod(method));
+    }
+
+    function getSaleVolumeBonus(uint value) public view returns (uint bonus) {
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        Crowdsale.Stage storage stage = stages[index];
+
+        return PurchaseProcessing.getBonus(value, stage.volumeBoundaries, stage.volumeBonuses);
+    }
+
+    function getCurrentStageIndex() public view returns (uint index, bool found) {
+        for (uint i = 0; i < stages.length; i++) {
+            Crowdsale.Stage storage stage = stages[i];
+
+            if (stage.startDate <= now && stage.endDate > now) {
+                return (i, true);
+            }
+        }
+
+        return (0, false);
+    }
+
+    function buyTokens(bytes32 method, uint amount) public payable nonReentrant onlyWhenSaleActive {
+        require(paymentMethods.isAllowed(method));
+
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            require(rates.getTokenAddress(method) != address(0));
+        }
+
+        (uint index, /*bool found*/) = getCurrentStageIndex();
+
+        uint[5] memory invoice = getInvoice(method, amount);
+        uint[2] memory fee = getFee(invoice[0], invoice[1], method);
+
+        _transferFee(fee, method);
+        _transferPurchase(invoice, fee, stages[index].vesting, method);
+        _recordPurchase(invoice, fee, method);
+
+        emit TokenPurchase(msg.sender, invoice[0], invoice[1], invoice[3]);
+    }
+
+    function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
+        require(paymentMethods.isAllowed(method));
+
+        (uint index, bool found) = getCurrentStageIndex();
+
+        if (!found) return;
+
+        if (PurchaseProcessing.METHOD_ETH() != method) {
+            if (!rates.isToken(method)) {
+                return;
+            }
+        }
+
+        uint[5] memory lastArguments = _getInvoiceByTokenAmountLastArguments(method);
+
+        return PurchaseProcessing.invoiceByTokenAmount(
+            method,
+            tokenAmount,
+            stages[index].discount,
+            stages[index].volumeBoundaries,
+            stages[index].volumeBonuses,
+            lastArguments[0],
+            lastArguments[1],
+            lastArguments[2],
+            lastArguments[3],
+            lastArguments[4]
+        );
+    }
+
+    function isEnded() public view returns (bool) {
+        return stages.length == 0 || stages[stages.length - 1].endDate < now;
+    }
+
+    function isSaleActive() public view returns (bool) {
+        (, bool found) = getCurrentStageIndex();
+
+        return found;
     }
 
     /**
@@ -236,21 +416,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         emit MilestonesUpdated();
     }
 
-    function buyTokens(bytes32 method, uint amount) payable public nonReentrant onlyWhenSaleActive {
-        if (PurchaseProcessing.METHOD_ETH() != method) {
-            require(rates.getTokenAddress(method) != address(0));
-        }
+    function __setParameters(uint _price, address _serviceWallet) internal {
+        require(_price > 0);
+        require(_serviceWallet != address(0));
 
-        (uint index, /*bool found*/) = getCurrentStageIndex();
-
-        uint[5] memory invoice = getInvoice(method, amount);
-        uint[2] memory fee = getFee(invoice[0], invoice[1]);
-
-        _transferFee(fee, method);
-        _transferPurchase(invoice, fee, stages[index].vesting, method);
-        _recordPurchase(invoice, fee, method);
-
-        emit TokenPurchase(msg.sender, invoice[0], invoice[1], invoice[3]);
+        price = _price;
+        serviceWallet = _serviceWallet;
     }
 
     function _transferFee(uint[2] _fee, bytes32 method) internal {
@@ -278,54 +449,12 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
 
     function _recordPurchase(uint[5] _invoice, uint[2] _fee, bytes32 method) internal {
         if (method == PurchaseProcessing.METHOD_ETH()) {
-            fund.recordPurchase.value(_invoice[1].sub(_fee[1]))(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
+            fund.recordPurchase.value(_invoice[1].sub(_fee[1]))(
+                msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
         } else {
             require(IERC20(rates.getTokenAddress(method)).transfer(address(fund), _invoice[1].sub(_fee[1])));
             fund.recordPurchase(msg.sender, _invoice[0], method, _invoice[1].sub(_fee[1]), _invoice[2]);
         }
-    }
-
-    function getWToken() external view returns(IWToken) {
-        return token;
-    }
-
-    function getFund() external view returns(IW12Fund) {
-        return fund;
-    }
-
-    function getPaymentMethodsList() external view returns(bytes32[]) {
-        return paymentMethods.list();
-    }
-
-    function isPaymentMethodAllowed(bytes32 _method) external view returns (bool) {
-        return paymentMethods.isAllowed(_method);
-    }
-
-    function getInvoice(bytes32 method, uint amount) public view returns (uint[5]) {
-        (uint index, bool found) = getCurrentStageIndex();
-
-        if (!found) return;
-
-        if (PurchaseProcessing.METHOD_ETH() != method) {
-            if (!rates.isToken(method)) {
-                return;
-            }
-        }
-
-        uint[5] memory lastArguments = _getInvoiceLastArguments(method);
-
-        return PurchaseProcessing.invoice(
-            method,
-            amount,
-            stages[index].discount,
-            stages[index].volumeBoundaries,
-            stages[index].volumeBonuses,
-            lastArguments[0],
-            lastArguments[1],
-            lastArguments[2],
-            lastArguments[3],
-            lastArguments[4]
-        );
     }
 
     function _getInvoiceLastArguments(bytes32 method) internal view returns(uint[5] result) {
@@ -338,33 +467,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
         result[4] = token.balanceOf(address(this));
     }
 
-    function getInvoiceByTokenAmount(bytes32 method, uint tokenAmount) public view returns (uint[4]) {
-        (uint index, bool found) = getCurrentStageIndex();
-
-        if (!found) return;
-
-        if (PurchaseProcessing.METHOD_ETH() != method) {
-            if (!rates.isToken(method)) {
-                return;
-            }
-        }
-
-        uint[5] memory lastArguments = _getInvoiceByTokenAmountLastArguments(method);
-
-        return PurchaseProcessing.invoiceByTokenAmount(
-            method,
-            tokenAmount,
-            stages[index].discount,
-            stages[index].volumeBoundaries,
-            stages[index].volumeBonuses,
-            lastArguments[0],
-            lastArguments[1],
-            lastArguments[2],
-            lastArguments[3],
-            lastArguments[4]
-        );
-    }
-
     function _getInvoiceByTokenAmountLastArguments(bytes32 method) internal view returns (uint[5] result) {
         result[0] = rates.get(method);
         result[1] = price;
@@ -373,52 +475,6 @@ contract W12Crowdsale is Versionable, IW12Crowdsale, Secondary, ReentrancyGuard 
             ? 18
             : uint(ERC20Detailed(rates.getTokenAddress(method)).decimals());
         result[4] = token.balanceOf(address(this));
-    }
-
-    function getFee(uint tokenAmount, uint cost) public view returns(uint[2]) {
-        return PurchaseProcessing.fee(tokenAmount, cost, serviceFee, WTokenSaleFeePercent);
-    }
-
-    function getSaleVolumeBonus(uint value) public view returns(uint bonus) {
-        (uint index, bool found) = getCurrentStageIndex();
-
-        if (!found) return;
-
-        Crowdsale.Stage storage stage = stages[index];
-
-        return PurchaseProcessing.getBonus(value, stage.volumeBoundaries, stage.volumeBonuses);
-    }
-
-    function getCurrentStageIndex() public view returns (uint index, bool found) {
-        for(uint i = 0; i < stages.length; i++) {
-            Crowdsale.Stage storage stage = stages[i];
-
-            if (stage.startDate <= now && stage.endDate > now) {
-                return (i, true);
-            }
-        }
-
-        return (0, false);
-    }
-
-    function claimRemainingTokens() external onlyPrimary {
-        require(isEnded());
-
-        uint amount = token.balanceOf(address(this));
-
-        require(token.transfer(primary(), amount));
-
-        emit UnsoldTokenReturned(primary(), amount);
-    }
-
-    function isEnded() public view returns (bool) {
-        return stages.length == 0 || stages[stages.length - 1].endDate < now;
-    }
-
-    function isSaleActive() public view returns (bool) {
-        (, bool found) = getCurrentStageIndex();
-
-        return found;
     }
 
     modifier beforeSaleStart() {

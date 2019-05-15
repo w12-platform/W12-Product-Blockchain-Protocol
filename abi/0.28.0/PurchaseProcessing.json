@@ -1,0 +1,288 @@
+{
+  "contractName": "PurchaseProcessing",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "method",
+          "type": "bytes32"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "name": "methodUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "currentBalanceInTokens",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenDecimals",
+          "type": "uint256"
+        },
+        {
+          "name": "methodDecimals",
+          "type": "uint256"
+        }
+      ],
+      "name": "checkInvoiceInput",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "method",
+          "type": "bytes32"
+        },
+        {
+          "name": "paymentAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "discount",
+          "type": "uint256"
+        },
+        {
+          "name": "volumeBoundaries",
+          "type": "uint256[]"
+        },
+        {
+          "name": "volumeBonuses",
+          "type": "uint256[]"
+        },
+        {
+          "name": "methodUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenDecimals",
+          "type": "uint256"
+        },
+        {
+          "name": "methodDecimals",
+          "type": "uint256"
+        },
+        {
+          "name": "currentBalanceInTokens",
+          "type": "uint256"
+        }
+      ],
+      "name": "invoice",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "uint256[5]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "method",
+          "type": "bytes32"
+        },
+        {
+          "name": "tokenAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "discount",
+          "type": "uint256"
+        },
+        {
+          "name": "volumeBoundaries",
+          "type": "uint256[]"
+        },
+        {
+          "name": "volumeBonuses",
+          "type": "uint256[]"
+        },
+        {
+          "name": "methodUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenUSDRate",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenDecimals",
+          "type": "uint256"
+        },
+        {
+          "name": "methodDecimals",
+          "type": "uint256"
+        },
+        {
+          "name": "currentBalanceInTokens",
+          "type": "uint256"
+        }
+      ],
+      "name": "invoiceByTokenAmount",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "uint256[4]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "tokenAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "cost",
+          "type": "uint256"
+        },
+        {
+          "name": "tokenFee",
+          "type": "uint256"
+        },
+        {
+          "name": "purchaseFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "fee",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "uint256[2]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_fee",
+          "type": "uint256[2]"
+        },
+        {
+          "name": "method",
+          "type": "bytes32"
+        },
+        {
+          "name": "methodToken",
+          "type": "address"
+        },
+        {
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "name": "originToken",
+          "type": "address"
+        },
+        {
+          "name": "exchanger",
+          "type": "address"
+        },
+        {
+          "name": "serviceWallet",
+          "type": "address"
+        }
+      ],
+      "name": "transferFee",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_invoice",
+          "type": "uint256[5]"
+        },
+        {
+          "name": "_fee",
+          "type": "uint256[2]"
+        },
+        {
+          "name": "vesting",
+          "type": "uint32"
+        },
+        {
+          "name": "method",
+          "type": "bytes32"
+        },
+        {
+          "name": "methodToken",
+          "type": "address"
+        },
+        {
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "transferPurchase",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "name": "volumeBoundaries",
+          "type": "uint256[]"
+        },
+        {
+          "name": "volumeBonuses",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "getBonus",
+      "outputs": [
+        {
+          "name": "bonus",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+}

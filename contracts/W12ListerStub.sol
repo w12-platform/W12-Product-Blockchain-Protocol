@@ -1,7 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./W12Lister.sol";
 import "./token/exchanger/ITokenExchanger.sol";
+
 
 contract W12ListerStub is W12Lister {
 

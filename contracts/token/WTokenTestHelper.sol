@@ -1,6 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./WToken.sol";
+
 
 contract WTokenTestHelper {
     address[] public tokens;
@@ -8,13 +9,21 @@ contract WTokenTestHelper {
 
     event NewToken(address indexed tokenAddress);
 
-    function createToken(string _name, string _symbol, uint8 _decimals, uint amountToIssue) public returns(WToken token) {
+    function createToken(
+        string _name,
+        string _symbol,
+        uint8 _decimals,
+        uint amountToIssue
+    )
+        public returns(WToken token)
+    {
         require(_isStringValid(_name, 5, 50));
         require(_isStringValid(_symbol, 3, 5));
         require(_decimals > uint8(1) && _decimals < uint8(19));
         require(amountToIssue > 99 && amountToIssue <= (uint(-1) / 10 ** uint(_decimals)));
 
         token = new WToken(_name, _symbol, _decimals);
+        token.addAdmin(msg.sender);
         token.transferPrimary(msg.sender);
 
         tokenIndexes[address(token)] = tokens.length;
@@ -65,13 +74,15 @@ contract WTokenTestHelper {
         // spaces at beginning and ending
         if (_stringBytes[0] == 0x20 || _stringBytes[_stringBytes.length - 1] == 0x20) return;
 
-        for(uint i = 0; i < _stringBytes.length; i++) {
+        for (uint i = 0; i < _stringBytes.length; i++) {
             if (
                 !(_stringBytes[i] == 0x20 && _stringBytes[i + 1] != 0x20)  // space, not followed by space
                 && !(_stringBytes[i] >= 0x30 && _stringBytes[i] <= 0x39) // 0-9
                 && !(_stringBytes[i] >= 0x41 && _stringBytes[i] <= 0x5a) // A-Z
                 && !(_stringBytes[i] >= 0x61 && _stringBytes[i] <= 0x7a) // a-z
-            ) return false;
+            ) {
+                return false;
+            }
         }
 
         return true;

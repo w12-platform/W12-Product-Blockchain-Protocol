@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "../../rates/IRates.sol";
@@ -46,8 +46,15 @@ contract W12FundStub is W12Fund {
         }
     }
 
-    // allow any sender
-    modifier onlyFrom(address sender) {
+    modifier onlyCrowdsale {
+        _;
+    }
+
+    modifier onlyAdmin {
+        _;
+    }
+
+    modifier onlyProjectOwner {
         _;
     }
 }

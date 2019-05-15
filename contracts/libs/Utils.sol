@@ -1,11 +1,12 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 
 library Utils {
     using SafeMath for uint;
 
-    uint constant MAX_UINT = uint(-1);
+    uint constant private MAX_UINT = uint(-1);
 
     /**
      * @dev Do convert `value` with `decimals` as position of point to another by `rate`.
@@ -31,8 +32,8 @@ library Utils {
         uint fractionsSum;
 
         assert(c != 0);
-        
-        if(a == 0 || b == 0) return;
+
+        if (a == 0 || b == 0) return;
 
         uint maxA = MAX_UINT.div(b);
 

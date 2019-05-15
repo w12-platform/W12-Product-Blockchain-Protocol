@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "../../rates/IRates.sol";
 import "../../crowdsale/W12Fund.sol";
@@ -13,7 +13,23 @@ contract W12CrowdsaleFundStub is IW12Fund {
 
     function setSwap(address _swap) external {}
 
-    function transferPrimary(address _address) external {}
+    function transferPrimary(address _address) public {}
+
+    function isAdmin(address account) public view returns (bool) {}
+
+    function addAdmin(address account) public {}
+
+    function renounceAdmin() public {}
+
+    function removeAdmin(address account) public {}
+
+    function isProjectOwner(address account) public view returns (bool) {}
+
+    function addProjectOwner(address account) public {}
+
+    function renounceProjectOwner() public {}
+
+    function removeProjectOwner(address account) public {}
 
     struct RecordPurchaseCallResult {
         address investor;

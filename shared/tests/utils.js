@@ -1,6 +1,5 @@
 import * as time from 'openzeppelin-solidity/test/helpers/time';
 import * as shouldFail from 'openzeppelin-solidity/test/helpers/shouldFail';
-import * as expectEvent from 'openzeppelin-solidity/test/helpers/expectEvent';
 
 function generateRandomAddress () {
     return `0x${crypto.randomBytes(20).toString('hex')}`;
@@ -328,11 +327,13 @@ module.exports = {
         increaseTime: time.increase,
         increaseTimeTo: time.increaseTo
     },
-    expectEvent,
+    common: require('./utils/common'),
+    expectEvent: require('./utils/events'),
     EVMRevert: 'revert',
     round,
     shouldFail,
     ZERO_ADDRESS,
+    ZERO_BYTES32: web3.padRight('0x', 66),
     ONE_TOKEN_18,
     generateRandomAddress,
     calculateRefundAmount,

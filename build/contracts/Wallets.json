@@ -3,8 +3,13 @@
   "abi": [
     {
       "constant": false,
-      "inputs": [],
-      "name": "renounceOwnership",
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "transferPrimary",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -27,7 +32,7 @@
     {
       "constant": true,
       "inputs": [],
-      "name": "owner",
+      "name": "primary",
       "outputs": [
         {
           "name": "",
@@ -36,20 +41,6 @@
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -63,7 +54,7 @@
       "inputs": [
         {
           "indexed": true,
-          "name": "ID",
+          "name": "id",
           "type": "uint8"
         },
         {
@@ -79,36 +70,19 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "name": "previousOwner",
+          "indexed": false,
+          "name": "recipient",
           "type": "address"
         }
       ],
-      "name": "OwnershipRenounced",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
+      "name": "PrimaryTransferred",
       "type": "event"
     },
     {
       "constant": false,
       "inputs": [
         {
-          "name": "ID",
+          "name": "id",
           "type": "uint8"
         },
         {
@@ -126,7 +100,7 @@
       "constant": true,
       "inputs": [
         {
-          "name": "ID",
+          "name": "id",
           "type": "uint8"
         }
       ],
@@ -142,41 +116,40 @@
       "type": "function"
     }
   ],
-  "bytecode": "0x608060405234801561001057600080fd5b5060008054600160a060020a0319163390811790915561003b90600190640100000000610040810204565b6100be565b600054600160a060020a0316331461005757600080fd5b60ff82166000818152600160209081526040918290208054600160a060020a031916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b610347806100cd6000396000f3006080604052600436106100775763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663684b0dd2811461007c578063715018a6146100a557806389a4fe84146100ba5780638da5cb5b146100e5578063e3ff76e414610116578063f2fde38b14610131575b600080fd5b34801561008857600080fd5b506100a360ff60043516600160a060020a0360243516610152565b005b3480156100b157600080fd5b506100a36101dd565b3480156100c657600080fd5b506100cf610249565b6040805160ff9092168252519081900360200190f35b3480156100f157600080fd5b506100fa61024e565b60408051600160a060020a039092168252519081900360200190f35b34801561012257600080fd5b506100fa60ff6004351661025d565b34801561013d57600080fd5b506100a3600160a060020a036004351661027b565b600054600160a060020a0316331461016957600080fd5b60ff8216600081815260016020908152604091829020805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b600054600160a060020a031633146101f457600080fd5b60008054604051600160a060020a03909116917ff8df31144d9c2f0f6b59d69b8b98abd5459d07f2742c4df920b25aae33c6482091a26000805473ffffffffffffffffffffffffffffffffffffffff19169055565b600181565b600054600160a060020a031681565b60ff16600090815260016020526040902054600160a060020a031690565b600054600160a060020a0316331461029257600080fd5b61029b8161029e565b50565b600160a060020a03811615156102b357600080fd5b60008054604051600160a060020a03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a36000805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03929092169190911790555600a165627a7a72305820e4b0192c5a650d4c52558df74a8c4555df5a03cfc1ca912114b2cb49d4f6d3120029",
-  "deployedBytecode": "0x6080604052600436106100775763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663684b0dd2811461007c578063715018a6146100a557806389a4fe84146100ba5780638da5cb5b146100e5578063e3ff76e414610116578063f2fde38b14610131575b600080fd5b34801561008857600080fd5b506100a360ff60043516600160a060020a0360243516610152565b005b3480156100b157600080fd5b506100a36101dd565b3480156100c657600080fd5b506100cf610249565b6040805160ff9092168252519081900360200190f35b3480156100f157600080fd5b506100fa61024e565b60408051600160a060020a039092168252519081900360200190f35b34801561012257600080fd5b506100fa60ff6004351661025d565b34801561013d57600080fd5b506100a3600160a060020a036004351661027b565b600054600160a060020a0316331461016957600080fd5b60ff8216600081815260016020908152604091829020805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b600054600160a060020a031633146101f457600080fd5b60008054604051600160a060020a03909116917ff8df31144d9c2f0f6b59d69b8b98abd5459d07f2742c4df920b25aae33c6482091a26000805473ffffffffffffffffffffffffffffffffffffffff19169055565b600181565b600054600160a060020a031681565b60ff16600090815260016020526040902054600160a060020a031690565b600054600160a060020a0316331461029257600080fd5b61029b8161029e565b50565b600160a060020a03811615156102b357600080fd5b60008054604051600160a060020a03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a36000805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03929092169190911790555600a165627a7a72305820e4b0192c5a650d4c52558df74a8c4555df5a03cfc1ca912114b2cb49d4f6d3120029",
-  "sourceMap": "91:498:40:-;;;273:78;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;567:5:45;:18;;-1:-1:-1;;;;;;567:18:45;575:10;567:18;;;;;;304:40:40;;567:18:45;;304:9:40;;;;:40;:::i;:::-;91:498;;357:130;719:5:45;;-1:-1:-1;;;;;719:5:45;705:10;:19;697:28;;;;;;422:12:40;;;;;;;:8;:12;;;;;;;;;:21;;-1:-1:-1;;;;;;422:21:40;-1:-1:-1;;;;;422:21:40;;;;;;;;459;;;;;;;;;;;;;;;;;357:130;;:::o;91:498::-;;;;;;;",
-  "deployedSourceMap": "91:498:40:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;357:130;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;357:130:40;;;;;-1:-1:-1;;;;;357:130:40;;;;;;;1001:111:45;;8:9:-1;5:2;;;30:1;27;20:12;5:2;1001:111:45;;;;125:43:40;;8:9:-1;5:2;;;30:1;27;20:12;5:2;125:43:40;;;;;;;;;;;;;;;;;;;;;;;238:20:45;;8:9:-1;5:2;;;30:1;27;20:12;5:2;238:20:45;;;;;;;;-1:-1:-1;;;;;238:20:45;;;;;;;;;;;;;;493:94:40;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;493:94:40;;;;;;;1274:103:45;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;1274:103:45;-1:-1:-1;;;;;1274:103:45;;;;;357:130:40;719:5:45;;-1:-1:-1;;;;;719:5:45;705:10;:19;697:28;;;;;;422:12:40;;;;;;;:8;:12;;;;;;;;;:21;;-1:-1:-1;;422:21:40;-1:-1:-1;;;;;422:21:40;;;;;;;;459;;;;;;;;;;;;;;;;;357:130;;:::o;1001:111:45:-;719:5;;-1:-1:-1;;;;;719:5:45;705:10;:19;697:28;;;;;;1077:5;;;1058:25;;-1:-1:-1;;;;;1077:5:45;;;;1058:25;;;1105:1;1089:18;;-1:-1:-1;;1089:18:45;;;1001:111::o;125:43:40:-;167:1;125:43;:::o;238:20:45:-;;;-1:-1:-1;;;;;238:20:45;;:::o;493:94:40:-;568:12;;542:7;568:12;;;:8;:12;;;;;;-1:-1:-1;;;;;568:12:40;;493:94::o;1274:103:45:-;719:5;;-1:-1:-1;;;;;719:5:45;705:10;:19;697:28;;;;;;1343:29;1362:9;1343:18;:29::i;:::-;1274:103;:::o;1512:171::-;-1:-1:-1;;;;;1582:23:45;;;;1574:32;;;;;;1638:5;;;1617:38;;-1:-1:-1;;;;;1617:38:45;;;;1638:5;;;1617:38;;;1661:5;:17;;-1:-1:-1;;1661:17:45;-1:-1:-1;;;;;1661:17:45;;;;;;;;;;1512:171::o",
-  "source": "pragma solidity ^0.4.24;\n\nimport \"openzeppelin-solidity/contracts/ownership/Ownable.sol\";\n\ncontract Wallets is Ownable {\n    uint8 constant public SERVICE_WALLET_ID = 1;\n\n    mapping (uint8 => address) _wallets;\n\n    event NewWallet(uint8 indexed ID, address wallet);\n\n    constructor() public {\n        setWallet(SERVICE_WALLET_ID, msg.sender);\n    }\n\n    function setWallet(uint8 ID, address wallet) onlyOwner {\n        _wallets[ID] = wallet;\n\n        emit NewWallet(ID, wallet);\n    }\n\n    function getWallet(uint8 ID) public view returns(address) {\n        return _wallets[ID];\n    }\n}\n",
-  "sourcePath": "/home/circleci/code/contracts/wallets/Wallets.sol",
+  "bytecode": "0x608060405234801561001057600080fd5b5060008054600160a060020a03191633179081905560408051600160a060020a03929092168252517f4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d99181900360200190a161007660013364010000000061007b810204565b6100f9565b600054600160a060020a0316331461009257600080fd5b60ff82166000818152600160209081526040918290208054600160a060020a031916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b6102ae806101086000396000f30060806040526004361061006c5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416632348238c8114610071578063684b0dd21461009457806389a4fe84146100bb578063c6dbdf61146100e6578063e3ff76e414610117575b600080fd5b34801561007d57600080fd5b50610092600160a060020a0360043516610132565b005b3480156100a057600080fd5b5061009260ff60043516600160a060020a03602435166101c5565b3480156100c757600080fd5b506100d0610250565b6040805160ff9092168252519081900360200190f35b3480156100f257600080fd5b506100fb610255565b60408051600160a060020a039092168252519081900360200190f35b34801561012357600080fd5b506100fb60ff60043516610264565b600054600160a060020a0316331461014957600080fd5b600160a060020a038116151561015e57600080fd5b6000805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03838116919091179182905560408051929091168252517f4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9916020908290030190a150565b600054600160a060020a031633146101dc57600080fd5b60ff8216600081815260016020908152604091829020805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b600181565b600054600160a060020a031690565b60ff16600090815260016020526040902054600160a060020a0316905600a165627a7a7230582079d8b0e43070c0f7e7c099b1b9113d8a35480825a06d45857d1fd82f3fd862be0029",
+  "deployedBytecode": "0x60806040526004361061006c5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416632348238c8114610071578063684b0dd21461009457806389a4fe84146100bb578063c6dbdf61146100e6578063e3ff76e414610117575b600080fd5b34801561007d57600080fd5b50610092600160a060020a0360043516610132565b005b3480156100a057600080fd5b5061009260ff60043516600160a060020a03602435166101c5565b3480156100c757600080fd5b506100d0610250565b6040805160ff9092168252519081900360200190f35b3480156100f257600080fd5b506100fb610255565b60408051600160a060020a039092168252519081900360200190f35b34801561012357600080fd5b506100fb60ff60043516610264565b600054600160a060020a0316331461014957600080fd5b600160a060020a038116151561015e57600080fd5b6000805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03838116919091179182905560408051929091168252517f4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9916020908290030190a150565b600054600160a060020a031633146101dc57600080fd5b60ff8216600081815260016020908152604091829020805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a038616908117909155825190815291517ffc3e20229acbcf5bec31a259c022ee755e4f599eb1152c979c853479a38e82d99281900390910190a25050565b600181565b600054600160a060020a031690565b60ff16600090815260016020526040902054600160a060020a0316905600a165627a7a7230582079d8b0e43070c0f7e7c099b1b9113d8a35480825a06d45857d1fd82f3fd862be0029",
+  "sourceMap": "93:517:55:-;;;285:78;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;385:8:59;:21;;-1:-1:-1;;;;;;385:21:59;396:10;385:21;;;;;417:28;;;-1:-1:-1;;;;;436:8:59;;;;417:28;;;;;;;;;;;;316:40:55;171:1;345:10;316:9;;;;:40;:::i;:::-;93:517;;369:139;586:8:59;;-1:-1:-1;;;;;586:8:59;572:10;:22;564:31;;;;;;443:12:55;;;;;;;:8;:12;;;;;;;;;:21;;-1:-1:-1;;;;;;443:21:55;-1:-1:-1;;;;;443:21:55;;;;;;;;480;;;;;;;;;;;;;;;;;369:139;;:::o;93:517::-;;;;;;;",
+  "deployedSourceMap": "93:517:55:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;855:171:59;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;855:171:59;-1:-1:-1;;;;;855:171:59;;;;;;;369:139:55;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;369:139:55;;;;;-1:-1:-1;;;;;369:139:55;;;;;129:43;;8:9:-1;5:2;;;30:1;27;20:12;5:2;129:43:55;;;;;;;;;;;;;;;;;;;;;;;664:75:59;;8:9:-1;5:2;;;30:1;27;20:12;5:2;664:75:59;;;;;;;;-1:-1:-1;;;;;664:75:59;;;;;;;;;;;;;;514:94:55;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;514:94:55;;;;;;;855:171:59;586:8;;-1:-1:-1;;;;;586:8:59;572:10;:22;564:31;;;;;;-1:-1:-1;;;;;932:23:59;;;;924:32;;;;;;962:8;:20;;-1:-1:-1;;962:20:59;-1:-1:-1;;;;;962:20:59;;;;;;;;;;;993:28;;;1012:8;;;;993:28;;;;;;;;;;;;;855:171;:::o;369:139:55:-;586:8:59;;-1:-1:-1;;;;;586:8:59;572:10;:22;564:31;;;;;;443:12:55;;;;;;;:8;:12;;;;;;;;;:21;;-1:-1:-1;;443:21:55;-1:-1:-1;;;;;443:21:55;;;;;;;;480;;;;;;;;;;;;;;;;;369:139;;:::o;129:43::-;171:1;129:43;:::o;664:75:59:-;704:7;726:8;-1:-1:-1;;;;;726:8:59;664:75;:::o;514:94:55:-;589:12;;563:7;589:12;;;:8;:12;;;;;;-1:-1:-1;;;;;589:12:55;;514:94::o",
+  "source": "pragma solidity 0.4.24;\n\nimport \"openzeppelin-solidity/contracts/ownership/Secondary.sol\";\n\n\ncontract Wallets is Secondary {\n    uint8 constant public SERVICE_WALLET_ID = 1;\n\n    mapping (uint8 => address) private _wallets;\n\n    event NewWallet(uint8 indexed id, address wallet);\n\n    constructor() public {\n        setWallet(SERVICE_WALLET_ID, msg.sender);\n    }\n\n    function setWallet(uint8 id, address wallet) public onlyPrimary {\n        _wallets[id] = wallet;\n\n        emit NewWallet(id, wallet);\n    }\n\n    function getWallet(uint8 id) public view returns(address) {\n        return _wallets[id];\n    }\n}\n",
+  "sourcePath": "/home/hokid/projects/work/W12-Product-Blockchain-Protocol/contracts/wallets/Wallets.sol",
   "ast": {
-    "absolutePath": "/home/circleci/code/contracts/wallets/Wallets.sol",
+    "absolutePath": "/home/hokid/projects/work/W12-Product-Blockchain-Protocol/contracts/wallets/Wallets.sol",
     "exportedSymbols": {
       "Wallets": [
-        9747
+        14415
       ]
     },
-    "id": 9748,
+    "id": 14416,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9687,
+        "id": 14355,
         "literals": [
           "solidity",
-          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:40"
+        "src": "0:23:55"
       },
       {
-        "absolutePath": "openzeppelin-solidity/contracts/ownership/Ownable.sol",
-        "file": "openzeppelin-solidity/contracts/ownership/Ownable.sol",
-        "id": 9688,
+        "absolutePath": "openzeppelin-solidity/contracts/ownership/Secondary.sol",
+        "file": "openzeppelin-solidity/contracts/ownership/Secondary.sol",
+        "id": 14356,
         "nodeType": "ImportDirective",
-        "scope": 9748,
-        "sourceUnit": 10135,
-        "src": "26:63:40",
+        "scope": 14416,
+        "sourceUnit": 14806,
+        "src": "25:65:55",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -186,42 +159,42 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 9689,
-              "name": "Ownable",
+              "id": 14357,
+              "name": "Secondary",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 10134,
-              "src": "111:7:40",
+              "referencedDeclaration": 14805,
+              "src": "113:9:55",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$10134",
-                "typeString": "contract Ownable"
+                "typeIdentifier": "t_contract$_Secondary_$14805",
+                "typeString": "contract Secondary"
               }
             },
-            "id": 9690,
+            "id": 14358,
             "nodeType": "InheritanceSpecifier",
-            "src": "111:7:40"
+            "src": "113:9:55"
           }
         ],
         "contractDependencies": [
-          10134
+          14805
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 9747,
+        "id": 14415,
         "linearizedBaseContracts": [
-          9747,
-          10134
+          14415,
+          14805
         ],
         "name": "Wallets",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": true,
-            "id": 9693,
+            "id": 14361,
             "name": "SERVICE_WALLET_ID",
             "nodeType": "VariableDeclaration",
-            "scope": 9747,
-            "src": "125:43:40",
+            "scope": 14415,
+            "src": "129:43:55",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -229,10 +202,10 @@
               "typeString": "uint8"
             },
             "typeName": {
-              "id": 9691,
+              "id": 14359,
               "name": "uint8",
               "nodeType": "ElementaryTypeName",
-              "src": "125:5:40",
+              "src": "129:5:55",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint8",
                 "typeString": "uint8"
@@ -241,14 +214,14 @@
             "value": {
               "argumentTypes": null,
               "hexValue": "31",
-              "id": 9692,
+              "id": 14360,
               "isConstant": false,
               "isLValue": false,
               "isPure": true,
               "kind": "number",
               "lValueRequested": false,
               "nodeType": "Literal",
-              "src": "167:1:40",
+              "src": "171:1:55",
               "subdenomination": null,
               "typeDescriptions": {
                 "typeIdentifier": "t_rational_1_by_1",
@@ -260,11 +233,11 @@
           },
           {
             "constant": false,
-            "id": 9697,
+            "id": 14365,
             "name": "_wallets",
             "nodeType": "VariableDeclaration",
-            "scope": 9747,
-            "src": "175:35:40",
+            "scope": 14415,
+            "src": "179:43:55",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -272,28 +245,28 @@
               "typeString": "mapping(uint8 => address)"
             },
             "typeName": {
-              "id": 9696,
+              "id": 14364,
               "keyType": {
-                "id": 9694,
+                "id": 14362,
                 "name": "uint8",
                 "nodeType": "ElementaryTypeName",
-                "src": "184:5:40",
+                "src": "188:5:55",
                 "typeDescriptions": {
                   "typeIdentifier": "t_uint8",
                   "typeString": "uint8"
                 }
               },
               "nodeType": "Mapping",
-              "src": "175:26:40",
+              "src": "179:26:55",
               "typeDescriptions": {
                 "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                 "typeString": "mapping(uint8 => address)"
               },
               "valueType": {
-                "id": 9695,
+                "id": 14363,
                 "name": "address",
                 "nodeType": "ElementaryTypeName",
-                "src": "193:7:40",
+                "src": "197:7:55",
                 "typeDescriptions": {
                   "typeIdentifier": "t_address",
                   "typeString": "address"
@@ -301,26 +274,26 @@
               }
             },
             "value": null,
-            "visibility": "internal"
+            "visibility": "private"
           },
           {
             "anonymous": false,
             "documentation": null,
-            "id": 9703,
+            "id": 14371,
             "name": "NewWallet",
             "nodeType": "EventDefinition",
             "parameters": {
-              "id": 9702,
+              "id": 14370,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9699,
+                  "id": 14367,
                   "indexed": true,
-                  "name": "ID",
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9703,
-                  "src": "233:16:40",
+                  "scope": 14371,
+                  "src": "245:16:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -328,10 +301,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9698,
+                    "id": 14366,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "233:5:40",
+                    "src": "245:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -342,12 +315,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 9701,
+                  "id": 14369,
                   "indexed": false,
                   "name": "wallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9703,
-                  "src": "251:14:40",
+                  "scope": 14371,
+                  "src": "263:14:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -355,10 +328,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9700,
+                    "id": 14368,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "251:7:40",
+                    "src": "263:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -368,15 +341,15 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "232:34:40"
+              "src": "244:34:55"
             },
-            "src": "217:50:40"
+            "src": "229:50:55"
           },
           {
             "body": {
-              "id": 9712,
+              "id": 14380,
               "nodeType": "Block",
-              "src": "294:57:40",
+              "src": "306:57:55",
               "statements": [
                 {
                   "expression": {
@@ -384,12 +357,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 9707,
+                        "id": 14375,
                         "name": "SERVICE_WALLET_ID",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9693,
-                        "src": "314:17:40",
+                        "referencedDeclaration": 14361,
+                        "src": "326:17:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -399,18 +372,18 @@
                         "argumentTypes": null,
                         "expression": {
                           "argumentTypes": null,
-                          "id": 9708,
+                          "id": 14376,
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 10488,
-                          "src": "333:3:40",
+                          "referencedDeclaration": 15793,
+                          "src": "345:3:55",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
                             "typeString": "msg"
                           }
                         },
-                        "id": 9709,
+                        "id": 14377,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -418,7 +391,7 @@
                         "memberName": "sender",
                         "nodeType": "MemberAccess",
                         "referencedDeclaration": null,
-                        "src": "333:10:40",
+                        "src": "345:10:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -436,18 +409,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 9706,
+                      "id": 14374,
                       "name": "setWallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9734,
-                      "src": "304:9:40",
+                      "referencedDeclaration": 14402,
+                      "src": "316:9:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_uint8_$_t_address_$returns$__$",
                         "typeString": "function (uint8,address)"
                       }
                     },
-                    "id": 9710,
+                    "id": 14378,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -455,20 +428,20 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "304:40:40",
+                    "src": "316:40:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 9711,
+                  "id": 14379,
                   "nodeType": "ExpressionStatement",
-                  "src": "304:40:40"
+                  "src": "316:40:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9713,
+            "id": 14381,
             "implemented": true,
             "isConstructor": true,
             "isDeclaredConst": false,
@@ -476,34 +449,34 @@
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9704,
+              "id": 14372,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "284:2:40"
+              "src": "296:2:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9705,
+              "id": 14373,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "294:0:40"
+              "src": "306:0:55"
             },
-            "scope": 9747,
-            "src": "273:78:40",
+            "scope": 14415,
+            "src": "285:78:55",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 9733,
+              "id": 14401,
               "nodeType": "Block",
-              "src": "412:75:40",
+              "src": "433:75:55",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 9726,
+                    "id": 14394,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -512,26 +485,26 @@
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
-                        "id": 9722,
+                        "id": 14390,
                         "name": "_wallets",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9697,
-                        "src": "422:8:40",
+                        "referencedDeclaration": 14365,
+                        "src": "443:8:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                           "typeString": "mapping(uint8 => address)"
                         }
                       },
-                      "id": 9724,
+                      "id": 14392,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 9723,
-                        "name": "ID",
+                        "id": 14391,
+                        "name": "id",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9715,
-                        "src": "431:2:40",
+                        "referencedDeclaration": 14383,
+                        "src": "452:2:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -542,7 +515,7 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "422:12:40",
+                      "src": "443:12:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
@@ -552,26 +525,26 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 9725,
+                      "id": 14393,
                       "name": "wallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9717,
-                      "src": "437:6:40",
+                      "referencedDeclaration": 14385,
+                      "src": "458:6:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
                       }
                     },
-                    "src": "422:21:40",
+                    "src": "443:21:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "id": 9727,
+                  "id": 14395,
                   "nodeType": "ExpressionStatement",
-                  "src": "422:21:40"
+                  "src": "443:21:55"
                 },
                 {
                   "eventCall": {
@@ -579,12 +552,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 9729,
-                        "name": "ID",
+                        "id": 14397,
+                        "name": "id",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9715,
-                        "src": "469:2:40",
+                        "referencedDeclaration": 14383,
+                        "src": "490:2:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -592,12 +565,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 9730,
+                        "id": 14398,
                         "name": "wallet",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9717,
-                        "src": "473:6:40",
+                        "referencedDeclaration": 14385,
+                        "src": "494:6:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -615,18 +588,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 9728,
+                      "id": 14396,
                       "name": "NewWallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9703,
-                      "src": "459:9:40",
+                      "referencedDeclaration": 14371,
+                      "src": "480:9:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_uint8_$_t_address_$returns$__$",
                         "typeString": "function (uint8,address)"
                       }
                     },
-                    "id": 9731,
+                    "id": 14399,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -634,57 +607,57 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "459:21:40",
+                    "src": "480:21:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 9732,
+                  "id": 14400,
                   "nodeType": "EmitStatement",
-                  "src": "454:26:40"
+                  "src": "475:26:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9734,
+            "id": 14402,
             "implemented": true,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [
               {
                 "arguments": null,
-                "id": 9720,
+                "id": 14388,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 9719,
-                  "name": "onlyOwner",
+                  "id": 14387,
+                  "name": "onlyPrimary",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 10082,
-                  "src": "402:9:40",
+                  "referencedDeclaration": 14772,
+                  "src": "421:11:55",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
                     "typeString": "modifier ()"
                   }
                 },
                 "nodeType": "ModifierInvocation",
-                "src": "402:9:40"
+                "src": "421:11:55"
               }
             ],
             "name": "setWallet",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9718,
+              "id": 14386,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9715,
-                  "name": "ID",
+                  "id": 14383,
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9734,
-                  "src": "376:8:40",
+                  "scope": 14402,
+                  "src": "388:8:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -692,10 +665,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9714,
+                    "id": 14382,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "376:5:40",
+                    "src": "388:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -706,11 +679,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 9717,
+                  "id": 14385,
                   "name": "wallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9734,
-                  "src": "386:14:40",
+                  "scope": 14402,
+                  "src": "398:14:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -718,10 +691,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9716,
+                    "id": 14384,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "386:7:40",
+                    "src": "398:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -731,52 +704,52 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "375:26:40"
+              "src": "387:26:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9721,
+              "id": 14389,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "412:0:40"
+              "src": "433:0:55"
             },
-            "scope": 9747,
-            "src": "357:130:40",
+            "scope": 14415,
+            "src": "369:139:55",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 9745,
+              "id": 14413,
               "nodeType": "Block",
-              "src": "551:36:40",
+              "src": "572:36:55",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
                     "baseExpression": {
                       "argumentTypes": null,
-                      "id": 9741,
+                      "id": 14409,
                       "name": "_wallets",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9697,
-                      "src": "568:8:40",
+                      "referencedDeclaration": 14365,
+                      "src": "589:8:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                         "typeString": "mapping(uint8 => address)"
                       }
                     },
-                    "id": 9743,
+                    "id": 14411,
                     "indexExpression": {
                       "argumentTypes": null,
-                      "id": 9742,
-                      "name": "ID",
+                      "id": 14410,
+                      "name": "id",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9736,
-                      "src": "577:2:40",
+                      "referencedDeclaration": 14404,
+                      "src": "598:2:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint8",
                         "typeString": "uint8"
@@ -787,21 +760,21 @@
                     "isPure": false,
                     "lValueRequested": false,
                     "nodeType": "IndexAccess",
-                    "src": "568:12:40",
+                    "src": "589:12:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 9740,
-                  "id": 9744,
+                  "functionReturnParameters": 14408,
+                  "id": 14412,
                   "nodeType": "Return",
-                  "src": "561:19:40"
+                  "src": "582:19:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9746,
+            "id": 14414,
             "implemented": true,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -809,16 +782,16 @@
             "name": "getWallet",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9737,
+              "id": 14405,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9736,
-                  "name": "ID",
+                  "id": 14404,
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9746,
-                  "src": "512:8:40",
+                  "scope": 14414,
+                  "src": "533:8:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -826,10 +799,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9735,
+                    "id": 14403,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "512:5:40",
+                    "src": "533:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -839,20 +812,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "511:10:40"
+              "src": "532:10:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9740,
+              "id": 14408,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9739,
+                  "id": 14407,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9746,
-                  "src": "542:7:40",
+                  "scope": 14414,
+                  "src": "563:7:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -860,10 +833,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9738,
+                    "id": 14406,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "542:7:40",
+                    "src": "563:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -873,50 +846,49 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "541:9:40"
+              "src": "562:9:55"
             },
-            "scope": 9747,
-            "src": "493:94:40",
+            "scope": 14415,
+            "src": "514:94:55",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 9748,
-        "src": "91:498:40"
+        "scope": 14416,
+        "src": "93:517:55"
       }
     ],
-    "src": "0:590:40"
+    "src": "0:611:55"
   },
   "legacyAST": {
-    "absolutePath": "/home/circleci/code/contracts/wallets/Wallets.sol",
+    "absolutePath": "/home/hokid/projects/work/W12-Product-Blockchain-Protocol/contracts/wallets/Wallets.sol",
     "exportedSymbols": {
       "Wallets": [
-        9747
+        14415
       ]
     },
-    "id": 9748,
+    "id": 14416,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9687,
+        "id": 14355,
         "literals": [
           "solidity",
-          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:40"
+        "src": "0:23:55"
       },
       {
-        "absolutePath": "openzeppelin-solidity/contracts/ownership/Ownable.sol",
-        "file": "openzeppelin-solidity/contracts/ownership/Ownable.sol",
-        "id": 9688,
+        "absolutePath": "openzeppelin-solidity/contracts/ownership/Secondary.sol",
+        "file": "openzeppelin-solidity/contracts/ownership/Secondary.sol",
+        "id": 14356,
         "nodeType": "ImportDirective",
-        "scope": 9748,
-        "sourceUnit": 10135,
-        "src": "26:63:40",
+        "scope": 14416,
+        "sourceUnit": 14806,
+        "src": "25:65:55",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -926,42 +898,42 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 9689,
-              "name": "Ownable",
+              "id": 14357,
+              "name": "Secondary",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 10134,
-              "src": "111:7:40",
+              "referencedDeclaration": 14805,
+              "src": "113:9:55",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$10134",
-                "typeString": "contract Ownable"
+                "typeIdentifier": "t_contract$_Secondary_$14805",
+                "typeString": "contract Secondary"
               }
             },
-            "id": 9690,
+            "id": 14358,
             "nodeType": "InheritanceSpecifier",
-            "src": "111:7:40"
+            "src": "113:9:55"
           }
         ],
         "contractDependencies": [
-          10134
+          14805
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 9747,
+        "id": 14415,
         "linearizedBaseContracts": [
-          9747,
-          10134
+          14415,
+          14805
         ],
         "name": "Wallets",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": true,
-            "id": 9693,
+            "id": 14361,
             "name": "SERVICE_WALLET_ID",
             "nodeType": "VariableDeclaration",
-            "scope": 9747,
-            "src": "125:43:40",
+            "scope": 14415,
+            "src": "129:43:55",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -969,10 +941,10 @@
               "typeString": "uint8"
             },
             "typeName": {
-              "id": 9691,
+              "id": 14359,
               "name": "uint8",
               "nodeType": "ElementaryTypeName",
-              "src": "125:5:40",
+              "src": "129:5:55",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint8",
                 "typeString": "uint8"
@@ -981,14 +953,14 @@
             "value": {
               "argumentTypes": null,
               "hexValue": "31",
-              "id": 9692,
+              "id": 14360,
               "isConstant": false,
               "isLValue": false,
               "isPure": true,
               "kind": "number",
               "lValueRequested": false,
               "nodeType": "Literal",
-              "src": "167:1:40",
+              "src": "171:1:55",
               "subdenomination": null,
               "typeDescriptions": {
                 "typeIdentifier": "t_rational_1_by_1",
@@ -1000,11 +972,11 @@
           },
           {
             "constant": false,
-            "id": 9697,
+            "id": 14365,
             "name": "_wallets",
             "nodeType": "VariableDeclaration",
-            "scope": 9747,
-            "src": "175:35:40",
+            "scope": 14415,
+            "src": "179:43:55",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -1012,28 +984,28 @@
               "typeString": "mapping(uint8 => address)"
             },
             "typeName": {
-              "id": 9696,
+              "id": 14364,
               "keyType": {
-                "id": 9694,
+                "id": 14362,
                 "name": "uint8",
                 "nodeType": "ElementaryTypeName",
-                "src": "184:5:40",
+                "src": "188:5:55",
                 "typeDescriptions": {
                   "typeIdentifier": "t_uint8",
                   "typeString": "uint8"
                 }
               },
               "nodeType": "Mapping",
-              "src": "175:26:40",
+              "src": "179:26:55",
               "typeDescriptions": {
                 "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                 "typeString": "mapping(uint8 => address)"
               },
               "valueType": {
-                "id": 9695,
+                "id": 14363,
                 "name": "address",
                 "nodeType": "ElementaryTypeName",
-                "src": "193:7:40",
+                "src": "197:7:55",
                 "typeDescriptions": {
                   "typeIdentifier": "t_address",
                   "typeString": "address"
@@ -1041,26 +1013,26 @@
               }
             },
             "value": null,
-            "visibility": "internal"
+            "visibility": "private"
           },
           {
             "anonymous": false,
             "documentation": null,
-            "id": 9703,
+            "id": 14371,
             "name": "NewWallet",
             "nodeType": "EventDefinition",
             "parameters": {
-              "id": 9702,
+              "id": 14370,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9699,
+                  "id": 14367,
                   "indexed": true,
-                  "name": "ID",
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9703,
-                  "src": "233:16:40",
+                  "scope": 14371,
+                  "src": "245:16:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1068,10 +1040,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9698,
+                    "id": 14366,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "233:5:40",
+                    "src": "245:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -1082,12 +1054,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 9701,
+                  "id": 14369,
                   "indexed": false,
                   "name": "wallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9703,
-                  "src": "251:14:40",
+                  "scope": 14371,
+                  "src": "263:14:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1095,10 +1067,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9700,
+                    "id": 14368,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "251:7:40",
+                    "src": "263:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -1108,15 +1080,15 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "232:34:40"
+              "src": "244:34:55"
             },
-            "src": "217:50:40"
+            "src": "229:50:55"
           },
           {
             "body": {
-              "id": 9712,
+              "id": 14380,
               "nodeType": "Block",
-              "src": "294:57:40",
+              "src": "306:57:55",
               "statements": [
                 {
                   "expression": {
@@ -1124,12 +1096,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 9707,
+                        "id": 14375,
                         "name": "SERVICE_WALLET_ID",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9693,
-                        "src": "314:17:40",
+                        "referencedDeclaration": 14361,
+                        "src": "326:17:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -1139,18 +1111,18 @@
                         "argumentTypes": null,
                         "expression": {
                           "argumentTypes": null,
-                          "id": 9708,
+                          "id": 14376,
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 10488,
-                          "src": "333:3:40",
+                          "referencedDeclaration": 15793,
+                          "src": "345:3:55",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
                             "typeString": "msg"
                           }
                         },
-                        "id": 9709,
+                        "id": 14377,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -1158,7 +1130,7 @@
                         "memberName": "sender",
                         "nodeType": "MemberAccess",
                         "referencedDeclaration": null,
-                        "src": "333:10:40",
+                        "src": "345:10:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -1176,18 +1148,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 9706,
+                      "id": 14374,
                       "name": "setWallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9734,
-                      "src": "304:9:40",
+                      "referencedDeclaration": 14402,
+                      "src": "316:9:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_uint8_$_t_address_$returns$__$",
                         "typeString": "function (uint8,address)"
                       }
                     },
-                    "id": 9710,
+                    "id": 14378,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1195,20 +1167,20 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "304:40:40",
+                    "src": "316:40:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 9711,
+                  "id": 14379,
                   "nodeType": "ExpressionStatement",
-                  "src": "304:40:40"
+                  "src": "316:40:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9713,
+            "id": 14381,
             "implemented": true,
             "isConstructor": true,
             "isDeclaredConst": false,
@@ -1216,34 +1188,34 @@
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9704,
+              "id": 14372,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "284:2:40"
+              "src": "296:2:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9705,
+              "id": 14373,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "294:0:40"
+              "src": "306:0:55"
             },
-            "scope": 9747,
-            "src": "273:78:40",
+            "scope": 14415,
+            "src": "285:78:55",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 9733,
+              "id": 14401,
               "nodeType": "Block",
-              "src": "412:75:40",
+              "src": "433:75:55",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 9726,
+                    "id": 14394,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1252,26 +1224,26 @@
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
-                        "id": 9722,
+                        "id": 14390,
                         "name": "_wallets",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9697,
-                        "src": "422:8:40",
+                        "referencedDeclaration": 14365,
+                        "src": "443:8:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                           "typeString": "mapping(uint8 => address)"
                         }
                       },
-                      "id": 9724,
+                      "id": 14392,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 9723,
-                        "name": "ID",
+                        "id": 14391,
+                        "name": "id",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9715,
-                        "src": "431:2:40",
+                        "referencedDeclaration": 14383,
+                        "src": "452:2:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -1282,7 +1254,7 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "422:12:40",
+                      "src": "443:12:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
@@ -1292,26 +1264,26 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 9725,
+                      "id": 14393,
                       "name": "wallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9717,
-                      "src": "437:6:40",
+                      "referencedDeclaration": 14385,
+                      "src": "458:6:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
                       }
                     },
-                    "src": "422:21:40",
+                    "src": "443:21:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "id": 9727,
+                  "id": 14395,
                   "nodeType": "ExpressionStatement",
-                  "src": "422:21:40"
+                  "src": "443:21:55"
                 },
                 {
                   "eventCall": {
@@ -1319,12 +1291,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 9729,
-                        "name": "ID",
+                        "id": 14397,
+                        "name": "id",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9715,
-                        "src": "469:2:40",
+                        "referencedDeclaration": 14383,
+                        "src": "490:2:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint8",
                           "typeString": "uint8"
@@ -1332,12 +1304,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 9730,
+                        "id": 14398,
                         "name": "wallet",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9717,
-                        "src": "473:6:40",
+                        "referencedDeclaration": 14385,
+                        "src": "494:6:55",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -1355,18 +1327,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 9728,
+                      "id": 14396,
                       "name": "NewWallet",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9703,
-                      "src": "459:9:40",
+                      "referencedDeclaration": 14371,
+                      "src": "480:9:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_uint8_$_t_address_$returns$__$",
                         "typeString": "function (uint8,address)"
                       }
                     },
-                    "id": 9731,
+                    "id": 14399,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1374,57 +1346,57 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "459:21:40",
+                    "src": "480:21:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 9732,
+                  "id": 14400,
                   "nodeType": "EmitStatement",
-                  "src": "454:26:40"
+                  "src": "475:26:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9734,
+            "id": 14402,
             "implemented": true,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [
               {
                 "arguments": null,
-                "id": 9720,
+                "id": 14388,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 9719,
-                  "name": "onlyOwner",
+                  "id": 14387,
+                  "name": "onlyPrimary",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 10082,
-                  "src": "402:9:40",
+                  "referencedDeclaration": 14772,
+                  "src": "421:11:55",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
                     "typeString": "modifier ()"
                   }
                 },
                 "nodeType": "ModifierInvocation",
-                "src": "402:9:40"
+                "src": "421:11:55"
               }
             ],
             "name": "setWallet",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9718,
+              "id": 14386,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9715,
-                  "name": "ID",
+                  "id": 14383,
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9734,
-                  "src": "376:8:40",
+                  "scope": 14402,
+                  "src": "388:8:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1432,10 +1404,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9714,
+                    "id": 14382,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "376:5:40",
+                    "src": "388:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -1446,11 +1418,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 9717,
+                  "id": 14385,
                   "name": "wallet",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9734,
-                  "src": "386:14:40",
+                  "scope": 14402,
+                  "src": "398:14:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1458,10 +1430,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9716,
+                    "id": 14384,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "386:7:40",
+                    "src": "398:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -1471,52 +1443,52 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "375:26:40"
+              "src": "387:26:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9721,
+              "id": 14389,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "412:0:40"
+              "src": "433:0:55"
             },
-            "scope": 9747,
-            "src": "357:130:40",
+            "scope": 14415,
+            "src": "369:139:55",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 9745,
+              "id": 14413,
               "nodeType": "Block",
-              "src": "551:36:40",
+              "src": "572:36:55",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
                     "baseExpression": {
                       "argumentTypes": null,
-                      "id": 9741,
+                      "id": 14409,
                       "name": "_wallets",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9697,
-                      "src": "568:8:40",
+                      "referencedDeclaration": 14365,
+                      "src": "589:8:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_mapping$_t_uint8_$_t_address_$",
                         "typeString": "mapping(uint8 => address)"
                       }
                     },
-                    "id": 9743,
+                    "id": 14411,
                     "indexExpression": {
                       "argumentTypes": null,
-                      "id": 9742,
-                      "name": "ID",
+                      "id": 14410,
+                      "name": "id",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9736,
-                      "src": "577:2:40",
+                      "referencedDeclaration": 14404,
+                      "src": "598:2:55",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint8",
                         "typeString": "uint8"
@@ -1527,21 +1499,21 @@
                     "isPure": false,
                     "lValueRequested": false,
                     "nodeType": "IndexAccess",
-                    "src": "568:12:40",
+                    "src": "589:12:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 9740,
-                  "id": 9744,
+                  "functionReturnParameters": 14408,
+                  "id": 14412,
                   "nodeType": "Return",
-                  "src": "561:19:40"
+                  "src": "582:19:55"
                 }
               ]
             },
             "documentation": null,
-            "id": 9746,
+            "id": 14414,
             "implemented": true,
             "isConstructor": false,
             "isDeclaredConst": true,
@@ -1549,16 +1521,16 @@
             "name": "getWallet",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9737,
+              "id": 14405,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9736,
-                  "name": "ID",
+                  "id": 14404,
+                  "name": "id",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9746,
-                  "src": "512:8:40",
+                  "scope": 14414,
+                  "src": "533:8:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1566,10 +1538,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 9735,
+                    "id": 14403,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "512:5:40",
+                    "src": "533:5:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -1579,20 +1551,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "511:10:40"
+              "src": "532:10:55"
             },
             "payable": false,
             "returnParameters": {
-              "id": 9740,
+              "id": 14408,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9739,
+                  "id": 14407,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9746,
-                  "src": "542:7:40",
+                  "scope": 14414,
+                  "src": "563:7:55",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1600,10 +1572,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9738,
+                    "id": 14406,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "542:7:40",
+                    "src": "563:7:55",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -1613,26 +1585,32 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "541:9:40"
+              "src": "562:9:55"
             },
-            "scope": 9747,
-            "src": "493:94:40",
+            "scope": 14415,
+            "src": "514:94:55",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 9748,
-        "src": "91:498:40"
+        "scope": 14416,
+        "src": "93:517:55"
       }
     ],
-    "src": "0:590:40"
+    "src": "0:611:55"
   },
   "compiler": {
     "name": "solc",
     "version": "0.4.24+commit.e67f0147.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {},
+      "links": {},
+      "address": "0x751d85776e933139cf389bf03946a04488d9a412",
+      "transactionHash": "0x6b6e9094562c998f498bc4ae81e1f5e0ee75e6353027423a75aeb0cd2b2e7d56"
+    },
     "4": {
       "events": {},
       "links": {},
@@ -1641,5 +1619,5 @@
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-10-27T04:56:22.019Z"
+  "updatedAt": "2019-03-06T11:10:16.580Z"
 }

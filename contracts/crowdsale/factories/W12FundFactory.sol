@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 import "./IW12FundFactory.sol";
 import "../W12Fund.sol";
 import "../../versioning/Versionable.sol";
+
 
 contract W12FundFactory is Versionable, IW12FundFactory {
     IRates rates;
@@ -18,7 +19,13 @@ contract W12FundFactory is Versionable, IW12FundFactory {
 
         result.setSwap(swap);
         result.setServiceWallet(serviceWallet);
+
+        // transfer all permissions to sender
+        result.addAdmin(msg.sender);
+        result.addProjectOwner(msg.sender);
         result.transferPrimary(msg.sender);
+        result.renounceAdmin();
+        result.renounceProjectOwner();
 
         emit FundCreated(result);
     }
