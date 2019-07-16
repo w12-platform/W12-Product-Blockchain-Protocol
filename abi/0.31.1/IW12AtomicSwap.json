@@ -1,15 +1,23 @@
 {
-  "contractName": "IPricerRole",
+  "contractName": "IW12AtomicSwap",
   "abi": [
     {
-      "constant": true,
+      "constant": false,
       "inputs": [
         {
-          "name": "account",
+          "name": "token",
           "type": "address"
+        },
+        {
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
         }
       ],
-      "name": "isPricer",
+      "name": "approve",
       "outputs": [
         {
           "name": "",
@@ -17,20 +25,6 @@
         }
       ],
       "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "addPricer",
-      "outputs": [],
-      "payable": false,
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -38,20 +32,15 @@
       "constant": false,
       "inputs": [
         {
-          "name": "account",
+          "name": "fromToken",
           "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
         }
       ],
-      "name": "removePricer",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "renouncePricer",
+      "name": "exchange",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -62,62 +51,63 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity 0.4.24;\n\n\ncontract IPricerRole {\n    function isPricer(address account) public view returns (bool);\n\n    function addPricer(address account) public;\n\n    function removePricer(address account) public;\n\n    function renouncePricer() public;\n}\n",
-  "sourcePath": "/Users/gauss/_games/w12/W12-Product-Blockchain-Protocol/contracts/access/roles/IPricerRole.sol",
+  "source": "pragma solidity ^0.4.24;\n\ninterface IW12AtomicSwap {\n    function approve(address token, address spender, uint amount) external returns (bool);\n\n    function exchange(address fromToken, uint amount) external;\n}\n",
+  "sourcePath": "/home/circleci/code/contracts/interfaces/IW12AtomicSwap.sol",
   "ast": {
-    "absolutePath": "/Users/gauss/_games/w12/W12-Product-Blockchain-Protocol/contracts/access/roles/IPricerRole.sol",
+    "absolutePath": "/home/circleci/code/contracts/interfaces/IW12AtomicSwap.sol",
     "exportedSymbols": {
-      "IPricerRole": [
-        1470
+      "IW12AtomicSwap": [
+        5103
       ]
     },
-    "id": 1471,
+    "id": 5104,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1449,
+        "id": 5084,
         "literals": [
           "solidity",
+          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:5"
+        "src": "0:24:14"
       },
       {
         "baseContracts": [],
         "contractDependencies": [],
-        "contractKind": "contract",
+        "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1470,
+        "id": 5103,
         "linearizedBaseContracts": [
-          1470
+          5103
         ],
-        "name": "IPricerRole",
+        "name": "IW12AtomicSwap",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "body": null,
             "documentation": null,
-            "id": 1456,
+            "id": 5095,
             "implemented": false,
             "isConstructor": false,
-            "isDeclaredConst": true,
+            "isDeclaredConst": false,
             "modifiers": [],
-            "name": "isPricer",
+            "name": "approve",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1452,
+              "id": 5091,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1451,
-                  "name": "account",
+                  "id": 5086,
+                  "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1456,
-                  "src": "71:15:5",
+                  "scope": 5095,
+                  "src": "74:13:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -125,10 +115,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1450,
+                    "id": 5085,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "71:7:5",
+                    "src": "74:7:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -136,22 +126,74 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 5088,
+                  "name": "spender",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 5095,
+                  "src": "89:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 5087,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "89:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 5090,
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 5095,
+                  "src": "106:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 5089,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "106:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "70:17:5"
+              "src": "73:45:14"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1455,
+              "id": 5094,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1454,
+                  "id": 5093,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1456,
-                  "src": "109:4:5",
+                  "scope": 5095,
+                  "src": "137:4:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -159,10 +201,10 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 1453,
+                    "id": 5092,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
-                    "src": "109:4:5",
+                    "src": "137:4:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
@@ -172,35 +214,35 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "108:6:5"
+              "src": "136:6:14"
             },
-            "scope": 1470,
-            "src": "53:62:5",
-            "stateMutability": "view",
+            "scope": 5103,
+            "src": "57:86:14",
+            "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "public"
+            "visibility": "external"
           },
           {
             "body": null,
             "documentation": null,
-            "id": 1461,
+            "id": 5102,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [],
-            "name": "addPricer",
+            "name": "exchange",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1459,
+              "id": 5100,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1458,
-                  "name": "account",
+                  "id": 5097,
+                  "name": "fromToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1461,
-                  "src": "140:15:5",
+                  "scope": 5102,
+                  "src": "167:17:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -208,10 +250,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1457,
+                    "id": 5096,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "140:7:5",
+                    "src": "167:7:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -219,169 +261,111 @@
                   },
                   "value": null,
                   "visibility": "internal"
-                }
-              ],
-              "src": "139:17:5"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1460,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "163:0:5"
-            },
-            "scope": 1470,
-            "src": "121:43:5",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 1466,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "removePricer",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 1464,
-              "nodeType": "ParameterList",
-              "parameters": [
+                },
                 {
                   "constant": false,
-                  "id": 1463,
-                  "name": "account",
+                  "id": 5099,
+                  "name": "amount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1466,
-                  "src": "192:15:5",
+                  "scope": 5102,
+                  "src": "186:11:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1462,
-                    "name": "address",
+                    "id": 5098,
+                    "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "192:7:5",
+                    "src": "186:4:14",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "191:17:5"
+              "src": "166:32:14"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1465,
+              "id": 5101,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "215:0:5"
+              "src": "207:0:14"
             },
-            "scope": 1470,
-            "src": "170:46:5",
+            "scope": 5103,
+            "src": "149:59:14",
             "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 1469,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "renouncePricer",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 1467,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "245:2:5"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1468,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "254:0:5"
-            },
-            "scope": 1470,
-            "src": "222:33:5",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
+            "visibility": "external"
           }
         ],
-        "scope": 1471,
-        "src": "26:231:5"
+        "scope": 5104,
+        "src": "26:184:14"
       }
     ],
-    "src": "0:258:5"
+    "src": "0:211:14"
   },
   "legacyAST": {
-    "absolutePath": "/Users/gauss/_games/w12/W12-Product-Blockchain-Protocol/contracts/access/roles/IPricerRole.sol",
+    "absolutePath": "/home/circleci/code/contracts/interfaces/IW12AtomicSwap.sol",
     "exportedSymbols": {
-      "IPricerRole": [
-        1470
+      "IW12AtomicSwap": [
+        5103
       ]
     },
-    "id": 1471,
+    "id": 5104,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1449,
+        "id": 5084,
         "literals": [
           "solidity",
+          "^",
           "0.4",
           ".24"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:5"
+        "src": "0:24:14"
       },
       {
         "baseContracts": [],
         "contractDependencies": [],
-        "contractKind": "contract",
+        "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1470,
+        "id": 5103,
         "linearizedBaseContracts": [
-          1470
+          5103
         ],
-        "name": "IPricerRole",
+        "name": "IW12AtomicSwap",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "body": null,
             "documentation": null,
-            "id": 1456,
+            "id": 5095,
             "implemented": false,
             "isConstructor": false,
-            "isDeclaredConst": true,
+            "isDeclaredConst": false,
             "modifiers": [],
-            "name": "isPricer",
+            "name": "approve",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1452,
+              "id": 5091,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1451,
-                  "name": "account",
+                  "id": 5086,
+                  "name": "token",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1456,
-                  "src": "71:15:5",
+                  "scope": 5095,
+                  "src": "74:13:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -389,10 +373,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1450,
+                    "id": 5085,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "71:7:5",
+                    "src": "74:7:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -400,22 +384,74 @@
                   },
                   "value": null,
                   "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 5088,
+                  "name": "spender",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 5095,
+                  "src": "89:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 5087,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "89:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 5090,
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 5095,
+                  "src": "106:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 5089,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "106:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
                 }
               ],
-              "src": "70:17:5"
+              "src": "73:45:14"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1455,
+              "id": 5094,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1454,
+                  "id": 5093,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1456,
-                  "src": "109:4:5",
+                  "scope": 5095,
+                  "src": "137:4:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -423,10 +459,10 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 1453,
+                    "id": 5092,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
-                    "src": "109:4:5",
+                    "src": "137:4:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
@@ -436,35 +472,35 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "108:6:5"
+              "src": "136:6:14"
             },
-            "scope": 1470,
-            "src": "53:62:5",
-            "stateMutability": "view",
+            "scope": 5103,
+            "src": "57:86:14",
+            "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "public"
+            "visibility": "external"
           },
           {
             "body": null,
             "documentation": null,
-            "id": 1461,
+            "id": 5102,
             "implemented": false,
             "isConstructor": false,
             "isDeclaredConst": false,
             "modifiers": [],
-            "name": "addPricer",
+            "name": "exchange",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 1459,
+              "id": 5100,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1458,
-                  "name": "account",
+                  "id": 5097,
+                  "name": "fromToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1461,
-                  "src": "140:15:5",
+                  "scope": 5102,
+                  "src": "167:17:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -472,10 +508,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1457,
+                    "id": 5096,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "140:7:5",
+                    "src": "167:7:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
@@ -483,114 +519,55 @@
                   },
                   "value": null,
                   "visibility": "internal"
-                }
-              ],
-              "src": "139:17:5"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1460,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "163:0:5"
-            },
-            "scope": 1470,
-            "src": "121:43:5",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 1466,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "removePricer",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 1464,
-              "nodeType": "ParameterList",
-              "parameters": [
+                },
                 {
                   "constant": false,
-                  "id": 1463,
-                  "name": "account",
+                  "id": 5099,
+                  "name": "amount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 1466,
-                  "src": "192:15:5",
+                  "scope": 5102,
+                  "src": "186:11:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1462,
-                    "name": "address",
+                    "id": 5098,
+                    "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "192:7:5",
+                    "src": "186:4:14",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
                     }
                   },
                   "value": null,
                   "visibility": "internal"
                 }
               ],
-              "src": "191:17:5"
+              "src": "166:32:14"
             },
             "payable": false,
             "returnParameters": {
-              "id": 1465,
+              "id": 5101,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "215:0:5"
+              "src": "207:0:14"
             },
-            "scope": 1470,
-            "src": "170:46:5",
+            "scope": 5103,
+            "src": "149:59:14",
             "stateMutability": "nonpayable",
             "superFunction": null,
-            "visibility": "public"
-          },
-          {
-            "body": null,
-            "documentation": null,
-            "id": 1469,
-            "implemented": false,
-            "isConstructor": false,
-            "isDeclaredConst": false,
-            "modifiers": [],
-            "name": "renouncePricer",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 1467,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "245:2:5"
-            },
-            "payable": false,
-            "returnParameters": {
-              "id": 1468,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "254:0:5"
-            },
-            "scope": 1470,
-            "src": "222:33:5",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "public"
+            "visibility": "external"
           }
         ],
-        "scope": 1471,
-        "src": "26:231:5"
+        "scope": 5104,
+        "src": "26:184:14"
       }
     ],
-    "src": "0:258:5"
+    "src": "0:211:14"
   },
   "compiler": {
     "name": "solc",
@@ -598,5 +575,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2019-07-16T12:57:20.964Z"
+  "updatedAt": "2018-09-28T12:09:35.696Z"
 }

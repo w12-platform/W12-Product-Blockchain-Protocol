@@ -39,6 +39,7 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     uint public WTokenSaleFeePercent;
     address public serviceWallet;
     address public swap;
+    uint8 public type;
 
     // list of payment methods
     PaymentMethods.Methods private paymentMethods;
