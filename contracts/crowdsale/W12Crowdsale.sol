@@ -39,7 +39,9 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
     uint public WTokenSaleFeePercent;
     address public serviceWallet;
     address public swap;
-    uint8 public type;
+    uint8 public project_type;
+    string public project_name;
+    uint public refund_date;
 
     // list of payment methods
     PaymentMethods.Methods private paymentMethods;
@@ -477,6 +479,45 @@ contract W12Crowdsale is IW12Crowdsale, AdminRole, ProjectOwnerRole, Versionable
             : uint(ERC20Detailed(rates.getTokenAddress(method)).decimals());
         result[4] = token.balanceOf(address(this));
     }
+
+
+    function getProjectType() public view returns(uint8)
+    {
+        return project_type;
+    }
+
+
+    function setProjectType(uint8 val_type) public onlyAdmin
+    {
+        project_type = val_type;
+    }
+
+
+    function getProjectName() public view returns(string)
+    {
+        return project_name;
+    }
+
+
+    function setProjectName(string val_name) public onlyAdmin
+    {
+        project_name = val_name;
+    }
+
+
+    function getRefundDate() public view returns(uint)
+    {
+        return refund_date;
+    }
+
+
+    function setRefundDate(uint val) public onlyAdmin
+    {
+        refund_date = val;
+    }
+
+
+
 
     modifier beforeSaleStart() {
         if (stages.length > 0) {

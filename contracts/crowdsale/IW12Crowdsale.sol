@@ -49,4 +49,21 @@ contract IW12Crowdsale is IAdminRole, IProjectOwnerRole {
     function buyTokens(bytes32 method, uint amount) public payable;
 
     function transferPrimary(address _address) public;
+
+    function getProjectType() public view returns(uint8);
+
+
+    function setProjectType(uint8 val_type) public;
+
+
+    function getProjectName() public view returns(string);
+
+
+    function setProjectName(string val_name) public;
+
+
+    function getRefundDate() public view returns(uint);
+
+
+    function setRefundDate(uint val) public;
 }

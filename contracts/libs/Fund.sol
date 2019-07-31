@@ -125,6 +125,40 @@ library Fund {
         result[2] = index;
     }
 
+
+    function getTrancheInvoiceIndex(
+        State storage state,
+        bool trancheTransferAllowed,
+        IW12Crowdsale crowdsale,
+        uint index
+    ) public view returns (uint[3] result)
+    {
+        if (!trancheTransferAllowed) return;
+
+        (, uint tranchePercent, , , , ) = crowdsale.getMilestone(index);
+
+        bool completed = state.completedTranches[index];
+
+        if (completed) return;
+
+        uint prevIndex = index;
+        uint totalTranchePercentBefore;
+
+        while (prevIndex > 0) {
+            prevIndex--;
+
+            (, uint _tranchePercent, , , , ) = crowdsale.getMilestone(prevIndex);
+
+            totalTranchePercentBefore = totalTranchePercentBefore.add(_tranchePercent);
+        }
+
+        result[0] = tranchePercent
+            .add(totalTranchePercentBefore)
+            .sub(state.totalTranchePercentReleased);
+        result[1] = totalTranchePercentBefore;
+        result[2] = index;
+    }
+
     function refundAssets(
         State storage state,
         uint tokenAmount,
