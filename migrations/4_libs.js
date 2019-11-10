@@ -22,6 +22,7 @@ const PercentMock = artifacts.require('PercentMock');
 
 const utils = require('../shared/utils');
 
+
 module.exports = function (deployer, network, accounts) {
     deployer.then(async () => {
         await utils.deploy(network, deployer, Utils);
@@ -39,6 +40,7 @@ module.exports = function (deployer, network, accounts) {
         Fund.link(Percent);
         Fund.link(FundAccount);
 
+        console.log('fund-------------------------------');
         await utils.deploy(network, deployer, Fund);
         await utils.deploy(network, deployer, Crowdsale);
         await utils.deploy(network, deployer, PurchaseProcessing);

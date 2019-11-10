@@ -12,6 +12,8 @@ async function deploy(net, deployer, contract, ...args) {
     let count = MAX_ATTEMPTS;
     let error;
 
+    console.log(args);
+
     while(count) {
         try {
             return await deployer.deploy(contract, ...args);

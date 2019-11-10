@@ -7,7 +7,7 @@ const semver = require('semver');
 const utils = require('../shared/utils');
 
 module.exports = function(deployer, network, accounts) {
-    if (network === 'test' || network === 'mainnet') {
+
         const netName = network === 'test' ? 'Rinkeby' : 'Mainnet';
 
         deployer.then(async () => {
@@ -16,7 +16,7 @@ module.exports = function(deployer, network, accounts) {
             utils.migrateLog.create(netName);
 
             // firstly deploy versions ledger
-            await utils.deploy(network, deployer, Versions, {overwrite: false});
+            await utils.deploy(network, deployer, Versions, {overwrite: true});
 
             utils.migrateLog.addAddress(Versions.contractName, Versions.address);
 
@@ -34,9 +34,9 @@ module.exports = function(deployer, network, accounts) {
 
             utils.migrateLog.addAddress(Migrations.contractName, Migrations.address);
 
-            await utils.deploy(network, deployer, Wallets, {overwrite: false});
+            await utils.deploy(network, deployer, Wallets);
 
             utils.migrateLog.addAddress(Wallets.contractName, Wallets.address);
         });
-    }
+
 };

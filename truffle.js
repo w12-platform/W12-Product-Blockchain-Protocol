@@ -9,17 +9,18 @@ module.exports = {
     networks: {
         development: {
             host: '127.0.0.1',
-            port: 7545,
+            port: 9545,
             network_id: '*', // Match any network id
             gasPrice: 0,
-            gas: 8000000
+            gas: 6500000
         },
         test: {
             provider() {
-                return new HDWalletProvider(deployConfig.mnemonic, `https://rinkeby.infura.io/v3/${deployConfig.infuraKey}`)
+                return new HDWalletProvider(deployConfig.mnemonic, `https://rinkeby.infura.io/v3/${deployConfig.infuraKey}`, 1)
             },
             network_id: 4,
             gasPrice: 10000000000,
+            gas: 6000000
         },
         mainnet: {
             provider () {
@@ -33,9 +34,13 @@ module.exports = {
         grep: '',
         bail: true
     },
-    solc: {
-        optimizer: {
-            enabled: true
+    compilers:
+        {
+            solc: {
+                version: "0.4.26",
+                optimizer: {
+                    enabled: true
+                }
+            }
         }
-    }
 };

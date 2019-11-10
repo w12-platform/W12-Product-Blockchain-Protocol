@@ -5,17 +5,23 @@ const semint = require('@redtea/semint');
 const utils = require('../shared/utils');
 
 module.exports = function (deployer, network, accounts) {
-    if(network === 'mainnet' || network === 'test') {
-    	deployer.then(async () => {
-    	    if (version === '0.29.1') {
+
+    	deployer.then(async () =>
+      {
+
+    	    // if (version === '0.29.1')
+    	    // {
                 await utils.deploy(network, deployer, Rates);
-            } else {
-    	        console.log('skip deploying Rates.sol, deployed address: ', Rates.address);
-            }
+          // }
+    	    // else
+   	     //  {
+   	     //    console.log('skip deploying Rates.sol, deployed address: ', Rates.address);
+          // }
 
             utils.migrateLog.addAddress(Rates.contractName, Rates.address);
 
-            if (version === '0.29.1') {
+            // if (version === '0.29.1')
+            // {
                 await utils.deploy(network, deployer, RatesGuard,
                     // destination to send suggestion
                     Rates.address,
@@ -35,11 +41,11 @@ module.exports = function (deployer, network, accounts) {
                     [accounts[0]]
                 );
                 await (await Rates.deployed()).addPricer(RatesGuard.address);
-            } else {
-                console.log('skip deploying RatesGuard.sol, deployed address: ', RatesGuard.address);
-            }
+            // } else {
+            //     console.log('skip deploying RatesGuard.sol, deployed address: ', RatesGuard.address);
+            // }
 
             utils.migrateLog.addAddress(RatesGuard.contractName, RatesGuard.address);
         });
-    }
+
 };

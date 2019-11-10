@@ -11,10 +11,13 @@ module.exports = function (deployer, network, accounts) {
 
     	deployer.then(async () => {
 
-    	      // await utils.deploy(network, deployer, oracles);
 
-            await utils.deploy(network, deployer, W12FundFactory, semint.encode(version, 4), Rates.address, Rates.address);
 
+            utils.migrateLog.addAddress(W12FundFactory.contractName, W12FundFactory.address);
+
+            await utils.deploy(network, deployer, W12CrowdsaleFactory, semint.encode(version, 4), W12FundFactory.address, Rates.address);
+
+            utils.migrateLog.addAddress(W12CrowdsaleFactory.contractName, W12CrowdsaleFactory.address);
         });
 
 };

@@ -6,7 +6,10 @@ import "./wallets/IWallets.sol";
 import "./token/exchanger/ITokenExchanger.sol";
 
 
+
 contract W12ListerStub is W12Lister {
+
+
 
     /**
     * @dev Allows for any account besides the owner.
@@ -23,13 +26,15 @@ contract W12ListerStub is W12Lister {
         uint version,
         IWallets _wallets,
         IW12CrowdsaleFactory _factory,
-        ITokenExchanger _exchanger
+        ITokenExchanger _exchanger,
+        IListerFactory _lister_factory
     )
         W12Lister(
             version,
             _wallets,
             _factory,
-            _exchanger
+            _exchanger,
+            _lister_factory
         ) public
     {}
 }

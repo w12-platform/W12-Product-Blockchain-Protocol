@@ -3,17 +3,20 @@ pragma solidity 0.4.24;
 import "./IW12CrowdsaleFactory.sol";
 import "./IW12FundFactory.sol";
 import "../../rates/IRates.sol";
-import "../../versioning/Versionable.sol";
-import "../W12Crowdsale.sol";
+
+import "./IW12CrowdsaleFactory2.sol";
 
 
-contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
+
+contract W12CrowdsaleFactory is IW12CrowdsaleFactory {
     IW12FundFactory private fundFactory;
     IRates private rates;
 
+    IW12CrowdsaleFactory2 base_crowdsale;
+
     event CrowdsaleCreated(address indexed token, address crowdsaleAddress, address fundAddress);
 
-    constructor(uint version, IW12FundFactory _fundFactory, IRates _rates) Versionable(version) public {
+    constructor(uint version, IW12FundFactory _fundFactory, IRates _rates) public {
         require(_fundFactory != address(0));
         require(_rates != address(0));
 
@@ -36,8 +39,7 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
     {
         IW12Fund fund = fundFactory.createFund(swap, serviceWallet, trancheFeePercent);
 
-        result = new W12Crowdsale(
-            version,
+        result = IW12Crowdsale(base_crowdsale.create(
             tokenAddress,
             wTokenAddress,
             price,
@@ -45,9 +47,9 @@ contract W12CrowdsaleFactory is Versionable, IW12CrowdsaleFactory {
             swap,
             serviceFee,
             WTokenSaleFeePercent,
-            fund,
-            rates
-        );
+            IW12Fund(fund),
+            IRates(rates)
+        ));
 
         fund.setCrowdsale(result);
         // make crowdsale a admin

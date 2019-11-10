@@ -7,13 +7,17 @@ const TokenExchanger = artifacts.require('TokenExchanger');
 const version = require('../package').version;
 const semint = require('@redtea/semint');
 const utils = require('../shared/utils');
+const ListerFactory = artifacts.require('ListerFactory');
 
 module.exports = function (deployer, network, accounts) {
-    if (network === 'test' || network === 'mainnet') {
+
         deployer.then(async () => {
             const owner = accounts[0];
             const serviceWallet = accounts[0];
             // const Lister = network === 'test' ? W12ListerStub : W12Lister;
+
+            await utils.deploy(network, deployer, ListerFactory);
+
             const Lister = W12Lister;
 
             await utils.deploy(network, deployer, TokenExchanger, semint.encode(version, 4));
@@ -27,8 +31,12 @@ module.exports = function (deployer, network, accounts) {
                 semint.encode(version, 4),
                 Wallets.address,
                 W12CrowdsaleFactory.address,
-                TokenExchanger.address
+                TokenExchanger.address,
+                ListerFactory.address
             );
+
+            console.log('--------------');
+            console.log(Lister.address);
 
             utils.migrateLog.addAddress(Lister.contractName, Lister.address);
             utils.migrateLog.addAddress('Owner', owner);
@@ -37,5 +45,5 @@ module.exports = function (deployer, network, accounts) {
             await (await TokenExchanger.deployed()).transferPrimary(Lister.address);
             await (await Versions.deployed()).setVersion(Lister.address, semint.encode(version, 4));
         });
-    }
+
 };

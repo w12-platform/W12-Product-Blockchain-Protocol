@@ -18,9 +18,6 @@ import "../access/roles/ProjectOwnerRole.sol";
 import "./IOracleBallot.sol";
 
 
-
-
-
 contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondary, ReentrancyGuard {
     using SafeMath for uint;
     using Percent for uint;
@@ -39,8 +36,7 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
 
     Fund.State private state;
 
-    address public ORACLE_ADDR = 0x09Da4Bee8DdAd5Df8b5BD354bD453652F25e6B62;
-
+    address public oracles;
 
     event FundsReceived(address indexed investor, uint tokenAmount, bytes32 symbol, uint cost);
     event AssetRefunded(address indexed investor, bytes32 symbol, uint amount);
@@ -48,12 +44,14 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
     event TrancheTransferred(address indexed receiver, bytes32 symbol, uint amount);
     event TrancheReleased(address indexed receiver, uint percent);
 
-    constructor(uint version, uint _trancheFeePercent, IRates _rates) public Versionable(version) {
+    constructor(uint version, uint _trancheFeePercent, IRates _rates, address oracles_addr) public Versionable(version) {
         require(_trancheFeePercent.isPercent() && _trancheFeePercent.fromPercent() < 100);
         require(_rates != address(0));
+        require(oracles_addr != address(0));
 
         trancheFeePercent = _trancheFeePercent;
         rates = _rates;
+        oracles = oracles_addr;
     }
 
     function setCrowdsale(IW12Crowdsale _crowdsale) external onlyAdmin {
@@ -248,32 +246,57 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
 
     function tokenRefundAllowed() public view returns (bool)
     {
-        if(crowdsale.getRefundDate() > 0)
-        {
-            if(now >= crowdsale.getRefundDate())
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         (uint index, /* bool found */) = crowdsale.getCurrentMilestoneIndex();
 
-        // first milestone is reserved for the project to claim initial amount of payments.
-        // No refund allowed at this stage.
-        if (index == 0) return;
+        if(crowdsale.getProjectType() == 2)
+        {
+            if(crowdsale.getRefundDate() > 0)
+            {
+                if(now >= crowdsale.getRefundDate())
+                {
+                    return true;
+                }
+                return false;
+            }
 
-        (uint32 endDate, , , uint32 withdrawalWindow, ,) = crowdsale.getMilestone(index);
+            OracleBallot oracle = OracleBallot(oracles);
 
-        OracleBallot oracle = OracleBallot(ORACLE_ADDR);
+            (uint vote_y, uint vote_n, uint vote_all, bool can_vote) = oracle.get_vote_result(crowdsale, index);
 
-        (uint vote_y, uint vote_n, uint vote_all, bool can_vote) = oracle.get_vote_result(crowdsale, index);
+            if(vote_y > vote_all / 2)
+                return true;
+            else
+                return false;
+        }
+        if(crowdsale.getProjectType() == 0)
+        {
+            // first milestone is reserved for the project to claim initial amount of payments.
+            // No refund allowed at this stage.
+            if (index == 0) return;
 
-        if(vote_y > vote_all / 2)
-            return true;
-        else
-            return false;
+            (endDate, , , withdrawalWindow, ,) = crowdsale.getMilestone(index);
+
+            return endDate <= now && now < withdrawalWindow;
+        }
+        if(crowdsale.getProjectType() == 1)
+        {
+            // first milestone is reserved for the project to claim initial amount of payments.
+            // No refund allowed at this stage.
+            if (index == 0) return;
+
+            (uint32 endDate, , , uint32 withdrawalWindow, ,) = crowdsale.getMilestone(index);
+
+            bool flag = endDate <= now && now < withdrawalWindow;
+
+            oracle = OracleBallot(oracles);
+
+            (vote_y, vote_n, vote_all, can_vote) = oracle.get_vote_result(crowdsale, index);
+
+            if(vote_y > vote_all / 2 && flag)
+                return true;
+            else
+                return false;
+        }
     }
 
     function trancheTransferAllowed() public view returns (bool)
@@ -282,12 +305,15 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
 
         if (!found) return;
 
-        OracleBallot oracle = OracleBallot(ORACLE_ADDR);
+        if(crowdsale.getProjectType() == 1)
+        {
+            OracleBallot oracle = OracleBallot(oracles);
 
-        (uint vote_y, uint vote_n, uint vote_all, bool can_vote) = oracle.get_vote_result(crowdsale, index);
+            (uint vote_y, uint vote_n, uint vote_all, bool can_vote) = oracle.get_vote_result(crowdsale, index);
 
-        if(vote_y <= vote_all / 2)
-            return false;
+            if(vote_y <= vote_all / 2)
+                return false;
+        }
 
         return index == 0 || isWithdrawalWindowActive();
     }
@@ -296,12 +322,17 @@ contract W12Fund is IW12Fund, AdminRole, ProjectOwnerRole, Versionable, Secondar
     {
         (uint last_index, bool found) = crowdsale.getLastMilestoneIndex();
 
+        if(crowdsale.getProjectType() != 2)
+        {
+            return false;
+        }
+
         if (!found) return;
 
         if(index > last_index)
             return false;
 
-        OracleBallot oracle = OracleBallot(ORACLE_ADDR);
+        OracleBallot oracle = OracleBallot(oracles);
 
         (uint vote_y, uint vote_n, uint vote_all, bool can_vote) = oracle.get_vote_result(crowdsale, index);
 

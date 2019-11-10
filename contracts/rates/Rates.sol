@@ -17,14 +17,16 @@ contract Rates is IRates, Symbols, PricerRole, Secondary {
         if (_address != address(0)) setTokenAddress(symbol, _address);
     }
 
-    function addSymbol(bytes32 symbol) public onlyPricer {
+    function addSymbol(bytes32 symbol) public onlyPricer
+    {
+
         Symbols.addSymbol(symbol);
     }
 
     function removeSymbol(bytes32 symbol) public onlyPricer {
         setTokenAddress(symbol, address(0));
-        Symbols.removeSymbol(symbol);
         rates[symbol] = 0;
+        Symbols.removeSymbol(symbol);
     }
 
     function setTokenAddress(bytes32 symbol, address _address) public onlyPricer {
