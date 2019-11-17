@@ -9,4 +9,5 @@ contract IListerFactory
 	function placeToken1(address _token) public returns(ERC20Detailed);
 	function placeToken2(uint amount, ITokenExchanger exchanger, uint amountWithoutFee, address service_wallet, uint fee);
 	function placeToken3(address crowdsale, ITokenExchanger exchanger, address snd, uint amountWithoutFee, string name, string symbol, uint8 decimals);
+	function addTokensToCrowdsale(address token, address crowdsale, uint amountForSale, ITokenExchanger exchanger);
 }
